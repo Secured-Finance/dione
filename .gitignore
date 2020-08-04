@@ -17,3 +17,4 @@ vendor/
 
 # Environment files
 .env
+eth-contracts/node_modules

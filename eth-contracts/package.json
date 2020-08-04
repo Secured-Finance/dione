@@ -1,0 +1,19 @@
+{
+  "name": "p2p-oracle-smart-contracts",
+  "version": "0.0.1",
+  "description": "Smart contracts for p2p oracle network",
+  "main": "truffle-config.js",
+  "directories": {
+    "test": "test"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "@truffle/hdwallet-provider": "^1.0.40",
+    "dotenv": "^8.2.0",
+    "truffle": "^5.1.37"
+  }
+}
