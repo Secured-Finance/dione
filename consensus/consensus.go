@@ -115,7 +115,7 @@ func (raftConsensus *RaftConsensus) WaitForLeader(r *raft.Raft) {
 	}
 }
 
-func (raftConsensus *RaftConsensus) MakeConsensus(h host.Host, pids []peer.ID, op consensus.Op) {
+func (raftConsensus *RaftConsensus) SetupConsensus(h host.Host, pids []peer.ID, op consensus.Op) {
 	raftConsensus.NewConsensus(op)
 
 	// -- Create Raft servers configuration
@@ -175,7 +175,7 @@ func (raftConsensus *RaftConsensus) MakeConsensus(h host.Host, pids []peer.ID, o
 }
 
 func (raftConsensus *RaftConsensus) StartConsensus(host host.Host, peers []peer.ID) {
-	raftConsensus.MakeConsensus(host, peers, nil)
+	raftConsensus.SetupConsensus(host, peers, nil)
 
 	// Create the actors using the Raft nodes
 	raftConsensus.Actor = libp2praft.NewActor(raftConsensus.Raft)
