@@ -24,6 +24,7 @@ type RaftConsensus struct {
 	Consensus *libp2praft.Consensus
 	State     consensus.State
 	Transport *raft.NetworkTransport
+	Actor     *libp2praft.Actor
 }
 
 type RaftState struct {
@@ -177,22 +178,21 @@ func (raftConsensus *RaftConsensus) StartConsensus(host host.Host, peers []peer.
 	raftConsensus.MakeConsensus(host, peers, nil)
 
 	// Create the actors using the Raft nodes
-	actor := libp2praft.NewActor(raftConsensus.Raft)
+	raftConsensus.Actor = libp2praft.NewActor(raftConsensus.Raft)
 
 	// Set the actors so that we can CommitState() and GetCurrentState()
-	raftConsensus.Consensus.SetActor(actor)
+	raftConsensus.Consensus.SetActor(raftConsensus.Actor)
 
 	// Provide some time for leader election
 	time.Sleep(5 * time.Second)
+}
 
-	// Run the 1000 updates on the leader
-	// Barrier() will wait until updates have been applied
-	if actor.IsLeader() {
-		value := "new value"
-		if err := raftConsensus.UpdateState(value); err != nil {
-			raftConsensus.Logger.Fatal("Failed to update state", err)
+func (raft *RaftConsensus) UpdateConsensus(value string) {
+	if raft.Actor.IsLeader() {
+		if err := raft.UpdateState(value); err != nil {
+			raft.Logger.Fatal("Failed to update state", err)
 		}
 	} else {
-		raftConsensus.WaitForLeader(raftConsensus.Raft)
+		raft.WaitForLeader(raft.Raft)
 	}
 }
