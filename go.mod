@@ -8,15 +8,18 @@ require (
 	github.com/edsrzf/mmap-go v1.0.0 // indirect
 	github.com/ethereum/go-ethereum v1.9.5
 	github.com/gballet/go-libpcsclite v0.0.0-20191108122812-4678299bea08 // indirect
+	github.com/hashicorp/raft v1.1.2
 	github.com/ipfs/go-log v1.0.4
 	github.com/karalabe/usb v0.0.0-20191104083709-911d15fe12a9 // indirect
 	github.com/libp2p/go-libp2p v0.10.2
+	github.com/libp2p/go-libp2p-consensus v0.0.1
 	github.com/libp2p/go-libp2p-core v0.6.1
 	github.com/libp2p/go-libp2p-discovery v0.5.0
 	github.com/libp2p/go-libp2p-kad-dht v0.8.3
 	github.com/libp2p/go-libp2p-peer v0.2.0
 	github.com/libp2p/go-libp2p-peerstore v0.2.6
 	github.com/libp2p/go-libp2p-pubsub v0.3.3
+	github.com/libp2p/go-libp2p-raft v0.1.5
 	github.com/multiformats/go-multiaddr v0.2.2
 	github.com/olekukonko/tablewriter v0.0.4 // indirect
 	github.com/pborman/uuid v1.2.0 // indirect
@@ -29,3 +32,5 @@ require (
 	github.com/wsddn/go-ecdh v0.0.0-20161211032359-48726bab9208 // indirect
 	golang.org/x/crypto v0.0.0-20200423211502-4bdfaf469ed5
 )
+
+replace github.com/libp2p/go-libp2p-raft v0.1.5 => github.com/ItalyPaleAle/go-libp2p-raft v0.1.6-0.20200703060436-0b37aa16095e

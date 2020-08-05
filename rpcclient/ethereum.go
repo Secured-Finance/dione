@@ -3,7 +3,6 @@ package rpcclient
 import (
 	"context"
 	"crypto/ecdsa"
-	"fmt"
 	"io/ioutil"
 	"math/big"
 
@@ -144,7 +143,7 @@ func (c *ethereumClient) SubscribeOnSmartContractEvents(ctx context.Context, add
 		case err := <-sub.Err():
 			c.Logger.Fatal(err)
 		case vLog := <-logs:
-			fmt.Println(vLog) // pointer to event log
+			c.Logger.Info(vLog) // pointer to event log
 		}
 	}
 
