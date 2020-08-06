@@ -5,9 +5,12 @@ import (
 	"crypto/ecdsa"
 	"io/ioutil"
 	"math/big"
+	"strings"
 
 	"github.com/Secured-Finance/p2p-oracle-node/contracts/aggregator"
+	"github.com/Secured-Finance/p2p-oracle-node/contracts/oracleemitter"
 	"github.com/ethereum/go-ethereum"
+	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/accounts/keystore"
 	"github.com/ethereum/go-ethereum/common"
@@ -24,6 +27,13 @@ type EthereumClient struct {
 	Logger     *log.ZapEventLogger
 }
 
+type OracleEvent struct {
+	RequestType      string
+	CallbackAddress  common.Address
+	CallbackMethodID [4]byte
+	RequestID        *big.Int
+}
+
 type Ethereum interface {
 	Connect(context.Context, string) error
 	Balance(context.Context, string) (*big.Int, error)
@@ -38,6 +48,7 @@ func NewEthereumClient() *EthereumClient {
 	ethereumClient := &EthereumClient{
 		Logger: log.Logger("rendezvous"),
 	}
+	log.SetAllLoggers(log.LevelInfo)
 
 	return ethereumClient
 }
@@ -136,10 +147,16 @@ func (c *EthereumClient) GenerateAddressFromPrivateKey(private_key string) strin
 	return address
 }
 
-func (c *EthereumClient) SubscribeOnSmartContractEvents(ctx context.Context, address string) {
+func (c *EthereumClient) SubscribeOnOracleEvents(ctx context.Context, address string) {
 	contractAddress := common.HexToAddress(address)
+
 	query := ethereum.FilterQuery{
 		Addresses: []common.Address{contractAddress},
+	}
+
+	contractAbi, err := abi.JSON(strings.NewReader(string(oracleemitter.SmartcontractsABI)))
+	if err != nil {
+		c.Logger.Fatal(err)
 	}
 
 	logs := make(chan types.Log)
@@ -153,10 +170,15 @@ func (c *EthereumClient) SubscribeOnSmartContractEvents(ctx context.Context, add
 		case err := <-sub.Err():
 			c.Logger.Fatal(err)
 		case vLog := <-logs:
-			c.Logger.Info(vLog) // pointer to event log
+			var event OracleEvent
+			err := contractAbi.Unpack(&event, "NewOracleRequest", vLog.Data)
+
+			if err != nil {
+				c.Logger.Fatal(err)
+			}
+			c.Logger.Info(event) // pointer to event log
 		}
 	}
-
 }
 
 func (c *EthereumClient) createKeyStore(password string) string {

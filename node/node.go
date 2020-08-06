@@ -34,6 +34,7 @@ func NewNode() *Node {
 		Logger:        log.Logger("rendezvous"),
 		networkTopics: mapset.NewSet(),
 	}
+	log.SetAllLoggers(log.LevelInfo)
 
 	return node
 }

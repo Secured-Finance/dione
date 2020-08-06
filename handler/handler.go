@@ -36,6 +36,8 @@ func NewHandler(pb *pubsub.PubSub, oracleTopic string, peerID peer.ID, networkTo
 		identityMap:   make(map[peer.ID]string),
 		Logger:        log.Logger("rendezvous"),
 	}
+	log.SetAllLoggers(log.LevelInfo)
+
 	return handler
 }
 

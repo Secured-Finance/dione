@@ -14,6 +14,7 @@ type Config struct {
 	Rendezvous             string `toml:"rendezvous"`
 	ProtocolID             string `toml:"protocol_id"`
 	SessionKey             string `toml:"session_key"`
+	PrivateKey             string `toml:"private_key"`
 }
 
 // viperEnvVariable loads config parameters from .env file
@@ -58,6 +59,7 @@ func NewConfig() *Config {
 	Rendezvous := viperEnvString("RENDEZVOUS", "filecoin-p2p-oracle")
 	ProtocolID := viperEnvString("PROTOCOL_ID", "p2p-oracle")
 	SessionKey := viperEnvString("SESSION_KEY", "go")
+	PrivateKey := viperEnvString("PRIVATE_KEY", "")
 
 	return &Config{
 		ListenPort:             ListenPort,
@@ -67,5 +69,6 @@ func NewConfig() *Config {
 		Rendezvous:             Rendezvous,
 		ProtocolID:             ProtocolID,
 		SessionKey:             SessionKey,
+		PrivateKey:             PrivateKey,
 	}
 }
