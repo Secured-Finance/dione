@@ -1,7 +1,7 @@
 // Code generated - DO NOT EDIT.
 // This file is a generated binding and any manual changes will be lost.
 
-package contracts
+package oracleemitter
 
 import (
 	"math/big"
@@ -27,7 +27,7 @@ var (
 )
 
 // SmartcontractsABI is the input ABI used to generate the binding from.
-const SmartcontractsABI = "[{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"address\",\"name\":\"previousOwner\",\"type\":\"address\"},{\"indexed\":true,\"internalType\":\"address\",\"name\":\"newOwner\",\"type\":\"address\"}],\"name\":\"OwnershipTransferred\",\"type\":\"event\"},{\"inputs\":[],\"name\":\"isOwner\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"owner\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"newOwner\",\"type\":\"address\"}],\"name\":\"transferOwnership\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"}]"
+const SmartcontractsABI = "[{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"internalType\":\"string\",\"name\":\"requestType\",\"type\":\"string\"},{\"indexed\":false,\"internalType\":\"address\",\"name\":\"callbackAddress\",\"type\":\"address\"},{\"indexed\":false,\"internalType\":\"bytes4\",\"name\":\"callbackMethodID\",\"type\":\"bytes4\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"requestID\",\"type\":\"uint256\"}],\"name\":\"NewOracleRequest\",\"type\":\"event\"},{\"inputs\":[{\"internalType\":\"string\",\"name\":\"requestType\",\"type\":\"string\"},{\"internalType\":\"address\",\"name\":\"callbackAddress\",\"type\":\"address\"},{\"internalType\":\"bytes4\",\"name\":\"callbackMethodID\",\"type\":\"bytes4\"}],\"name\":\"requestOracles\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"nonpayable\",\"type\":\"function\"}]"
 
 // Smartcontracts is an auto generated Go binding around an Ethereum contract.
 type Smartcontracts struct {
@@ -171,82 +171,30 @@ func (_Smartcontracts *SmartcontractsTransactorRaw) Transact(opts *bind.Transact
 	return _Smartcontracts.Contract.contract.Transact(opts, method, params...)
 }
 
-// IsOwner is a free data retrieval call binding the contract method 0x8f32d59b.
+// RequestOracles is a paid mutator transaction binding the contract method 0xcae2f480.
 //
-// Solidity: function isOwner() view returns(bool)
-func (_Smartcontracts *SmartcontractsCaller) IsOwner(opts *bind.CallOpts) (bool, error) {
-	var (
-		ret0 = new(bool)
-	)
-	out := ret0
-	err := _Smartcontracts.contract.Call(opts, out, "isOwner")
-	return *ret0, err
+// Solidity: function requestOracles(string requestType, address callbackAddress, bytes4 callbackMethodID) returns(uint256)
+func (_Smartcontracts *SmartcontractsTransactor) RequestOracles(opts *bind.TransactOpts, requestType string, callbackAddress common.Address, callbackMethodID [4]byte) (*types.Transaction, error) {
+	return _Smartcontracts.contract.Transact(opts, "requestOracles", requestType, callbackAddress, callbackMethodID)
 }
 
-// IsOwner is a free data retrieval call binding the contract method 0x8f32d59b.
+// RequestOracles is a paid mutator transaction binding the contract method 0xcae2f480.
 //
-// Solidity: function isOwner() view returns(bool)
-func (_Smartcontracts *SmartcontractsSession) IsOwner() (bool, error) {
-	return _Smartcontracts.Contract.IsOwner(&_Smartcontracts.CallOpts)
+// Solidity: function requestOracles(string requestType, address callbackAddress, bytes4 callbackMethodID) returns(uint256)
+func (_Smartcontracts *SmartcontractsSession) RequestOracles(requestType string, callbackAddress common.Address, callbackMethodID [4]byte) (*types.Transaction, error) {
+	return _Smartcontracts.Contract.RequestOracles(&_Smartcontracts.TransactOpts, requestType, callbackAddress, callbackMethodID)
 }
 
-// IsOwner is a free data retrieval call binding the contract method 0x8f32d59b.
+// RequestOracles is a paid mutator transaction binding the contract method 0xcae2f480.
 //
-// Solidity: function isOwner() view returns(bool)
-func (_Smartcontracts *SmartcontractsCallerSession) IsOwner() (bool, error) {
-	return _Smartcontracts.Contract.IsOwner(&_Smartcontracts.CallOpts)
+// Solidity: function requestOracles(string requestType, address callbackAddress, bytes4 callbackMethodID) returns(uint256)
+func (_Smartcontracts *SmartcontractsTransactorSession) RequestOracles(requestType string, callbackAddress common.Address, callbackMethodID [4]byte) (*types.Transaction, error) {
+	return _Smartcontracts.Contract.RequestOracles(&_Smartcontracts.TransactOpts, requestType, callbackAddress, callbackMethodID)
 }
 
-// Owner is a free data retrieval call binding the contract method 0x8da5cb5b.
-//
-// Solidity: function owner() view returns(address)
-func (_Smartcontracts *SmartcontractsCaller) Owner(opts *bind.CallOpts) (common.Address, error) {
-	var (
-		ret0 = new(common.Address)
-	)
-	out := ret0
-	err := _Smartcontracts.contract.Call(opts, out, "owner")
-	return *ret0, err
-}
-
-// Owner is a free data retrieval call binding the contract method 0x8da5cb5b.
-//
-// Solidity: function owner() view returns(address)
-func (_Smartcontracts *SmartcontractsSession) Owner() (common.Address, error) {
-	return _Smartcontracts.Contract.Owner(&_Smartcontracts.CallOpts)
-}
-
-// Owner is a free data retrieval call binding the contract method 0x8da5cb5b.
-//
-// Solidity: function owner() view returns(address)
-func (_Smartcontracts *SmartcontractsCallerSession) Owner() (common.Address, error) {
-	return _Smartcontracts.Contract.Owner(&_Smartcontracts.CallOpts)
-}
-
-// TransferOwnership is a paid mutator transaction binding the contract method 0xf2fde38b.
-//
-// Solidity: function transferOwnership(address newOwner) returns()
-func (_Smartcontracts *SmartcontractsTransactor) TransferOwnership(opts *bind.TransactOpts, newOwner common.Address) (*types.Transaction, error) {
-	return _Smartcontracts.contract.Transact(opts, "transferOwnership", newOwner)
-}
-
-// TransferOwnership is a paid mutator transaction binding the contract method 0xf2fde38b.
-//
-// Solidity: function transferOwnership(address newOwner) returns()
-func (_Smartcontracts *SmartcontractsSession) TransferOwnership(newOwner common.Address) (*types.Transaction, error) {
-	return _Smartcontracts.Contract.TransferOwnership(&_Smartcontracts.TransactOpts, newOwner)
-}
-
-// TransferOwnership is a paid mutator transaction binding the contract method 0xf2fde38b.
-//
-// Solidity: function transferOwnership(address newOwner) returns()
-func (_Smartcontracts *SmartcontractsTransactorSession) TransferOwnership(newOwner common.Address) (*types.Transaction, error) {
-	return _Smartcontracts.Contract.TransferOwnership(&_Smartcontracts.TransactOpts, newOwner)
-}
-
-// SmartcontractsOwnershipTransferredIterator is returned from FilterOwnershipTransferred and is used to iterate over the raw logs and unpacked data for OwnershipTransferred events raised by the Smartcontracts contract.
-type SmartcontractsOwnershipTransferredIterator struct {
-	Event *SmartcontractsOwnershipTransferred // Event containing the contract specifics and raw log
+// SmartcontractsNewOracleRequestIterator is returned from FilterNewOracleRequest and is used to iterate over the raw logs and unpacked data for NewOracleRequest events raised by the Smartcontracts contract.
+type SmartcontractsNewOracleRequestIterator struct {
+	Event *SmartcontractsNewOracleRequest // Event containing the contract specifics and raw log
 
 	contract *bind.BoundContract // Generic contract to use for unpacking event data
 	event    string              // Event name to use for unpacking event data
@@ -260,7 +208,7 @@ type SmartcontractsOwnershipTransferredIterator struct {
 // Next advances the iterator to the subsequent event, returning whether there
 // are any more events found. In case of a retrieval or parsing error, false is
 // returned and Error() can be queried for the exact failure.
-func (it *SmartcontractsOwnershipTransferredIterator) Next() bool {
+func (it *SmartcontractsNewOracleRequestIterator) Next() bool {
 	// If the iterator failed, stop iterating
 	if it.fail != nil {
 		return false
@@ -269,7 +217,7 @@ func (it *SmartcontractsOwnershipTransferredIterator) Next() bool {
 	if it.done {
 		select {
 		case log := <-it.logs:
-			it.Event = new(SmartcontractsOwnershipTransferred)
+			it.Event = new(SmartcontractsNewOracleRequest)
 			if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
 				it.fail = err
 				return false
@@ -284,7 +232,7 @@ func (it *SmartcontractsOwnershipTransferredIterator) Next() bool {
 	// Iterator still in progress, wait for either a data or an error event
 	select {
 	case log := <-it.logs:
-		it.Event = new(SmartcontractsOwnershipTransferred)
+		it.Event = new(SmartcontractsNewOracleRequest)
 		if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
 			it.fail = err
 			return false
@@ -300,60 +248,44 @@ func (it *SmartcontractsOwnershipTransferredIterator) Next() bool {
 }
 
 // Error returns any retrieval or parsing error occurred during filtering.
-func (it *SmartcontractsOwnershipTransferredIterator) Error() error {
+func (it *SmartcontractsNewOracleRequestIterator) Error() error {
 	return it.fail
 }
 
 // Close terminates the iteration process, releasing any pending underlying
 // resources.
-func (it *SmartcontractsOwnershipTransferredIterator) Close() error {
+func (it *SmartcontractsNewOracleRequestIterator) Close() error {
 	it.sub.Unsubscribe()
 	return nil
 }
 
-// SmartcontractsOwnershipTransferred represents a OwnershipTransferred event raised by the Smartcontracts contract.
-type SmartcontractsOwnershipTransferred struct {
-	PreviousOwner common.Address
-	NewOwner      common.Address
-	Raw           types.Log // Blockchain specific contextual infos
+// SmartcontractsNewOracleRequest represents a NewOracleRequest event raised by the Smartcontracts contract.
+type SmartcontractsNewOracleRequest struct {
+	RequestType      string
+	CallbackAddress  common.Address
+	CallbackMethodID [4]byte
+	RequestID        *big.Int
+	Raw              types.Log // Blockchain specific contextual infos
 }
 
-// FilterOwnershipTransferred is a free log retrieval operation binding the contract event 0x8be0079c531659141344cd1fd0a4f28419497f9722a3daafe3b4186f6b6457e0.
+// FilterNewOracleRequest is a free log retrieval operation binding the contract event 0xc1a7df69ed0404441720a3eb710f322985ecbbe4f31934587bee703efe04427a.
 //
-// Solidity: event OwnershipTransferred(address indexed previousOwner, address indexed newOwner)
-func (_Smartcontracts *SmartcontractsFilterer) FilterOwnershipTransferred(opts *bind.FilterOpts, previousOwner []common.Address, newOwner []common.Address) (*SmartcontractsOwnershipTransferredIterator, error) {
+// Solidity: event NewOracleRequest(string requestType, address callbackAddress, bytes4 callbackMethodID, uint256 requestID)
+func (_Smartcontracts *SmartcontractsFilterer) FilterNewOracleRequest(opts *bind.FilterOpts) (*SmartcontractsNewOracleRequestIterator, error) {
 
-	var previousOwnerRule []interface{}
-	for _, previousOwnerItem := range previousOwner {
-		previousOwnerRule = append(previousOwnerRule, previousOwnerItem)
-	}
-	var newOwnerRule []interface{}
-	for _, newOwnerItem := range newOwner {
-		newOwnerRule = append(newOwnerRule, newOwnerItem)
-	}
-
-	logs, sub, err := _Smartcontracts.contract.FilterLogs(opts, "OwnershipTransferred", previousOwnerRule, newOwnerRule)
+	logs, sub, err := _Smartcontracts.contract.FilterLogs(opts, "NewOracleRequest")
 	if err != nil {
 		return nil, err
 	}
-	return &SmartcontractsOwnershipTransferredIterator{contract: _Smartcontracts.contract, event: "OwnershipTransferred", logs: logs, sub: sub}, nil
+	return &SmartcontractsNewOracleRequestIterator{contract: _Smartcontracts.contract, event: "NewOracleRequest", logs: logs, sub: sub}, nil
 }
 
-// WatchOwnershipTransferred is a free log subscription operation binding the contract event 0x8be0079c531659141344cd1fd0a4f28419497f9722a3daafe3b4186f6b6457e0.
+// WatchNewOracleRequest is a free log subscription operation binding the contract event 0xc1a7df69ed0404441720a3eb710f322985ecbbe4f31934587bee703efe04427a.
 //
-// Solidity: event OwnershipTransferred(address indexed previousOwner, address indexed newOwner)
-func (_Smartcontracts *SmartcontractsFilterer) WatchOwnershipTransferred(opts *bind.WatchOpts, sink chan<- *SmartcontractsOwnershipTransferred, previousOwner []common.Address, newOwner []common.Address) (event.Subscription, error) {
+// Solidity: event NewOracleRequest(string requestType, address callbackAddress, bytes4 callbackMethodID, uint256 requestID)
+func (_Smartcontracts *SmartcontractsFilterer) WatchNewOracleRequest(opts *bind.WatchOpts, sink chan<- *SmartcontractsNewOracleRequest) (event.Subscription, error) {
 
-	var previousOwnerRule []interface{}
-	for _, previousOwnerItem := range previousOwner {
-		previousOwnerRule = append(previousOwnerRule, previousOwnerItem)
-	}
-	var newOwnerRule []interface{}
-	for _, newOwnerItem := range newOwner {
-		newOwnerRule = append(newOwnerRule, newOwnerItem)
-	}
-
-	logs, sub, err := _Smartcontracts.contract.WatchLogs(opts, "OwnershipTransferred", previousOwnerRule, newOwnerRule)
+	logs, sub, err := _Smartcontracts.contract.WatchLogs(opts, "NewOracleRequest")
 	if err != nil {
 		return nil, err
 	}
@@ -363,8 +295,8 @@ func (_Smartcontracts *SmartcontractsFilterer) WatchOwnershipTransferred(opts *b
 			select {
 			case log := <-logs:
 				// New log arrived, parse the event and forward to the user
-				event := new(SmartcontractsOwnershipTransferred)
-				if err := _Smartcontracts.contract.UnpackLog(event, "OwnershipTransferred", log); err != nil {
+				event := new(SmartcontractsNewOracleRequest)
+				if err := _Smartcontracts.contract.UnpackLog(event, "NewOracleRequest", log); err != nil {
 					return err
 				}
 				event.Raw = log
@@ -385,12 +317,12 @@ func (_Smartcontracts *SmartcontractsFilterer) WatchOwnershipTransferred(opts *b
 	}), nil
 }
 
-// ParseOwnershipTransferred is a log parse operation binding the contract event 0x8be0079c531659141344cd1fd0a4f28419497f9722a3daafe3b4186f6b6457e0.
+// ParseNewOracleRequest is a log parse operation binding the contract event 0xc1a7df69ed0404441720a3eb710f322985ecbbe4f31934587bee703efe04427a.
 //
-// Solidity: event OwnershipTransferred(address indexed previousOwner, address indexed newOwner)
-func (_Smartcontracts *SmartcontractsFilterer) ParseOwnershipTransferred(log types.Log) (*SmartcontractsOwnershipTransferred, error) {
-	event := new(SmartcontractsOwnershipTransferred)
-	if err := _Smartcontracts.contract.UnpackLog(event, "OwnershipTransferred", log); err != nil {
+// Solidity: event NewOracleRequest(string requestType, address callbackAddress, bytes4 callbackMethodID, uint256 requestID)
+func (_Smartcontracts *SmartcontractsFilterer) ParseNewOracleRequest(log types.Log) (*SmartcontractsNewOracleRequest, error) {
+	event := new(SmartcontractsNewOracleRequest)
+	if err := _Smartcontracts.contract.UnpackLog(event, "NewOracleRequest", log); err != nil {
 		return nil, err
 	}
 	return event, nil
