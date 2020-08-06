@@ -32,7 +32,7 @@ func NewRequestBody(method string) *RequestBody {
 }
 
 // NewClient returns a new client.
-func NewLotusClient(host string, token jwt.Token) Client {
+func NewLotusClient(host string, token jwt.Token) *LotusClient {
 	return &LotusClient{
 		host: host,
 		jwt:  token,
