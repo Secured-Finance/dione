@@ -5,14 +5,12 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-
-	"github.com/dgrijalva/jwt-go"
 )
 
 // client implements the `Client` interface.
 type LotusClient struct {
 	host string
-	jwt  jwt.Token
+	jwt  string
 }
 
 type RequestBody struct {
@@ -32,7 +30,7 @@ func NewRequestBody(method string) *RequestBody {
 }
 
 // NewClient returns a new client.
-func NewLotusClient(host string, token jwt.Token) *LotusClient {
+func NewLotusClient(host string, token string) *LotusClient {
 	return &LotusClient{
 		host: host,
 		jwt:  token,
@@ -49,7 +47,7 @@ func (c *LotusClient) GetMessage(r *http.Request, txHash string) (*http.Response
 	client := http.Client{}
 	req, err := http.NewRequest("POST", c.host, bytes.NewBuffer(body))
 	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Authentication", "Bearer "+c.jwt.Raw)
+	req.Header.Set("Authentication", "Bearer "+c.jwt)
 	if err != nil {
 		return nil, fmt.Errorf("Failed to construct lotus node rpc request %v", err)
 	}
@@ -61,7 +59,7 @@ func (c *LotusClient) HandleRequest(r *http.Request, data []byte) (*http.Respons
 	client := http.Client{}
 	req, err := http.NewRequest("POST", c.host, bytes.NewBuffer(data))
 	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Authentication", "Bearer "+c.jwt.Raw)
+	req.Header.Set("Authentication", "Bearer "+c.jwt)
 	if err != nil {
 		return nil, fmt.Errorf("Failed to construct lotus node rpc request %v", err)
 	}
