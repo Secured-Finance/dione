@@ -53,7 +53,7 @@ func NewEthereumClient() *EthereumClient {
 	return ethereumClient
 }
 
-func (c *EthereumClient) Connect(ctx context.Context, url string, connectionType string) error {
+func (c *EthereumClient) Connect(ctx context.Context, url string, connectionType string) {
 	client, err := ethclient.Dial(url)
 	if err != nil {
 		c.Logger.Fatal(err)
@@ -63,7 +63,6 @@ func (c *EthereumClient) Connect(ctx context.Context, url string, connectionType
 	} else {
 		c.HttpClient = client
 	}
-	return nil
 }
 
 // Balance returns the balance of the given ethereum address.
@@ -76,7 +75,7 @@ func (c *EthereumClient) Balance(ctx context.Context, address string) (*big.Int,
 	return value, nil
 }
 
-func (c *EthereumClient) SendTransaction(private_key, to string, amount int64) string {
+func (c *EthereumClient) SendTransaction(ctx context.Context, private_key, to string, amount int64) string {
 	privateKey, err := crypto.HexToECDSA(private_key)
 	if err != nil {
 		c.Logger.Fatal("Failed to parse private key", err)
@@ -89,14 +88,14 @@ func (c *EthereumClient) SendTransaction(private_key, to string, amount int64) s
 	}
 
 	fromAddress := crypto.PubkeyToAddress(*publicKeyECDSA)
-	nonce, err := c.HttpClient.PendingNonceAt(context.Background(), fromAddress)
+	nonce, err := c.HttpClient.PendingNonceAt(ctx, fromAddress)
 	if err != nil {
 		c.Logger.Fatal("Failed to generate wallet nonce value", err)
 	}
 
 	value := big.NewInt(amount)
 	gasLimit := uint64(21000) // in units
-	gasPrice, err := c.HttpClient.SuggestGasPrice(context.Background())
+	gasPrice, err := c.HttpClient.SuggestGasPrice(ctx)
 	if err != nil {
 		c.Logger.Fatal("Failed to suggest new gas price", err)
 	}
@@ -105,7 +104,7 @@ func (c *EthereumClient) SendTransaction(private_key, to string, amount int64) s
 	var data []byte
 	tx := types.NewTransaction(nonce, toAddress, value, gasLimit, gasPrice, data)
 
-	chainID, err := c.HttpClient.NetworkID(context.Background())
+	chainID, err := c.HttpClient.NetworkID(ctx)
 	if err != nil {
 		c.Logger.Fatal("Failed to get network ID", err)
 	}
@@ -115,7 +114,7 @@ func (c *EthereumClient) SendTransaction(private_key, to string, amount int64) s
 		c.Logger.Fatal("Failed to sign transaction", err)
 	}
 
-	err = c.HttpClient.SendTransaction(context.Background(), signedTx)
+	err = c.HttpClient.SendTransaction(ctx, signedTx)
 	if err != nil {
 		c.Logger.Fatal("Failed to send signed transaction", err)
 	}
@@ -147,7 +146,7 @@ func (c *EthereumClient) GenerateAddressFromPrivateKey(private_key string) strin
 	return address
 }
 
-func (c *EthereumClient) SubscribeOnOracleEvents(ctx context.Context, address string) {
+func (c *EthereumClient) SubscribeOnOracleEvents(ctx context.Context, address string, incomingEventsChan chan OracleEvent) {
 	contractAddress := common.HexToAddress(address)
 
 	query := ethereum.FilterQuery{
@@ -160,7 +159,7 @@ func (c *EthereumClient) SubscribeOnOracleEvents(ctx context.Context, address st
 	}
 
 	logs := make(chan types.Log)
-	sub, err := c.WsClient.SubscribeFilterLogs(context.Background(), query, logs)
+	sub, err := c.WsClient.SubscribeFilterLogs(ctx, query, logs)
 	if err != nil {
 		c.Logger.Fatal(err)
 	}
@@ -176,7 +175,8 @@ func (c *EthereumClient) SubscribeOnOracleEvents(ctx context.Context, address st
 			if err != nil {
 				c.Logger.Fatal(err)
 			}
-			c.Logger.Info(event) // pointer to event log
+			c.Logger.Info(event)
+			incomingEventsChan <- event
 		}
 	}
 }
@@ -206,7 +206,7 @@ func (c *EthereumClient) importKeyStore(filePath string, password string) string
 	return account.Address.Hex()
 }
 
-func (c *EthereumClient) SendConsensusValues(private_key string, smartContractAddress string, reqID *big.Int, data string, callbackAddress common.Address, callbackMethodID [4]byte) string {
+func (c *EthereumClient) SendConsensusValues(ctx context.Context, private_key string, smartContractAddress string, reqID *big.Int, data string, callbackAddress common.Address, callbackMethodID [4]byte) string {
 	privateKey, err := crypto.HexToECDSA(private_key)
 	if err != nil {
 		c.Logger.Fatal("Failed to generate private key", err)
@@ -222,12 +222,12 @@ func (c *EthereumClient) SendConsensusValues(private_key string, smartContractAd
 	c.Logger.Info(hexutil.Encode(publicKeyBytes)[4:])
 
 	fromAddress := crypto.PubkeyToAddress(*publicKeyECDSA)
-	nonce, err := c.HttpClient.PendingNonceAt(context.Background(), fromAddress)
+	nonce, err := c.HttpClient.PendingNonceAt(ctx, fromAddress)
 	if err != nil {
 		c.Logger.Fatal(err)
 	}
 
-	gasPrice, err := c.HttpClient.SuggestGasPrice(context.Background())
+	gasPrice, err := c.HttpClient.SuggestGasPrice(ctx)
 	if err != nil {
 		c.Logger.Fatal(err)
 	}

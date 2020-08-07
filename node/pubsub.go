@@ -1,15 +1,19 @@
 package node
 
 import (
-	"bufio"
 	"context"
 	"encoding/json"
-	"io"
-	"os"
+	"io/ioutil"
 	"sync"
 	"time"
 
+	consensus "github.com/Secured-Finance/p2p-oracle-node/consensus"
 	"github.com/Secured-Finance/p2p-oracle-node/handler"
+	"github.com/Secured-Finance/p2p-oracle-node/rpc"
+	"github.com/Secured-Finance/p2p-oracle-node/rpcclient"
+	"github.com/filecoin-project/go-address"
+	lotusTypes "github.com/filecoin-project/lotus/chain/types"
+	"github.com/filecoin-project/specs-actors/actors/abi"
 	"github.com/libp2p/go-libp2p-core/host"
 	peer "github.com/libp2p/go-libp2p-core/peer"
 	discovery "github.com/libp2p/go-libp2p-discovery"
@@ -18,6 +22,30 @@ import (
 	pubsub "github.com/libp2p/go-libp2p-pubsub"
 	"github.com/multiformats/go-multiaddr"
 )
+
+var (
+	LotusHost = ""
+	LotusJWT  = ""
+	EthWsUrl  = "wss://ropsten.infura.io/ws/v3/b9faa807bb814588bfdb3d6e94a37737"
+	EthUrl    = "https://ropsten.infura.io/v3/b9faa807bb814588bfdb3d6e94a37737"
+)
+
+type LotusMessage struct {
+	Version int64
+
+	To   address.Address
+	From address.Address
+
+	Nonce uint64
+
+	Value lotusTypes.BigInt
+
+	GasPrice lotusTypes.BigInt
+	GasLimit int64
+
+	Method abi.MethodNum
+	Params []byte
+}
 
 func (node *Node) readSub(subscription *pubsub.Subscription, incomingMessagesChan chan pubsub.Message) {
 	ctx := node.GlobalCtx
@@ -71,7 +99,7 @@ func (node *Node) newTopic(topic string) {
 			return
 		case msg := <-incomingMessages:
 			{
-				node.handler.HandleIncomingMessage(node.OracleTopic, msg, func(textMessage handler.TextMessage) {
+				node.handler.HandleIncomingMessage(node.OracleTopic, msg, func(textMessage handler.EventMessage) {
 					node.Logger.Info("%s \x1b[32m%s\x1b[0m> ", textMessage.From, textMessage.Body)
 				})
 			}
@@ -83,7 +111,7 @@ func (node *Node) newTopic(topic string) {
 // NOTE: we don't need to be subscribed to publish something
 func (node *Node) writeTopic(topic string) {
 	ctx := node.GlobalCtx
-	stdReader := bufio.NewReader(os.Stdin)
+	// stdReader := bufio.NewReader(os.Stdin)
 	for {
 		select {
 		case <-ctx.Done():
@@ -91,18 +119,8 @@ func (node *Node) writeTopic(topic string) {
 		default:
 		}
 		node.Logger.Info("> ")
-		text, err := stdReader.ReadString('\n')
-		if err != nil {
-
-			if err == io.EOF {
-				break
-			}
-
-			node.Logger.Warn("Error reading from stdin", err)
-			return
-		}
 		message := &handler.BaseMessage{
-			Body: text,
+			Body: &rpcclient.OracleEvent{},
 			Flag: handler.FlagGenericMessage,
 		}
 
@@ -191,7 +209,20 @@ func (node *Node) startPubSub(ctx context.Context, host host.Host) {
 
 	node.Logger.Info("Waiting for correct set up of PubSub...")
 	time.Sleep(3 * time.Second)
+	peers := node.Host.Peerstore().Peers()
 
+	consensus := consensus.NewRaftConsensus()
+	node.Consensus = consensus
+	node.Consensus.StartConsensus(node.Host, peers)
+
+	ethereum := rpcclient.NewEthereumClient()
+	node.Ethereum = ethereum
+	ethereum.Connect(ctx, EthUrl, "rpc")
+	ethereum.Connect(ctx, EthWsUrl, "websocket")
+
+	lotus := rpc.NewLotusClient(LotusHost, LotusJWT)
+	node.Lotus = lotus
+	incomingEvents := make(chan rpcclient.OracleEvent)
 	incomingMessages := make(chan pubsub.Message)
 
 	go func() {
@@ -199,6 +230,7 @@ func (node *Node) startPubSub(ctx context.Context, host host.Host) {
 		node.GlobalCtxCancel()
 	}()
 	go node.readSub(subscription, incomingMessages)
+	go ethereum.SubscribeOnOracleEvents(ctx, "0x89d3A6151a9E608c51FF70E0F7f78a109949c2c1", incomingEvents)
 	go node.getNetworkTopics()
 
 MainLoop:
@@ -208,9 +240,23 @@ MainLoop:
 			break MainLoop
 		case msg := <-incomingMessages:
 			{
-				node.handler.HandleIncomingMessage(node.OracleTopic, msg, func(textMessage handler.TextMessage) {
+				node.handler.HandleIncomingMessage(node.OracleTopic, msg, func(textMessage handler.EventMessage) {
 					node.Logger.Info("%s > \x1b[32m%s\x1b[0m", textMessage.From, textMessage.Body)
 					node.Logger.Info("> ")
+					response, err := node.Lotus.GetMessage(textMessage.Body.RequestType)
+					if err != nil {
+						node.Logger.Warn("Failed to get transaction data from lotus node")
+					}
+					defer response.Body.Close()
+					body, err := ioutil.ReadAll(response.Body)
+					if err != nil {
+						node.Logger.Warn("Failed to read lotus response")
+					}
+					var lotusMessage = new(LotusMessage)
+					if err := json.Unmarshal(body, &lotusMessage); err != nil {
+						node.Logger.Warn("Failed to unmarshal to get message request")
+					}
+					node.Consensus.UpdateConsensus(lotusMessage.Value.String())
 				})
 			}
 		case newPeer := <-peerChan:
@@ -225,6 +271,16 @@ MainLoop:
 				}
 				node.Logger.Info("Connected to:", newPeer)
 				node.Logger.Info("> ")
+			}
+		case event := <-incomingEvents:
+			{
+				message := &handler.BaseMessage{
+					Body: &event,
+					Flag: handler.FlagEventMessage,
+					From: node.Host.ID(),
+					To:   "",
+				}
+				node.handler.SendMessageToServiceTopic(message)
 			}
 		}
 	}

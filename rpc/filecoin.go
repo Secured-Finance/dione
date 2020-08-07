@@ -37,7 +37,7 @@ func NewLotusClient(host string, token string) *LotusClient {
 	}
 }
 
-func (c *LotusClient) GetMessage(r *http.Request, txHash string) (*http.Response, error) {
+func (c *LotusClient) GetMessage(txHash string) (*http.Response, error) {
 	requestBody := NewRequestBody("Filecoin.GetMessage")
 	requestBody.Params = append(requestBody.Params, txHash)
 	body, err := json.Marshal(requestBody)

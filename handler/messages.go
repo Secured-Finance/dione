@@ -3,6 +3,7 @@ package handler
 import (
 	"encoding/json"
 
+	"github.com/Secured-Finance/p2p-oracle-node/rpcclient"
 	"github.com/libp2p/go-libp2p-core/peer"
 )
 
@@ -15,14 +16,15 @@ const (
 	FlagGreeting         int = 0x5
 	FlagFarewell         int = 0x6
 	FlagGreetingRespond  int = 0x7
+	FlagEventMessage     int = 0x8
 )
 
 // BaseMessage is the basic message format of our protocol
 type BaseMessage struct {
-	Body string  `json:"body"`
-	To   peer.ID `json:"to"`
-	Flag int     `json:"flag"`
-	From peer.ID `json:"from"`
+	Body *rpcclient.OracleEvent `json:"body"`
+	To   peer.ID                `json:"to"`
+	Flag int                    `json:"flag"`
+	From peer.ID                `json:"from"`
 }
 
 // GetTopicsRespondMessage is the format of the message to answer of request for topics
@@ -40,7 +42,7 @@ func (h *Handler) sendIdentityResponse(topic string, fromPeerID peer.ID) {
 		flag = FlagGreetingRespond
 	}
 	respond := &BaseMessage{
-		Body: "",
+		Body: &rpcclient.OracleEvent{},
 		Flag: flag,
 		From: "",
 		To:   fromPeerID,
@@ -63,45 +65,45 @@ func (h *Handler) sendIdentityResponse(topic string, fromPeerID peer.ID) {
 // TODO: refactor with promise
 func (h *Handler) RequestPeerIdentity(peerID peer.ID) {
 	requestPeersIdentity := &BaseMessage{
-		Body: "",
+		Body: &rpcclient.OracleEvent{},
 		To:   peerID,
 		Flag: FlagIdentityRequest,
 		From: h.peerID,
 	}
 
-	h.sendMessageToServiceTopic(requestPeersIdentity)
+	h.SendMessageToServiceTopic(requestPeersIdentity)
 }
 
 // TODO: refactor
 func (h *Handler) SendGreetingInTopic(topic string) {
 	greetingMessage := &BaseMessage{
-		Body: "",
+		Body: &rpcclient.OracleEvent{},
 		To:   "",
 		Flag: FlagGreeting,
 		From: h.peerID,
 	}
 
-	h.sendMessageToTopic(topic, greetingMessage)
+	h.SendMessageToTopic(topic, greetingMessage)
 }
 
 // TODO: refactor
 func (h *Handler) SendFarewellInTopic(topic string) {
 	farewellMessage := &BaseMessage{
-		Body: "",
+		Body: &rpcclient.OracleEvent{},
 		To:   "",
 		Flag: FlagFarewell,
 		From: h.peerID,
 	}
 
-	h.sendMessageToTopic(topic, farewellMessage)
+	h.SendMessageToTopic(topic, farewellMessage)
 }
 
 // Sends marshaled message to the service topic
-func (h *Handler) sendMessageToServiceTopic(message *BaseMessage) {
-	h.sendMessageToTopic(h.oracleTopic, message)
+func (h *Handler) SendMessageToServiceTopic(message *BaseMessage) {
+	h.SendMessageToTopic(h.oracleTopic, message)
 }
 
-func (h *Handler) sendMessageToTopic(topic string, message *BaseMessage) {
+func (h *Handler) SendMessageToTopic(topic string, message *BaseMessage) {
 	sendData, err := json.Marshal(message)
 	if err != nil {
 		h.Logger.Warn("Failed to send message to topic", err)

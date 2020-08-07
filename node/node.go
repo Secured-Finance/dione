@@ -6,7 +6,10 @@ import (
 	"fmt"
 
 	"github.com/Secured-Finance/p2p-oracle-node/config"
+	consensus "github.com/Secured-Finance/p2p-oracle-node/consensus"
 	"github.com/Secured-Finance/p2p-oracle-node/handler"
+	"github.com/Secured-Finance/p2p-oracle-node/rpc"
+	"github.com/Secured-Finance/p2p-oracle-node/rpcclient"
 	mapset "github.com/deckarep/golang-set"
 	"github.com/ipfs/go-log"
 	"github.com/libp2p/go-libp2p"
@@ -26,10 +29,14 @@ type Node struct {
 	handler         *handler.Handler
 	Config          *config.Config
 	Logger          *log.ZapEventLogger
+	Consensus       *consensus.RaftConsensus
+	Lotus           *rpc.LotusClient
+	Ethereum        *rpcclient.EthereumClient
 }
 
 func NewNode() *Node {
 	node := &Node{
+		OracleTopic:   "p2p_oracle",
 		Config:        config.NewConfig(),
 		Logger:        log.Logger("rendezvous"),
 		networkTopics: mapset.NewSet(),

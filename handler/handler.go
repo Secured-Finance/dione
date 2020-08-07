@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"sync"
 
+	"github.com/Secured-Finance/p2p-oracle-node/rpcclient"
 	mapset "github.com/deckarep/golang-set"
 	"github.com/ipfs/go-log"
 	peer "github.com/libp2p/go-libp2p-core/peer"
@@ -21,10 +22,10 @@ type Handler struct {
 }
 
 // TextMessage is more end-user model of regular text messages
-type TextMessage struct {
-	Topic string  `json:"topic"`
-	Body  string  `json:"body"`
-	From  peer.ID `json:"from"`
+type EventMessage struct {
+	Topic string                 `json:"topic"`
+	Body  *rpcclient.OracleEvent `json:"body"`
+	From  peer.ID                `json:"from"`
 }
 
 func NewHandler(pb *pubsub.PubSub, oracleTopic string, peerID peer.ID, networkTopics mapset.Set) *Handler {
@@ -41,7 +42,7 @@ func NewHandler(pb *pubsub.PubSub, oracleTopic string, peerID peer.ID, networkTo
 	return handler
 }
 
-func (h *Handler) HandleIncomingMessage(topic string, msg pubsub.Message, handleTextMessage func(TextMessage)) {
+func (h *Handler) HandleIncomingMessage(topic string, msg pubsub.Message, handleTextMessage func(EventMessage)) {
 	fromPeerID, err := peer.IDFromBytes(msg.From)
 	if err != nil {
 		h.Logger.Warn("Error occurred when reading message from field...")
@@ -59,17 +60,17 @@ func (h *Handler) HandleIncomingMessage(topic string, msg pubsub.Message, handle
 	switch message.Flag {
 	// Getting regular message
 	case FlagGenericMessage:
-		textMessage := TextMessage{
+		eventMessage := EventMessage{
 			Topic: topic,
 			Body:  message.Body,
 			From:  fromPeerID,
 		}
-		handleTextMessage(textMessage)
+		handleTextMessage(eventMessage)
 	// Getting topic request, answer topic response
 	case FlagTopicsRequest:
 		respond := &GetTopicsRespondMessage{
 			BaseMessage: BaseMessage{
-				Body: "",
+				Body: &rpcclient.OracleEvent{},
 				Flag: FlagTopicsResponse,
 				To:   fromPeerID,
 			},
@@ -110,6 +111,13 @@ func (h *Handler) HandleIncomingMessage(topic string, msg pubsub.Message, handle
 		h.Logger.Info("Greeting respond from " + fromPeerID.String() + ":" + message.From.String() + " in topic " + topic)
 	case FlagFarewell:
 		h.Logger.Info("Greeting respond from " + fromPeerID.String() + ":" + message.From.String() + " in topic " + topic)
+	case FlagEventMessage:
+		eventMessage := EventMessage{
+			Topic: topic,
+			Body:  message.Body,
+			From:  fromPeerID,
+		}
+		handleTextMessage(eventMessage)
 	default:
 		h.Logger.Info("\nUnknown message type: %#x\n", message.Flag)
 	}

@@ -7,6 +7,9 @@ require (
 	github.com/dgrijalva/jwt-go v3.2.0+incompatible
 	github.com/edsrzf/mmap-go v1.0.0 // indirect
 	github.com/ethereum/go-ethereum v1.9.5
+	github.com/filecoin-project/go-address v0.0.2-0.20200504173055-8b6f2fb2b3ef
+	github.com/filecoin-project/lotus v0.4.2
+	github.com/filecoin-project/specs-actors v0.8.1-0.20200723200253-a3c01bc62f99
 	github.com/gballet/go-libpcsclite v0.0.0-20191108122812-4678299bea08 // indirect
 	github.com/hashicorp/raft v1.1.2
 	github.com/ipfs/go-log v1.0.4
@@ -30,7 +33,7 @@ require (
 	github.com/status-im/keycard-go v0.0.0-20200402102358-957c09536969 // indirect
 	github.com/tyler-smith/go-bip39 v1.0.2 // indirect
 	github.com/wsddn/go-ecdh v0.0.0-20161211032359-48726bab9208 // indirect
-	golang.org/x/crypto v0.0.0-20200423211502-4bdfaf469ed5
+	golang.org/x/crypto v0.0.0-20200604202706-70a84ac30bf9
 )
 
 replace github.com/libp2p/go-libp2p-raft v0.1.5 => github.com/ItalyPaleAle/go-libp2p-raft v0.1.6-0.20200703060436-0b37aa16095e

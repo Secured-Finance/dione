@@ -28,9 +28,7 @@ type RaftConsensus struct {
 }
 
 type RaftState struct {
-	From   string
-	To     string
-	Amount string
+	Value string
 }
 
 func NewRaftConsensus() *RaftConsensus {
@@ -42,8 +40,8 @@ func NewRaftConsensus() *RaftConsensus {
 
 }
 
-func (raftConsensus *RaftConsensus) NewState(from, to, amount string) {
-	raftConsensus.State = &RaftState{from, to, amount}
+func (raftConsensus *RaftConsensus) NewState(value string) {
+	raftConsensus.State = &RaftState{value}
 }
 
 func (raftConsensus *RaftConsensus) NewConsensus(op consensus.Op) {
@@ -65,8 +63,8 @@ func (raftConsensus *RaftConsensus) GetConsensusState(consensus *libp2praft.Cons
 	return raftConsensus.State, nil
 }
 
-func (raftConsensus *RaftConsensus) UpdateState(from, to, amount string) error {
-	raftConsensus.NewState(from, to, amount)
+func (raftConsensus *RaftConsensus) UpdateState(value string) error {
+	raftConsensus.NewState(value)
 
 	// CommitState() blocks until the state has been
 	// agreed upon by everyone
@@ -189,9 +187,9 @@ func (raftConsensus *RaftConsensus) StartConsensus(host host.Host, peers []peer.
 	time.Sleep(5 * time.Second)
 }
 
-func (raft *RaftConsensus) UpdateConsensus(from, to, amount string) {
+func (raft *RaftConsensus) UpdateConsensus(value string) {
 	if raft.Actor.IsLeader() {
-		if err := raft.UpdateState(from, to, amount); err != nil {
+		if err := raft.UpdateState(value); err != nil {
 			raft.Logger.Fatal("Failed to update state", err)
 		}
 	} else {
