@@ -3,6 +3,7 @@ package node
 import (
 	"context"
 	"crypto/rand"
+	"flag"
 	"fmt"
 
 	"github.com/Secured-Finance/p2p-oracle-node/config"
@@ -34,16 +35,20 @@ type Node struct {
 	Ethereum        *rpcclient.EthereumClient
 }
 
-func NewNode() *Node {
+func NewNode(configPath string) (*Node, error) {
+	cfg, err := config.NewConfig(configPath)
+	if err != nil {
+		return nil, err
+	}
 	node := &Node{
 		OracleTopic:   "p2p_oracle",
-		Config:        config.NewConfig(),
-		Logger:        log.Logger("rendezvous"),
+		Config:        cfg,
+		Logger:        log.Logger("node"),
 		networkTopics: mapset.NewSet(),
 	}
 	log.SetAllLoggers(log.LevelInfo)
 
-	return node
+	return node, nil
 }
 
 func (node *Node) setupNode(ctx context.Context, prvKey crypto.PrivKey) {
@@ -63,16 +68,24 @@ func (node *Node) setupNode(ctx context.Context, prvKey crypto.PrivKey) {
 	node.startPubSub(ctx, host)
 }
 
-func Start() {
-	node := NewNode()
-	log.SetAllLoggers(log.LevelInfo)
+func Start() error {
+	configPath := flag.String("config", "", "Path to config")
+	verbose := flag.Bool("verbose", false, "Verbose logging")
+	flag.Parse()
 
-	err := log.SetLogLevel("rendezvous", "info")
-	if err != nil {
-		node.Logger.Warn("Failed to set a rendezvous log level:", err)
+	if *configPath == "" {
+		return fmt.Errorf("no config path provided")
 	}
 
-	node.parseFlags()
+	node, err := NewNode(*configPath)
+	if *verbose {
+		log.SetAllLoggers(log.LevelDebug)
+	} else {
+		log.SetAllLoggers(log.LevelInfo)
+	}
+	if err != nil {
+		log.Logger("node").Panic(err)
+	}
 
 	r := rand.Reader
 
@@ -87,4 +100,5 @@ func Start() {
 	node.GlobalCtxCancel = ctxCancel
 
 	node.setupNode(ctx, prvKey)
+	return nil
 }
