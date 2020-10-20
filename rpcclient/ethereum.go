@@ -2,29 +2,24 @@ package rpcclient
 
 import (
 	"context"
-	"crypto/ecdsa"
-	"io/ioutil"
 	"math/big"
-	"strings"
 
 	"github.com/Secured-Finance/p2p-oracle-node/contracts/aggregator"
 	"github.com/Secured-Finance/p2p-oracle-node/contracts/oracleemitter"
-	"github.com/ethereum/go-ethereum"
-	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
-	"github.com/ethereum/go-ethereum/accounts/keystore"
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/common/hexutil"
-	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/ethclient"
+	"github.com/ethereum/go-ethereum/event"
 	"github.com/ipfs/go-log"
 )
 
 type EthereumClient struct {
-	HttpClient *ethclient.Client
-	WsClient   *ethclient.Client
-	Logger     *log.ZapEventLogger
+	client         *ethclient.Client
+	Logger         *log.ZapEventLogger
+	authTransactor *bind.TransactOpts
+	oracleEmitter  *oracleemitter.SmartcontractsSession
+	aggregator     *aggregator.SmartcontractsSession
 }
 
 type OracleEvent struct {
@@ -35,13 +30,10 @@ type OracleEvent struct {
 }
 
 type Ethereum interface {
-	Connect(context.Context, string) error
+	Initialize(ctx context.Context, url, connectionType, privateKey, oracleEmitterContractAddress, aggregatorContractAddress string) error
 	Balance(context.Context, string) (*big.Int, error)
 	SubscribeOnSmartContractEvents(context.Context, string)
-	GenerateAddressFromPrivateKey(string) string
-	SendTransaction(string, string, int64) string
-	createKeyStore(string) string
-	importKeyStore(string, string) string
+	SubmitRequestAnswer(reqID *big.Int, data string, callbackAddress common.Address, callbackMethodID [4]byte) error
 }
 
 func NewEthereumClient() *EthereumClient {
@@ -53,203 +45,183 @@ func NewEthereumClient() *EthereumClient {
 	return ethereumClient
 }
 
-func (c *EthereumClient) Connect(ctx context.Context, url string, connectionType string) {
+func (c *EthereumClient) Initialize(ctx context.Context, url, privateKey, oracleEmitterContractAddress, aggregatorContractAddress string) error {
 	client, err := ethclient.Dial(url)
 	if err != nil {
-		c.Logger.Fatal(err)
+		return err
 	}
-	if connectionType == "websocket" {
-		c.WsClient = client
-	} else {
-		c.HttpClient = client
+	c.client = client
+	ecdsaKey, err := crypto.HexToECDSA(privateKey)
+	if err != nil {
+		return err
 	}
+	authTransactor := bind.NewKeyedTransactor(ecdsaKey)
+	c.authTransactor = authTransactor
+
+	oracleEmitter, err := oracleemitter.NewSmartcontracts(common.HexToAddress(oracleEmitterContractAddress), client)
+	if err != nil {
+		return err
+	}
+	aggregatorPlainSC, err := aggregator.NewSmartcontracts(common.HexToAddress(aggregatorContractAddress), client)
+	if err != nil {
+		return err
+	}
+	c.oracleEmitter = &oracleemitter.SmartcontractsSession{
+		Contract: oracleEmitter,
+		CallOpts: bind.CallOpts{
+			Pending: true,
+			From:    authTransactor.From,
+			Context: context.Background(),
+		},
+		TransactOpts: bind.TransactOpts{
+			From:     authTransactor.From,
+			Signer:   authTransactor.Signer,
+			GasLimit: 0,   // 0 automatically estimates gas limit
+			GasPrice: nil, // nil automatically suggests gas price
+			Context:  context.Background(),
+		},
+	}
+	c.aggregator = &aggregator.SmartcontractsSession{
+		Contract: aggregatorPlainSC,
+		CallOpts: bind.CallOpts{
+			Pending: true,
+			From:    authTransactor.From,
+			Context: context.Background(),
+		},
+		TransactOpts: bind.TransactOpts{
+			From:     authTransactor.From,
+			Signer:   authTransactor.Signer,
+			GasLimit: 0,   // 0 automatically estimates gas limit
+			GasPrice: nil, // nil automatically suggests gas price
+			Context:  context.Background(),
+		},
+	}
+	return nil
 }
 
-// Balance returns the balance of the given ethereum address.
-func (c *EthereumClient) Balance(ctx context.Context, address string) (*big.Int, error) {
-	ethereumAddress := common.HexToAddress(address)
-	value, err := c.HttpClient.BalanceAt(ctx, ethereumAddress, nil)
+// // Balance returns the balance of the given ethereum address.
+// func (c *EthereumClient) Balance(ctx context.Context, address string) (*big.Int, error) {
+// 	ethereumAddress := common.HexToAddress(address)
+// 	value, err := c.HttpClient.BalanceAt(ctx, ethereumAddress, nil)
+// 	if err != nil {
+// 		return nil, err
+// 	}
+// 	return value, nil
+// }
+
+// func (c *EthereumClient) SendTransaction(ctx context.Context, private_key, to string, amount int64) string {
+// 	privateKey, err := crypto.HexToECDSA(private_key)
+// 	if err != nil {
+// 		c.Logger.Fatal("Failed to parse private key", err)
+// 	}
+
+// 	publicKey := privateKey.Public()
+// 	publicKeyECDSA, ok := publicKey.(*ecdsa.PublicKey)
+// 	if !ok {
+// 		c.Logger.Fatal("Cannot assert type: publicKey is not of type *ecdsa.PublicKey", err)
+// 	}
+
+// 	fromAddress := crypto.PubkeyToAddress(*publicKeyECDSA)
+// 	nonce, err := c.HttpClient.PendingNonceAt(ctx, fromAddress)
+// 	if err != nil {
+// 		c.Logger.Fatal("Failed to generate wallet nonce value", err)
+// 	}
+
+// 	value := big.NewInt(amount)
+// 	gasLimit := uint64(21000) // in units
+// 	gasPrice, err := c.HttpClient.SuggestGasPrice(ctx)
+// 	if err != nil {
+// 		c.Logger.Fatal("Failed to suggest new gas price", err)
+// 	}
+
+// 	toAddress := common.HexToAddress(to)
+// 	var data []byte
+// 	tx := types.NewTransaction(nonce, toAddress, value, gasLimit, gasPrice, data)
+
+// 	chainID, err := c.HttpClient.NetworkID(ctx)
+// 	if err != nil {
+// 		c.Logger.Fatal("Failed to get network ID", err)
+// 	}
+
+// 	signedTx, err := types.SignTx(tx, types.NewEIP155Signer(chainID), privateKey)
+// 	if err != nil {
+// 		c.Logger.Fatal("Failed to sign transaction", err)
+// 	}
+
+// 	err = c.HttpClient.SendTransaction(ctx, signedTx)
+// 	if err != nil {
+// 		c.Logger.Fatal("Failed to send signed transaction", err)
+// 	}
+
+// 	TxHash := signedTx.Hash().Hex()
+
+// 	c.Logger.Info("Transaction sent: %s", TxHash)
+
+// 	return TxHash
+// }
+
+// func (c *EthereumClient) GenerateAddressFromPrivateKey(private_key string) string {
+// 	privateKey, err := crypto.HexToECDSA(private_key)
+// 	if err != nil {
+// 		c.Logger.Fatal("Failed to generate private key", err)
+// 	}
+
+// 	publicKey := privateKey.Public()
+// 	publicKeyECDSA, ok := publicKey.(*ecdsa.PublicKey)
+// 	if !ok {
+// 		c.Logger.Fatal("cannot assert type: publicKey is not of type *ecdsa.PublicKey")
+// 	}
+
+// 	publicKeyBytes := crypto.FromECDSAPub(publicKeyECDSA)
+// 	c.Logger.Info(hexutil.Encode(publicKeyBytes)[4:])
+
+// 	address := crypto.PubkeyToAddress(*publicKeyECDSA).Hex()
+
+// 	return address
+// }
+
+func (c *EthereumClient) SubscribeOnOracleEvents(incomingEventsChan chan *oracleemitter.SmartcontractsNewOracleRequest) (event.Subscription, error) {
+	requestsFilter := c.oracleEmitter.Contract.SmartcontractsFilterer
+	subscription, err := requestsFilter.WatchNewOracleRequest(&bind.WatchOpts{
+		Start:   nil, //last block
+		Context: nil,
+	}, incomingEventsChan)
 	if err != nil {
 		return nil, err
 	}
-	return value, nil
+	return subscription, err
 }
 
-func (c *EthereumClient) SendTransaction(ctx context.Context, private_key, to string, amount int64) string {
-	privateKey, err := crypto.HexToECDSA(private_key)
+func (c *EthereumClient) SubmitRequestAnswer(reqID *big.Int, data string, callbackAddress common.Address, callbackMethodID [4]byte) error {
+	// privateKey, err := crypto.HexToECDSA(private_key)
+	// if err != nil {
+	// 	c.Logger.Fatal("Failed to generate private key", err)
+	// }
+
+	// publicKey := privateKey.Public()
+	// publicKeyECDSA, ok := publicKey.(*ecdsa.PublicKey)
+	// if !ok {
+	// 	c.Logger.Fatal("cannot assert type: publicKey is not of type *ecdsa.PublicKey")
+	// }
+
+	// publicKeyBytes := crypto.FromECDSAPub(publicKeyECDSA)
+	// c.Logger.Info(hexutil.Encode(publicKeyBytes)[4:])
+
+	// fromAddress := crypto.PubkeyToAddress(*publicKeyECDSA)
+	// nonce, err := c.HttpClient.PendingNonceAt(ctx, fromAddress)
+	// if err != nil {
+	// 	c.Logger.Fatal(err)
+	// }
+
+	// gasPrice, err := c.HttpClient.SuggestGasPrice(ctx)
+	// if err != nil {
+	// 	c.Logger.Fatal(err)
+	// }
+
+	_, err := c.aggregator.CollectData(reqID, data, callbackAddress, callbackMethodID)
 	if err != nil {
-		c.Logger.Fatal("Failed to parse private key", err)
+		return err
 	}
 
-	publicKey := privateKey.Public()
-	publicKeyECDSA, ok := publicKey.(*ecdsa.PublicKey)
-	if !ok {
-		c.Logger.Fatal("Cannot assert type: publicKey is not of type *ecdsa.PublicKey", err)
-	}
-
-	fromAddress := crypto.PubkeyToAddress(*publicKeyECDSA)
-	nonce, err := c.HttpClient.PendingNonceAt(ctx, fromAddress)
-	if err != nil {
-		c.Logger.Fatal("Failed to generate wallet nonce value", err)
-	}
-
-	value := big.NewInt(amount)
-	gasLimit := uint64(21000) // in units
-	gasPrice, err := c.HttpClient.SuggestGasPrice(ctx)
-	if err != nil {
-		c.Logger.Fatal("Failed to suggest new gas price", err)
-	}
-
-	toAddress := common.HexToAddress(to)
-	var data []byte
-	tx := types.NewTransaction(nonce, toAddress, value, gasLimit, gasPrice, data)
-
-	chainID, err := c.HttpClient.NetworkID(ctx)
-	if err != nil {
-		c.Logger.Fatal("Failed to get network ID", err)
-	}
-
-	signedTx, err := types.SignTx(tx, types.NewEIP155Signer(chainID), privateKey)
-	if err != nil {
-		c.Logger.Fatal("Failed to sign transaction", err)
-	}
-
-	err = c.HttpClient.SendTransaction(ctx, signedTx)
-	if err != nil {
-		c.Logger.Fatal("Failed to send signed transaction", err)
-	}
-
-	TxHash := signedTx.Hash().Hex()
-
-	c.Logger.Info("Transaction sent: %s", TxHash)
-
-	return TxHash
-}
-
-func (c *EthereumClient) GenerateAddressFromPrivateKey(private_key string) string {
-	privateKey, err := crypto.HexToECDSA(private_key)
-	if err != nil {
-		c.Logger.Fatal("Failed to generate private key", err)
-	}
-
-	publicKey := privateKey.Public()
-	publicKeyECDSA, ok := publicKey.(*ecdsa.PublicKey)
-	if !ok {
-		c.Logger.Fatal("cannot assert type: publicKey is not of type *ecdsa.PublicKey")
-	}
-
-	publicKeyBytes := crypto.FromECDSAPub(publicKeyECDSA)
-	c.Logger.Info(hexutil.Encode(publicKeyBytes)[4:])
-
-	address := crypto.PubkeyToAddress(*publicKeyECDSA).Hex()
-
-	return address
-}
-
-func (c *EthereumClient) SubscribeOnOracleEvents(ctx context.Context, address string, incomingEventsChan chan OracleEvent) {
-	contractAddress := common.HexToAddress(address)
-
-	query := ethereum.FilterQuery{
-		Addresses: []common.Address{contractAddress},
-	}
-
-	contractAbi, err := abi.JSON(strings.NewReader(string(oracleemitter.SmartcontractsABI)))
-	if err != nil {
-		c.Logger.Fatal(err)
-	}
-
-	logs := make(chan types.Log)
-	sub, err := c.WsClient.SubscribeFilterLogs(ctx, query, logs)
-	if err != nil {
-		c.Logger.Fatal(err)
-	}
-
-	for {
-		select {
-		case err := <-sub.Err():
-			c.Logger.Fatal(err)
-		case vLog := <-logs:
-			var event OracleEvent
-			err := contractAbi.Unpack(&event, "NewOracleRequest", vLog.Data)
-
-			if err != nil {
-				c.Logger.Fatal(err)
-			}
-			c.Logger.Info(event)
-			incomingEventsChan <- event
-		}
-	}
-}
-
-func (c *EthereumClient) createKeyStore(password string) string {
-	ks := keystore.NewKeyStore("./wallets", keystore.StandardScryptN, keystore.StandardScryptP)
-	account, err := ks.NewAccount(password)
-	if err != nil {
-		c.Logger.Fatal("Failed to create new keystore", err)
-	}
-
-	return account.Address.Hex()
-}
-
-func (c *EthereumClient) importKeyStore(filePath string, password string) string {
-	ks := keystore.NewKeyStore("./wallets", keystore.StandardScryptN, keystore.StandardScryptP)
-	jsonBytes, err := ioutil.ReadFile(filePath)
-	if err != nil {
-		c.Logger.Fatal("Failed to read keystore file", err)
-	}
-
-	account, err := ks.Import(jsonBytes, password, password)
-	if err != nil {
-		c.Logger.Fatal("Failed to import keystore", err)
-	}
-
-	return account.Address.Hex()
-}
-
-func (c *EthereumClient) SendConsensusValues(ctx context.Context, private_key string, smartContractAddress string, reqID *big.Int, data string, callbackAddress common.Address, callbackMethodID [4]byte) string {
-	privateKey, err := crypto.HexToECDSA(private_key)
-	if err != nil {
-		c.Logger.Fatal("Failed to generate private key", err)
-	}
-
-	publicKey := privateKey.Public()
-	publicKeyECDSA, ok := publicKey.(*ecdsa.PublicKey)
-	if !ok {
-		c.Logger.Fatal("cannot assert type: publicKey is not of type *ecdsa.PublicKey")
-	}
-
-	publicKeyBytes := crypto.FromECDSAPub(publicKeyECDSA)
-	c.Logger.Info(hexutil.Encode(publicKeyBytes)[4:])
-
-	fromAddress := crypto.PubkeyToAddress(*publicKeyECDSA)
-	nonce, err := c.HttpClient.PendingNonceAt(ctx, fromAddress)
-	if err != nil {
-		c.Logger.Fatal(err)
-	}
-
-	gasPrice, err := c.HttpClient.SuggestGasPrice(ctx)
-	if err != nil {
-		c.Logger.Fatal(err)
-	}
-
-	auth := bind.NewKeyedTransactor(privateKey)
-	auth.Nonce = big.NewInt(int64(nonce))
-	auth.Value = big.NewInt(0)     // in wei
-	auth.GasLimit = uint64(300000) // in units
-	auth.GasPrice = gasPrice
-
-	address := common.HexToAddress(smartContractAddress)
-	contract, err := aggregator.NewSmartcontracts(address, c.HttpClient)
-	if err != nil {
-		c.Logger.Fatal(err)
-	}
-
-	tx, err := contract.CollectData(auth, reqID, data, callbackAddress, callbackMethodID)
-	if err != nil {
-		c.Logger.Fatal(err)
-	}
-
-	txHash := tx.Hash().Hex()
-
-	return txHash
+	return nil
 }

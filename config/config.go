@@ -11,12 +11,21 @@ type Config struct {
 	BootstrapNodeMultiaddr string         `mapstructure:"bootstrap_node_multiaddr"`
 	Rendezvous             string         `mapstructure:"rendezvous"`
 	SessionKey             string         `mapstructure:"session_key"`
-	Etherium               EtheriumConfig `mapstructure:"eth"`
+	Etherium               EtheriumConfig `mapstructure:"etherium"`
+	Filecoin               FilecoinConfig `mapstructure:"filecoin"`
 	PubSub                 PubSubConfig   `mapstructure:"pubSub"`
 }
 
 type EtheriumConfig struct {
-	PrivateKey string `mapstructure:"private_key"`
+	GatewayAddress               string `mapstructure:"gateway_address"`
+	PrivateKey                   string `mapstructure:"private_key"`
+	OracleEmitterContractAddress string `mapstructure:"oracle_emitter_contract_address"`
+	AggregatorContractAddress    string `mapstructure:"aggregator_contract_address"`
+}
+
+type FilecoinConfig struct {
+	LotusHost  string `mapstructure:"lotusHost"`
+	LotusToken string `mapstructure:"lotusToken"`
 }
 
 type PubSubConfig struct {
