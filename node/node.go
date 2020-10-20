@@ -64,19 +64,19 @@ func (n *Node) setupNode(ctx context.Context, prvKey crypto.PrivKey) {
 	}
 	n.Host = host
 	n.bootstrapLibp2pHost(context.TODO())
-	n.setupEtheriumClient()
+	n.setupEthereumClient()
 	n.setupFilecoinClient()
 	//n.startPubSub(ctx, host)
 }
 
-func (n *Node) setupEtheriumClient() error {
+func (n *Node) setupEthereumClient() error {
 	ethereum := rpcclient.NewEthereumClient()
 	n.Ethereum = ethereum
 	return ethereum.Initialize(context.Background(),
-		n.Config.Etherium.GatewayAddress,
-		n.Config.Etherium.PrivateKey,
-		n.Config.Etherium.OracleEmitterContractAddress,
-		n.Config.Etherium.AggregatorContractAddress,
+		n.Config.Ethereum.GatewayAddress,
+		n.Config.Ethereum.PrivateKey,
+		n.Config.Ethereum.OracleEmitterContractAddress,
+		n.Config.Ethereum.AggregatorContractAddress,
 	)
 }
 

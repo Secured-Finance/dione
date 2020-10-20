@@ -13,7 +13,7 @@ type PubSubConfig struct {
 	ProtocolID string `toml:"protocolID"`
 }
 
-type EtheriumConfig struct {
+type EthereumConfig struct {
 	PrivateKey     string `toml:"privateKey"`
 	GatewayAddress string `toml:"gatewayAddress"`
 }

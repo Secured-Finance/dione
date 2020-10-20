@@ -11,12 +11,12 @@ type Config struct {
 	BootstrapNodeMultiaddr string         `mapstructure:"bootstrap_node_multiaddr"`
 	Rendezvous             string         `mapstructure:"rendezvous"`
 	SessionKey             string         `mapstructure:"session_key"`
-	Etherium               EtheriumConfig `mapstructure:"etherium"`
+	Ethereum               EthereumConfig `mapstructure:"ethereum"`
 	Filecoin               FilecoinConfig `mapstructure:"filecoin"`
 	PubSub                 PubSubConfig   `mapstructure:"pubSub"`
 }
 
-type EtheriumConfig struct {
+type EthereumConfig struct {
 	GatewayAddress               string `mapstructure:"gateway_address"`
 	PrivateKey                   string `mapstructure:"private_key"`
 	OracleEmitterContractAddress string `mapstructure:"oracle_emitter_contract_address"`
@@ -40,7 +40,7 @@ func NewConfig(configPath string) (*Config, error) {
 		Bootstrap:              false,
 		BootstrapNodeMultiaddr: "/ip4/127.0.0.1/tcp/0",
 		Rendezvous:             "filecoin-p2p-oracle",
-		Etherium: EtheriumConfig{
+		Ethereum: EthereumConfig{
 			PrivateKey: "",
 		},
 		SessionKey: "go",
