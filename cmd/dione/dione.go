@@ -1,7 +1,7 @@
 package main
 
 import (
-	"github.com/Secured-Finance/p2p-oracle-node/node"
+	"github.com/Secured-Finance/dione/node"
 	"github.com/ipfs/go-log"
 )
 

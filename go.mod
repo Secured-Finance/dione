@@ -1,4 +1,4 @@
-module github.com/Secured-Finance/p2p-oracle-node
+module github.com/Secured-Finance/dione
 
 go 1.14
 
@@ -11,6 +11,7 @@ require (
 	github.com/filecoin-project/lotus v0.4.2
 	github.com/filecoin-project/specs-actors v0.8.1-0.20200723200253-a3c01bc62f99
 	github.com/gballet/go-libpcsclite v0.0.0-20191108122812-4678299bea08 // indirect
+	github.com/google/uuid v1.1.1
 	github.com/hashicorp/raft v1.1.2
 	github.com/ipfs/go-log v1.0.4
 	github.com/karalabe/usb v0.0.0-20191104083709-911d15fe12a9 // indirect

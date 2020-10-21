@@ -17,3 +17,5 @@
 # Environment files
 .env
 eth-contracts/node_modules
+/dione
+/.dione-config.toml

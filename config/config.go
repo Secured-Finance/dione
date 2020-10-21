@@ -10,7 +10,6 @@ type Config struct {
 	Bootstrap              bool           `mapstructure:"is_bootstrap"`
 	BootstrapNodeMultiaddr string         `mapstructure:"bootstrap_node_multiaddr"`
 	Rendezvous             string         `mapstructure:"rendezvous"`
-	SessionKey             string         `mapstructure:"session_key"`
 	Ethereum               EthereumConfig `mapstructure:"ethereum"`
 	Filecoin               FilecoinConfig `mapstructure:"filecoin"`
 	PubSub                 PubSubConfig   `mapstructure:"pubSub"`
@@ -43,7 +42,6 @@ func NewConfig(configPath string) (*Config, error) {
 		Ethereum: EthereumConfig{
 			PrivateKey: "",
 		},
-		SessionKey: "go",
 		PubSub: PubSubConfig{
 			ProtocolID: "p2p-oracle",
 		},

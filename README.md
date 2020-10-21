@@ -67,7 +67,7 @@ Governance mechanism would take place on [snapshot.page](https://snapshot.page/#
 
 [Bach Adylbekov](https://github.com/bahadylbekov)
 
-We welcome every contributions big and small! Take a look at the [community contributing notes](). Please make sure to check the [issues](https://github.com/Secured-Finance/p2p-oracle-node/issues). Search the closed ones before reporting things, and help us with the open ones.
+We welcome every contributions big and small! Take a look at the [community contributing notes](). Please make sure to check the [issues](https://github.com/Secured-Finance/dione/issues). Search the closed ones before reporting things, and help us with the open ones.
 
 
 # License

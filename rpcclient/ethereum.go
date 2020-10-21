@@ -4,8 +4,8 @@ import (
 	"context"
 	"math/big"
 
-	"github.com/Secured-Finance/p2p-oracle-node/contracts/aggregator"
-	"github.com/Secured-Finance/p2p-oracle-node/contracts/oracleemitter"
+	"github.com/Secured-Finance/dione/contracts/aggregator"
+	"github.com/Secured-Finance/dione/contracts/oracleemitter"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"

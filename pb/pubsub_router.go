@@ -1,45 +1,48 @@
-package node
+package pb
 
 import (
 	"context"
 	"encoding/json"
 
-	"github.com/Secured-Finance/p2p-oracle-node/models"
+	"github.com/Secured-Finance/dione/models"
 	"github.com/ipfs/go-log"
+	host "github.com/libp2p/go-libp2p-core/host"
 	peer "github.com/libp2p/go-libp2p-core/peer"
 	pubsub "github.com/libp2p/go-libp2p-pubsub"
 )
 
 type PubSubRouter struct {
-	node          *Node
+	node          host.Host
 	pubsub        *pubsub.PubSub
 	logger        *log.ZapEventLogger
 	context       context.Context
 	contextCancel context.CancelFunc
 	handlers      map[string][]Handler
+	oracleTopic   string
 }
 
-func NewPubSubRouter(n *Node) *PubSubRouter {
+func NewPubSubRouter(h host.Host, oracleTopic string) *PubSubRouter {
 	ctx, ctxCancel := context.WithCancel(context.Background())
 
 	psr := &PubSubRouter{
-		node:          n,
+		node:          h,
 		logger:        log.Logger("PubSubRouter"),
 		context:       ctx,
 		contextCancel: ctxCancel,
+		handlers:      make(map[string][]Handler),
 	}
 
 	pb, err := pubsub.NewGossipSub(
 		context.Background(),
-		psr.node.Host, pubsub.WithMessageSigning(true),
+		psr.node, pubsub.WithMessageSigning(true),
 		pubsub.WithStrictSignatureVerification(true),
 	)
 	if err != nil {
 		psr.logger.Fatal("Error occurred when create PubSub", err)
 	}
 
-	n.OracleTopic = n.Config.Rendezvous
-	subscription, err := pb.Subscribe(n.OracleTopic)
+	psr.oracleTopic = oracleTopic
+	subscription, err := pb.Subscribe(oracleTopic)
 	if err != nil {
 		psr.logger.Fatal("Error occurred when subscribing to service topic", err)
 	}
@@ -72,7 +75,7 @@ func (psr *PubSubRouter) handleMessage(p *pubsub.Message) {
 		return
 	}
 	// We can receive our own messages when sending to the topic. So we should drop them.
-	if senderPeerID == psr.node.Host.ID() {
+	if senderPeerID == psr.node.ID() {
 		return
 	}
 	var message models.Message
@@ -88,7 +91,7 @@ func (psr *PubSubRouter) handleMessage(p *pubsub.Message) {
 		return
 	}
 	for _, v := range handlers {
-		go v.HandleMessage(&message)
+		go v(&message)
 	}
 }
 
@@ -100,6 +103,15 @@ func (psr *PubSubRouter) Hook(messageType string, handler Handler) {
 		handlers = emptyArray
 	}
 	psr.handlers[messageType] = append(handlers, handler)
+}
+
+func (psr *PubSubRouter) BroadcastToServiceTopic(msg *models.Message) error {
+	data, err := json.Marshal(msg)
+	if err != nil {
+		return err
+	}
+	err = psr.pubsub.Publish(psr.oracleTopic, data)
+	return err
 }
 
 func (psr *PubSubRouter) Shutdown() {

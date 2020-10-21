@@ -6,10 +6,13 @@ import (
 	"flag"
 	"fmt"
 	"sync"
+	"time"
 
-	"github.com/Secured-Finance/p2p-oracle-node/config"
-	"github.com/Secured-Finance/p2p-oracle-node/rpc"
-	"github.com/Secured-Finance/p2p-oracle-node/rpcclient"
+	"github.com/Secured-Finance/dione/config"
+	"github.com/Secured-Finance/dione/consensus"
+	"github.com/Secured-Finance/dione/pb"
+	"github.com/Secured-Finance/dione/rpc"
+	"github.com/Secured-Finance/dione/rpcclient"
 	"github.com/ipfs/go-log"
 	"github.com/libp2p/go-libp2p"
 	crypto "github.com/libp2p/go-libp2p-core/crypto"
@@ -18,20 +21,20 @@ import (
 	discovery "github.com/libp2p/go-libp2p-discovery"
 	dht "github.com/libp2p/go-libp2p-kad-dht"
 	peerstore "github.com/libp2p/go-libp2p-peerstore"
-	pubsub "github.com/libp2p/go-libp2p-pubsub"
 	"github.com/multiformats/go-multiaddr"
 )
 
 type Node struct {
-	Host            host.Host
-	PubSub          *pubsub.PubSub
-	GlobalCtx       context.Context
-	GlobalCtxCancel context.CancelFunc
-	OracleTopic     string
-	Config          *config.Config
-	Logger          *log.ZapEventLogger
-	Lotus           *rpc.LotusClient
-	Ethereum        *rpcclient.EthereumClient
+	Host             host.Host
+	PubSubRouter     *pb.PubSubRouter
+	GlobalCtx        context.Context
+	GlobalCtxCancel  context.CancelFunc
+	OracleTopic      string
+	Config           *config.Config
+	Logger           *log.ZapEventLogger
+	Lotus            *rpc.LotusClient
+	Ethereum         *rpcclient.EthereumClient
+	ConsensusManager *consensus.PBFTConsensusManager
 }
 
 func NewNode(configPath string) (*Node, error) {
@@ -40,33 +43,20 @@ func NewNode(configPath string) (*Node, error) {
 		return nil, err
 	}
 	node := &Node{
-		OracleTopic: "p2p_oracle",
+		OracleTopic: "dione",
 		Config:      cfg,
 		Logger:      log.Logger("node"),
 	}
-	log.SetAllLoggers(log.LevelInfo)
 
 	return node, nil
 }
 
 func (n *Node) setupNode(ctx context.Context, prvKey crypto.PrivKey) {
-	listenMultiAddr, err := multiaddr.NewMultiaddr(fmt.Sprintf("/ip4/%s/tcp/%s", n.Config.ListenAddr, n.Config.ListenPort))
-	if err != nil {
-		n.Logger.Fatal("Failed to generate new node multiaddress:", err)
-	}
-	host, err := libp2p.New(
-		ctx,
-		libp2p.ListenAddrs(listenMultiAddr),
-		libp2p.Identity(prvKey),
-	)
-	if err != nil {
-		n.Logger.Fatal("Failed to set a new libp2p node:", err)
-	}
-	n.Host = host
-	n.bootstrapLibp2pHost(context.TODO())
-	n.setupEthereumClient()
-	n.setupFilecoinClient()
-	//n.startPubSub(ctx, host)
+	n.setupLibp2pHost(context.TODO(), prvKey)
+	//n.setupEthereumClient()
+	//n.setupFilecoinClient()
+	n.setupPubsub()
+	n.setupConsensusManager()
 }
 
 func (n *Node) setupEthereumClient() error {
@@ -85,7 +75,33 @@ func (n *Node) setupFilecoinClient() {
 	n.Lotus = lotus
 }
 
-func (n *Node) bootstrapLibp2pHost(ctx context.Context) {
+func (n *Node) setupPubsub() {
+	n.PubSubRouter = pb.NewPubSubRouter(n.Host, n.OracleTopic)
+	// wait for setting up pubsub
+	time.Sleep(3 * time.Second)
+}
+
+func (n *Node) setupConsensusManager() {
+	n.ConsensusManager = consensus.NewPBFTConsensusManager(n.PubSubRouter, 2)
+}
+
+func (n *Node) setupLibp2pHost(ctx context.Context, privateKey crypto.PrivKey) {
+	listenMultiAddr, err := multiaddr.NewMultiaddr(fmt.Sprintf("/ip4/%s/tcp/%s", n.Config.ListenAddr, n.Config.ListenPort))
+	if err != nil {
+		n.Logger.Fatal("Failed to generate new node multiaddress:", err)
+	}
+	host, err := libp2p.New(
+		ctx,
+		libp2p.ListenAddrs(listenMultiAddr),
+		libp2p.Identity(privateKey),
+	)
+	if err != nil {
+		n.Logger.Fatal("Failed to set a new libp2p node:", err)
+	}
+	n.Host = host
+
+	n.Logger.Info(fmt.Sprintf("[*] Your Multiaddress Is: /ip4/%s/tcp/%v/p2p/%s\n", n.Config.ListenAddr, n.Config.ListenPort, host.ID().Pretty()))
+
 	kademliaDHT, err := dht.New(context.Background(), n.Host)
 	if err != nil {
 		n.Logger.Fatal("Failed to create new DHT instance: ", err)
@@ -119,7 +135,7 @@ func (n *Node) bootstrapLibp2pHost(ctx context.Context) {
 	n.Logger.Info("Successfully announced!")
 
 	// Randezvous string = service tag
-	// Disvover all peers with our service (all ms devices)
+	// Discover all peers with our service
 	n.Logger.Info("Searching for other peers...")
 	peerChan, err := routingDiscovery.FindPeers(context.Background(), n.Config.Rendezvous)
 	if err != nil {
@@ -133,6 +149,12 @@ func (n *Node) bootstrapLibp2pHost(ctx context.Context) {
 				break MainLoop
 			case newPeer := <-peerChan:
 				{
+					if len(newPeer.Addrs) == 0 {
+						continue
+					}
+					if newPeer.ID.String() == n.Host.ID().String() {
+						continue
+					}
 					n.Logger.Info("Found peer:", newPeer, ", put it to the peerstore")
 					n.Host.Peerstore().AddAddr(newPeer.ID, newPeer.Addrs[0], peerstore.PermanentAddrTTL)
 					// Connect to the peer
@@ -175,7 +197,12 @@ func Start() error {
 	node.GlobalCtxCancel = ctxCancel
 
 	node.setupNode(ctx, privKey)
-	return nil
+	for {
+		select {
+		case <-ctx.Done():
+			return nil
+		}
+	}
 }
 
 func generatePrivateKey() (crypto.PrivKey, error) {
