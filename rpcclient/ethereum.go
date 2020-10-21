@@ -11,12 +11,10 @@ import (
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/ethereum/go-ethereum/event"
-	"github.com/ipfs/go-log"
 )
 
 type EthereumClient struct {
 	client         *ethclient.Client
-	Logger         *log.ZapEventLogger
 	authTransactor *bind.TransactOpts
 	oracleEmitter  *oracleemitter.SmartcontractsSession
 	aggregator     *aggregator.SmartcontractsSession
@@ -37,10 +35,7 @@ type Ethereum interface {
 }
 
 func NewEthereumClient() *EthereumClient {
-	ethereumClient := &EthereumClient{
-		Logger: log.Logger("rendezvous"),
-	}
-	log.SetAllLoggers(log.LevelInfo)
+	ethereumClient := &EthereumClient{}
 
 	return ethereumClient
 }

@@ -6,7 +6,7 @@ import (
 	"github.com/Secured-Finance/dione/models"
 	"github.com/Secured-Finance/dione/pb"
 	"github.com/google/uuid"
-	"github.com/ipfs/go-log"
+	"github.com/sirupsen/logrus"
 )
 
 type ConsensusState int
@@ -21,7 +21,6 @@ const (
 
 type PBFTConsensusManager struct {
 	psb           *pb.PubSubRouter
-	logger        *log.ZapEventLogger
 	Consensuses   map[string]*ConsensusData
 	maxFaultNodes int
 }
@@ -36,7 +35,6 @@ type ConsensusData struct {
 
 func NewPBFTConsensusManager(psb *pb.PubSubRouter, maxFaultNodes int) *PBFTConsensusManager {
 	pcm := &PBFTConsensusManager{}
-	pcm.logger = log.Logger("PBFTConsensusManager")
 	pcm.Consensuses = make(map[string]*ConsensusData)
 	pcm.psb = psb
 	pcm.psb.Hook("prepared", pcm.handlePreparedMessage)
@@ -58,14 +56,14 @@ func (pcm *PBFTConsensusManager) NewTestConsensus(data string) {
 	pcm.psb.BroadcastToServiceTopic(&msg)
 
 	cData.State = consensusPrePrepared
-	pcm.logger.Debug("started new consensus: " + consensusID)
+	logrus.Debug("started new consensus: " + consensusID)
 }
 
 func (pcm *PBFTConsensusManager) handlePreparedMessage(message *models.Message) {
 	// TODO add check on view of the message
 	consensusID := message.Payload["consensusID"].(string)
 	if _, ok := pcm.Consensuses[consensusID]; !ok {
-		pcm.logger.Warn("Unknown consensus ID: " + consensusID)
+		logrus.Warn("Unknown consensus ID: " + consensusID)
 		return
 	}
 	data := pcm.Consensuses[consensusID]
@@ -74,7 +72,7 @@ func (pcm *PBFTConsensusManager) handlePreparedMessage(message *models.Message) 
 	if data.test {
 		rData := message.Payload["data"].(string)
 		if rData != testValidData {
-			pcm.logger.Error("Incorrect data was received! Ignoring this message, because it was sent from fault node!")
+			logrus.Error("Incorrect data was received! Ignoring this message, because it was sent from fault node!")
 			return
 		}
 	} else {
@@ -91,7 +89,7 @@ func (pcm *PBFTConsensusManager) handlePreparedMessage(message *models.Message) 
 		msg.Payload["consensusID"] = consensusID
 		err := pcm.psb.BroadcastToServiceTopic(&msg)
 		if err != nil {
-			pcm.logger.Warn("Unable to send COMMIT message: " + err.Error())
+			logrus.Warn("Unable to send COMMIT message: " + err.Error())
 			return
 		}
 		data.State = consensusPrepared
@@ -102,7 +100,7 @@ func (pcm *PBFTConsensusManager) handleCommitMessage(message *models.Message) {
 	// TODO add check on view of the message
 	consensusID := message.Payload["consensusID"].(string)
 	if _, ok := pcm.Consensuses[consensusID]; !ok {
-		pcm.logger.Warn("Unknown consensus ID: " + consensusID)
+		logrus.Warn("Unknown consensus ID: " + consensusID)
 		return
 	}
 	data := pcm.Consensuses[consensusID]
@@ -111,8 +109,7 @@ func (pcm *PBFTConsensusManager) handleCommitMessage(message *models.Message) {
 	data.mutex.Unlock()
 
 	if data.commitCount > 2*pcm.maxFaultNodes+1 {
-		pcm.logger.Debug("consensus successfully finished")
-		pcm.logger.Debug("")
+		logrus.Debug("consensus successfully finished")
 		data.State = consensusPrepared
 	}
 }

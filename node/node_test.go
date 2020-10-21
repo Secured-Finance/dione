@@ -7,12 +7,11 @@ import (
 
 	"github.com/Secured-Finance/dione/config"
 	"github.com/Secured-Finance/dione/consensus"
-	"github.com/ipfs/go-log"
+	"github.com/sirupsen/logrus"
 )
 
 func TestConsensus(t *testing.T) {
-	var logger = log.Logger("test")
-	log.SetAllLoggers(log.LevelDebug)
+	logrus.SetLevel(logrus.DebugLevel)
 
 	cfg := &config.Config{
 		ListenPort: "1234",
@@ -35,7 +34,6 @@ func TestConsensus(t *testing.T) {
 		Config:          cfg,
 		GlobalCtx:       ctx,
 		GlobalCtxCancel: ctxCancel,
-		Logger:          log.Logger("node"),
 	}
 	node1.setupNode(ctx, privKey)
 
@@ -47,13 +45,13 @@ func TestConsensus(t *testing.T) {
 	ctx, ctxCancel = context.WithCancel(context.Background())
 	cfg.ListenPort = "1235"
 	cfg.Bootstrap = false
-	cfg.BootstrapNodeMultiaddr = node1.Host.Addrs()[0].String() + fmt.Sprintf("/p2p/%s", node1.Host.ID().String())
+	//cfg.BootstrapNodeMultiaddr = node1.Host.Addrs()[0].String() + fmt.Sprintf("/p2p/%s", node1.Host.ID().String())
+	cfg.BootstrapNodeMultiaddr = "/dnsaddr/bootstrap.libp2p.io/p2p/QmNnooDu7bfjPFoTZYxMNLWUQJyrVwtbZg5gBMjTezGAJN"
 	node2 := &Node{
 		OracleTopic:     "dione",
 		Config:          cfg,
 		GlobalCtx:       ctx,
 		GlobalCtxCancel: ctxCancel,
-		Logger:          log.Logger("node"),
 	}
 	node2.setupNode(ctx, privKey)
 
@@ -69,11 +67,8 @@ func TestConsensus(t *testing.T) {
 		Config:          cfg,
 		GlobalCtx:       ctx,
 		GlobalCtxCancel: ctxCancel,
-		Logger:          log.Logger("node"),
 	}
 	node3.setupNode(ctx, privKey)
-
-	logger.Debug(node3.Host.Peerstore().Peers())
 
 	node2.ConsensusManager.NewTestConsensus("test")
 	node1.ConsensusManager.NewTestConsensus("test1")

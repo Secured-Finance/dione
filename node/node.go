@@ -13,7 +13,6 @@ import (
 	"github.com/Secured-Finance/dione/pb"
 	"github.com/Secured-Finance/dione/rpc"
 	"github.com/Secured-Finance/dione/rpcclient"
-	"github.com/ipfs/go-log"
 	"github.com/libp2p/go-libp2p"
 	crypto "github.com/libp2p/go-libp2p-core/crypto"
 	"github.com/libp2p/go-libp2p-core/host"
@@ -22,6 +21,7 @@ import (
 	dht "github.com/libp2p/go-libp2p-kad-dht"
 	peerstore "github.com/libp2p/go-libp2p-peerstore"
 	"github.com/multiformats/go-multiaddr"
+	"github.com/sirupsen/logrus"
 )
 
 type Node struct {
@@ -31,7 +31,6 @@ type Node struct {
 	GlobalCtxCancel  context.CancelFunc
 	OracleTopic      string
 	Config           *config.Config
-	Logger           *log.ZapEventLogger
 	Lotus            *rpc.LotusClient
 	Ethereum         *rpcclient.EthereumClient
 	ConsensusManager *consensus.PBFTConsensusManager
@@ -45,7 +44,6 @@ func NewNode(configPath string) (*Node, error) {
 	node := &Node{
 		OracleTopic: "dione",
 		Config:      cfg,
-		Logger:      log.Logger("node"),
 	}
 
 	return node, nil
@@ -88,7 +86,7 @@ func (n *Node) setupConsensusManager() {
 func (n *Node) setupLibp2pHost(ctx context.Context, privateKey crypto.PrivKey) {
 	listenMultiAddr, err := multiaddr.NewMultiaddr(fmt.Sprintf("/ip4/%s/tcp/%s", n.Config.ListenAddr, n.Config.ListenPort))
 	if err != nil {
-		n.Logger.Fatal("Failed to generate new node multiaddress:", err)
+		logrus.Fatal("Failed to generate new node multiaddress:", err)
 	}
 	host, err := libp2p.New(
 		ctx,
@@ -96,50 +94,50 @@ func (n *Node) setupLibp2pHost(ctx context.Context, privateKey crypto.PrivKey) {
 		libp2p.Identity(privateKey),
 	)
 	if err != nil {
-		n.Logger.Fatal("Failed to set a new libp2p node:", err)
+		logrus.Fatal("Failed to set a new libp2p node:", err)
 	}
 	n.Host = host
 
-	n.Logger.Info(fmt.Sprintf("[*] Your Multiaddress Is: /ip4/%s/tcp/%v/p2p/%s\n", n.Config.ListenAddr, n.Config.ListenPort, host.ID().Pretty()))
+	logrus.Info(fmt.Sprintf("[*] Your Multiaddress Is: /ip4/%s/tcp/%v/p2p/%s\n", n.Config.ListenAddr, n.Config.ListenPort, host.ID().Pretty()))
 
 	kademliaDHT, err := dht.New(context.Background(), n.Host)
 	if err != nil {
-		n.Logger.Fatal("Failed to create new DHT instance: ", err)
+		logrus.Fatal("Failed to create new DHT instance: ", err)
 	}
 
 	if err = kademliaDHT.Bootstrap(context.Background()); err != nil {
-		n.Logger.Fatal(err)
+		logrus.Fatal(err)
 	}
 
 	if !n.Config.Bootstrap {
 		var wg sync.WaitGroup
 		bootstrapMultiaddr, err := multiaddr.NewMultiaddr(n.Config.BootstrapNodeMultiaddr)
 		if err != nil {
-			n.Logger.Fatal(err)
+			logrus.Fatal(err)
 		}
 		peerinfo, _ := peer.AddrInfoFromP2pAddr(bootstrapMultiaddr)
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
 			if err := n.Host.Connect(context.Background(), *peerinfo); err != nil {
-				n.Logger.Fatal(err)
+				logrus.Fatal(err)
 			}
-			n.Logger.Info("Connection established with bootstrap node:", *peerinfo)
+			logrus.Info("Connection established with bootstrap node:", *peerinfo)
 		}()
 		wg.Wait()
 	}
 
-	n.Logger.Info("Announcing ourselves...")
+	logrus.Info("Announcing ourselves...")
 	routingDiscovery := discovery.NewRoutingDiscovery(kademliaDHT)
 	discovery.Advertise(context.Background(), routingDiscovery, n.Config.Rendezvous)
-	n.Logger.Info("Successfully announced!")
+	logrus.Info("Successfully announced!")
 
 	// Randezvous string = service tag
 	// Discover all peers with our service
-	n.Logger.Info("Searching for other peers...")
+	logrus.Info("Searching for other peers...")
 	peerChan, err := routingDiscovery.FindPeers(context.Background(), n.Config.Rendezvous)
 	if err != nil {
-		n.Logger.Fatal("Failed to find new peers, exiting...", err)
+		logrus.Fatal("Failed to find new peers, exiting...", err)
 	}
 	go func() {
 	MainLoop:
@@ -155,13 +153,13 @@ func (n *Node) setupLibp2pHost(ctx context.Context, privateKey crypto.PrivKey) {
 					if newPeer.ID.String() == n.Host.ID().String() {
 						continue
 					}
-					n.Logger.Info("Found peer:", newPeer, ", put it to the peerstore")
+					logrus.Info("Found peer:", newPeer, ", put it to the peerstore")
 					n.Host.Peerstore().AddAddr(newPeer.ID, newPeer.Addrs[0], peerstore.PermanentAddrTTL)
 					// Connect to the peer
 					if err := n.Host.Connect(ctx, newPeer); err != nil {
-						n.Logger.Warn("Connection failed: ", err)
+						logrus.Warn("Connection failed: ", err)
 					}
-					n.Logger.Info("Connected to: ", newPeer)
+					logrus.Info("Connected to: ", newPeer)
 				}
 			}
 		}
@@ -179,17 +177,17 @@ func Start() error {
 
 	node, err := NewNode(*configPath)
 	if *verbose {
-		log.SetAllLoggers(log.LevelDebug)
+		logrus.SetLevel(logrus.DebugLevel)
 	} else {
-		log.SetAllLoggers(log.LevelInfo)
+		logrus.SetLevel(logrus.InfoLevel)
 	}
 	if err != nil {
-		log.Logger("node").Panic(err)
+		logrus.Panic(err)
 	}
 
 	privKey, err := generatePrivateKey()
 	if err != nil {
-		node.Logger.Fatal(err)
+		logrus.Fatal(err)
 	}
 
 	ctx, ctxCancel := context.WithCancel(context.Background())
