@@ -5,7 +5,6 @@ import (
 
 	"github.com/Secured-Finance/dione/models"
 	"github.com/Secured-Finance/dione/pb"
-	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 )
 
@@ -42,8 +41,8 @@ func NewPBFTConsensusManager(psb *pb.PubSubRouter, maxFaultNodes int) *PBFTConse
 	return pcm
 }
 
-func (pcm *PBFTConsensusManager) NewTestConsensus(data string) {
-	consensusID := uuid.New().String()
+func (pcm *PBFTConsensusManager) NewTestConsensus(data string, consensusID string) {
+	//consensusID := uuid.New().String()
 	cData := &ConsensusData{}
 	cData.test = true
 	pcm.Consensuses[consensusID] = cData
@@ -66,6 +65,7 @@ func (pcm *PBFTConsensusManager) handlePreparedMessage(message *models.Message) 
 		logrus.Warn("Unknown consensus ID: " + consensusID)
 		return
 	}
+	logrus.Debug("received prepared msg")
 	data := pcm.Consensuses[consensusID]
 
 	// validate payload data

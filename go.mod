@@ -16,7 +16,7 @@ require (
 	github.com/golang/protobuf v1.4.2 // indirect
 	github.com/google/uuid v1.1.1
 	github.com/gopherjs/gopherjs v0.0.0-20190812055157-5d271430af9f // indirect
-	github.com/ipfs/go-log/v2 v2.1.2-0.20200626104915-0016c0b4b3e4 // indirect
+	github.com/ipfs/go-log/v2 v2.1.2-0.20200626104915-0016c0b4b3e4
 	github.com/karalabe/usb v0.0.0-20191104083709-911d15fe12a9 // indirect
 	github.com/libp2p/go-libp2p v0.10.2
 	github.com/libp2p/go-libp2p-core v0.6.1
