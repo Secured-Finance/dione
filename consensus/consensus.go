@@ -110,6 +110,6 @@ func (pcm *PBFTConsensusManager) handleCommitMessage(message *models.Message) {
 
 	if data.commitCount > 2*pcm.maxFaultNodes+1 {
 		logrus.Debug("consensus successfully finished")
-		data.State = consensusPrepared
+		data.State = consensusCommitted
 	}
 }
