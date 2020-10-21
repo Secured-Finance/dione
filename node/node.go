@@ -5,6 +5,7 @@ import (
 	"crypto/rand"
 	"flag"
 	"fmt"
+	"github.com/libp2p/go-libp2p-kad-dht/dual"
 	"sync"
 	"time"
 
@@ -18,7 +19,6 @@ import (
 	"github.com/libp2p/go-libp2p-core/host"
 	peer "github.com/libp2p/go-libp2p-core/peer"
 	discovery "github.com/libp2p/go-libp2p-discovery"
-	dht "github.com/libp2p/go-libp2p-kad-dht"
 	peerstore "github.com/libp2p/go-libp2p-peerstore"
 	"github.com/multiformats/go-multiaddr"
 	"github.com/sirupsen/logrus"
@@ -98,9 +98,9 @@ func (n *Node) setupLibp2pHost(ctx context.Context, privateKey crypto.PrivKey) {
 	}
 	n.Host = host
 
-	logrus.Info(fmt.Sprintf("[*] Your Multiaddress Is: /ip4/%s/tcp/%v/p2p/%s\n", n.Config.ListenAddr, n.Config.ListenPort, host.ID().Pretty()))
+	logrus.Info(fmt.Sprintf("[*] Your Multiaddress Is: /ip4/%s/tcp/%v/p2p/%s", n.Config.ListenAddr, n.Config.ListenPort, host.ID().Pretty()))
 
-	kademliaDHT, err := dht.New(context.Background(), n.Host)
+	kademliaDHT, err := dual.New(context.Background(), n.Host)
 	if err != nil {
 		logrus.Fatal("Failed to create new DHT instance: ", err)
 	}
