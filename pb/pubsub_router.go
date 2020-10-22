@@ -7,7 +7,6 @@ import (
 	"github.com/Secured-Finance/dione/models"
 	host "github.com/libp2p/go-libp2p-core/host"
 	peer "github.com/libp2p/go-libp2p-core/peer"
-	"github.com/libp2p/go-libp2p-core/protocol"
 	pubsub "github.com/libp2p/go-libp2p-pubsub"
 	"github.com/sirupsen/logrus"
 )
@@ -31,9 +30,9 @@ func NewPubSubRouter(h host.Host, oracleTopic string) *PubSubRouter {
 		handlers:      make(map[string][]Handler),
 	}
 
-	pb, err := pubsub.NewFloodsubWithProtocols(
+	pb, err := pubsub.NewGossipSub(
 		context.TODO(),
-		psr.node, []protocol.ID{"/dione/1.0.0"}, //pubsub.WithMessageSigning(true),
+		psr.node, //pubsub.WithMessageSigning(true),
 		//pubsub.WithStrictSignatureVerification(true),
 	)
 	if err != nil {
