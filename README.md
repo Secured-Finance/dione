@@ -42,9 +42,7 @@ Most of off-chain data use cases require external adapters and APIs for simple i
 
 ## Consensus
 
-Dione network uses Expected Consensus (EC) a probabilistic Byzantine fault-tolerant consensus protocol invented by Filecoin. At a high level, it operates by running a leader election every epoch in which, on expectation, a set number of participants may be eligible to submit a block. EC guarantees that these winners will be anonymous until they reveal themselves by submitting a proof that they have been elected.
-
-A miner’s probability of being elected is roughly proportional to their share of the Dione network’s total DIO tokens staked.
+Dione network uses PBFT a practical Byzantine fault-tolerant consensus protocol invented by Miguel Castro and Barbara Liskov at MIT. At a high level, it operates by running a leader election in every block in which, on expectation, a set number of participants may be eligible to submit a block. 
 
 The randomness used in the proofs is generated from [DRAND](https://drand.love), an unbiasable randomness generator, through a beacon.
 
