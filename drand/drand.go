@@ -7,6 +7,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/Secured-Finance/dione/beacon"
 	"github.com/drand/drand/chain"
 	"github.com/drand/drand/client"
 	httpClient "github.com/drand/drand/client/http"
@@ -18,8 +19,10 @@ import (
 
 	"github.com/Secured-Finance/dione/config"
 	"github.com/Secured-Finance/dione/lib"
+	types "github.com/Secured-Finance/dione/types"
 )
 
+//	DrandRes structure representing response from drand network
 type DrandRes struct {
 	// PreviousSig is the previous signature generated
 	PreviousSig []byte
@@ -31,21 +34,19 @@ type DrandRes struct {
 	Randomness []byte
 }
 
-type Beacon struct {
-	DrandResponse DrandRes
-	Error         error
-}
-
 type DrandBeacon struct {
 	DrandClient      client.Client
 	PublicKey        kyber.Point
 	Interval         time.Duration
+	chainGenesisTime uint64
+	chainRoundTime   uint64
+
 	drandGenesisTime uint64
 	cacheLock        sync.Mutex
-	localCache       map[uint64]DrandRes
+	localCache       map[uint64]types.BeaconEntry
 }
 
-func NewDrandBeacon(ps *pubsub.PubSub) (*DrandBeacon, error) {
+func NewDrandBeacon(genesisTs, interval uint64, ps *pubsub.PubSub) (*DrandBeacon, error) {
 	cfg := config.NewDrandConfig()
 
 	drandChain, err := chain.InfoFromJSON(bytes.NewReader([]byte(cfg.ChainInfo)))
@@ -81,22 +82,24 @@ func NewDrandBeacon(ps *pubsub.PubSub) (*DrandBeacon, error) {
 
 	db := &DrandBeacon{
 		DrandClient: drandClient,
-		localCache:  make(map[uint64]DrandRes),
+		localCache:  make(map[uint64]types.BeaconEntry),
 	}
 
 	db.PublicKey = drandChain.PublicKey
 	db.Interval = drandChain.Period
 	db.drandGenesisTime = uint64(drandChain.GenesisTime)
+	db.chainRoundTime = interval
+	db.chainGenesisTime = genesisTs
 
 	return db, nil
 }
 
-func (db *DrandBeacon) Entry(ctx context.Context, round uint64) <-chan Beacon {
-	out := make(chan Beacon, 1)
+func (db *DrandBeacon) Entry(ctx context.Context, round uint64) <-chan beacon.Response {
+	out := make(chan beacon.Response, 1)
 	if round != 0 {
-		res := db.getCachedValue(round)
-		if res != nil {
-			out <- Beacon{DrandResponse: *res}
+		be := db.getCachedValue(round)
+		if be != nil {
+			out <- beacon.Response{Entry: *be}
 			close(out)
 			return out
 		}
@@ -107,27 +110,27 @@ func (db *DrandBeacon) Entry(ctx context.Context, round uint64) <-chan Beacon {
 		logrus.Info("start fetching randomness", "round", round)
 		resp, err := db.DrandClient.Get(ctx, round)
 
-		var res Beacon
+		var br beacon.Response
 		if err != nil {
-			res.Error = fmt.Errorf("drand failed Get request: %w", err)
+			br.Err = fmt.Errorf("drand failed Get request: %w", err)
 		} else {
-			res.DrandResponse.Round = resp.Round()
-			res.DrandResponse.Signature = resp.Signature()
+			br.Entry.Round = resp.Round()
+			br.Entry.Data = resp.Signature()
 		}
 		logrus.Info("done fetching randomness", "round", round, "took", lib.Clock.Since(start))
-		out <- res
+		out <- br
 		close(out)
 	}()
 
 	return out
 }
-func (db *DrandBeacon) cacheValue(res DrandRes) {
+func (db *DrandBeacon) cacheValue(res types.BeaconEntry) {
 	db.cacheLock.Lock()
 	defer db.cacheLock.Unlock()
 	db.localCache[res.Round] = res
 }
 
-func (db *DrandBeacon) getCachedValue(round uint64) *DrandRes {
+func (db *DrandBeacon) getCachedValue(round uint64) *types.BeaconEntry {
 	db.cacheLock.Lock()
 	defer db.cacheLock.Unlock()
 	v, ok := db.localCache[round]
@@ -137,7 +140,7 @@ func (db *DrandBeacon) getCachedValue(round uint64) *DrandRes {
 	return &v
 }
 
-func (db *DrandBeacon) VerifyEntry(curr DrandRes, prev DrandRes) error {
+func (db *DrandBeacon) VerifyEntry(curr, prev types.BeaconEntry) error {
 	if prev.Round == 0 {
 		return nil
 	}
@@ -145,9 +148,9 @@ func (db *DrandBeacon) VerifyEntry(curr DrandRes, prev DrandRes) error {
 		return nil
 	}
 	b := &chain.Beacon{
-		PreviousSig: prev.PreviousSig,
+		PreviousSig: prev.Data,
 		Round:       curr.Round,
-		Signature:   curr.Signature,
+		Signature:   curr.Data,
 	}
 	err := chain.VerifyBeacon(db.PublicKey, b)
 	if err == nil {
@@ -155,3 +158,17 @@ func (db *DrandBeacon) VerifyEntry(curr DrandRes, prev DrandRes) error {
 	}
 	return err
 }
+
+func (db *DrandBeacon) MaxBeaconRoundForEpoch(taskEpoch types.TaskEpoch) uint64 {
+	var latestTs uint64
+	if taskEpoch == 0 {
+		latestTs = db.chainGenesisTime
+	} else {
+		latestTs = ((uint64(taskEpoch) * db.chainRoundTime) + db.chainGenesisTime) - db.chainRoundTime
+	}
+
+	dround := (latestTs - db.drandGenesisTime) / uint64(db.Interval.Seconds())
+	return dround
+}
+
+var _ beacon.RandomBeacon = (*DrandBeacon)(nil)

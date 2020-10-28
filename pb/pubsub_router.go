@@ -13,7 +13,7 @@ import (
 
 type PubSubRouter struct {
 	node          host.Host
-	pubsub        *pubsub.PubSub
+	Pubsub        *pubsub.PubSub
 	context       context.Context
 	contextCancel context.CancelFunc
 	handlers      map[string][]Handler
@@ -44,7 +44,7 @@ func NewPubSubRouter(h host.Host, oracleTopic string) *PubSubRouter {
 	if err != nil {
 		logrus.Fatal("Error occurred when subscribing to service topic", err)
 	}
-	psr.pubsub = pb
+	psr.Pubsub = pb
 
 	go func() {
 		for {
@@ -109,7 +109,7 @@ func (psr *PubSubRouter) BroadcastToServiceTopic(msg *models.Message) error {
 	if err != nil {
 		return err
 	}
-	err = psr.pubsub.Publish(psr.oracleTopic, data)
+	err = psr.Pubsub.Publish(psr.oracleTopic, data)
 	return err
 }
 

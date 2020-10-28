@@ -46,7 +46,6 @@ func TestConsensus(t *testing.T) {
 	cfg.ListenPort = "1239"
 	node6 := newNode(cfg)
 
-
 	time.Sleep(10 * time.Second)
 	go node2.ConsensusManager.NewTestConsensus("test", "123")
 	go node1.ConsensusManager.NewTestConsensus("test1", "123")
@@ -54,7 +53,7 @@ func TestConsensus(t *testing.T) {
 	go node4.ConsensusManager.NewTestConsensus("test1", "123")
 	go node5.ConsensusManager.NewTestConsensus("test", "123")
 	go node6.ConsensusManager.NewTestConsensus("test2", "123")
-	select{}
+	select {}
 }
 
 func newNode(cfg *config.Config) *Node {

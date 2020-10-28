@@ -5,9 +5,10 @@ import (
 	"crypto/rand"
 	"flag"
 	"fmt"
-	"github.com/libp2p/go-libp2p-kad-dht/dual"
 	"sync"
 	"time"
+
+	"github.com/libp2p/go-libp2p-kad-dht/dual"
 
 	"github.com/Secured-Finance/dione/config"
 	"github.com/Secured-Finance/dione/consensus"
@@ -212,3 +213,5 @@ func generatePrivateKey() (crypto.PrivKey, error) {
 	}
 	return prvKey, nil
 }
+
+// TODO generate MinerBase for the node
