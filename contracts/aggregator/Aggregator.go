@@ -26,107 +26,107 @@ var (
 	_ = event.NewSubscription
 )
 
-// SmartcontractsABI is the input ABI used to generate the binding from.
-const SmartcontractsABI = "[{\"inputs\":[{\"internalType\":\"contractWhitelist\",\"name\":\"_whitelist\",\"type\":\"address\"}],\"stateMutability\":\"nonpayable\",\"type\":\"constructor\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"reqID\",\"type\":\"uint256\"},{\"internalType\":\"string\",\"name\":\"data\",\"type\":\"string\"},{\"internalType\":\"address\",\"name\":\"callbackAddress\",\"type\":\"address\"},{\"internalType\":\"bytes4\",\"name\":\"callbackMethodID\",\"type\":\"bytes4\"}],\"name\":\"collectData\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"}]"
+// AggregatorABI is the input ABI used to generate the binding from.
+const AggregatorABI = "[{\"inputs\":[{\"internalType\":\"contractWhitelist\",\"name\":\"_whitelist\",\"type\":\"address\"}],\"stateMutability\":\"nonpayable\",\"type\":\"constructor\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"reqID\",\"type\":\"uint256\"},{\"internalType\":\"string\",\"name\":\"data\",\"type\":\"string\"},{\"internalType\":\"address\",\"name\":\"callbackAddress\",\"type\":\"address\"},{\"internalType\":\"bytes4\",\"name\":\"callbackMethodID\",\"type\":\"bytes4\"}],\"name\":\"collectData\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"}]"
 
-// Smartcontracts is an auto generated Go binding around an Ethereum contract.
-type Smartcontracts struct {
-	SmartcontractsCaller     // Read-only binding to the contract
-	SmartcontractsTransactor // Write-only binding to the contract
-	SmartcontractsFilterer   // Log filterer for contract events
+// Aggregator is an auto generated Go binding around an Ethereum contract.
+type Aggregator struct {
+	AggregatorCaller     // Read-only binding to the contract
+	AggregatorTransactor // Write-only binding to the contract
+	AggregatorFilterer   // Log filterer for contract events
 }
 
-// SmartcontractsCaller is an auto generated read-only Go binding around an Ethereum contract.
-type SmartcontractsCaller struct {
+// AggregatorCaller is an auto generated read-only Go binding around an Ethereum contract.
+type AggregatorCaller struct {
 	contract *bind.BoundContract // Generic contract wrapper for the low level calls
 }
 
-// SmartcontractsTransactor is an auto generated write-only Go binding around an Ethereum contract.
-type SmartcontractsTransactor struct {
+// AggregatorTransactor is an auto generated write-only Go binding around an Ethereum contract.
+type AggregatorTransactor struct {
 	contract *bind.BoundContract // Generic contract wrapper for the low level calls
 }
 
-// SmartcontractsFilterer is an auto generated log filtering Go binding around an Ethereum contract events.
-type SmartcontractsFilterer struct {
+// AggregatorFilterer is an auto generated log filtering Go binding around an Ethereum contract events.
+type AggregatorFilterer struct {
 	contract *bind.BoundContract // Generic contract wrapper for the low level calls
 }
 
-// SmartcontractsSession is an auto generated Go binding around an Ethereum contract,
+// AggregatorSession is an auto generated Go binding around an Ethereum contract,
 // with pre-set call and transact options.
-type SmartcontractsSession struct {
-	Contract     *Smartcontracts   // Generic contract binding to set the session for
+type AggregatorSession struct {
+	Contract     *Aggregator       // Generic contract binding to set the session for
 	CallOpts     bind.CallOpts     // Call options to use throughout this session
 	TransactOpts bind.TransactOpts // Transaction auth options to use throughout this session
 }
 
-// SmartcontractsCallerSession is an auto generated read-only Go binding around an Ethereum contract,
+// AggregatorCallerSession is an auto generated read-only Go binding around an Ethereum contract,
 // with pre-set call options.
-type SmartcontractsCallerSession struct {
-	Contract *SmartcontractsCaller // Generic contract caller binding to set the session for
-	CallOpts bind.CallOpts         // Call options to use throughout this session
+type AggregatorCallerSession struct {
+	Contract *AggregatorCaller // Generic contract caller binding to set the session for
+	CallOpts bind.CallOpts     // Call options to use throughout this session
 }
 
-// SmartcontractsTransactorSession is an auto generated write-only Go binding around an Ethereum contract,
+// AggregatorTransactorSession is an auto generated write-only Go binding around an Ethereum contract,
 // with pre-set transact options.
-type SmartcontractsTransactorSession struct {
-	Contract     *SmartcontractsTransactor // Generic contract transactor binding to set the session for
-	TransactOpts bind.TransactOpts         // Transaction auth options to use throughout this session
+type AggregatorTransactorSession struct {
+	Contract     *AggregatorTransactor // Generic contract transactor binding to set the session for
+	TransactOpts bind.TransactOpts     // Transaction auth options to use throughout this session
 }
 
-// SmartcontractsRaw is an auto generated low-level Go binding around an Ethereum contract.
-type SmartcontractsRaw struct {
-	Contract *Smartcontracts // Generic contract binding to access the raw methods on
+// AggregatorRaw is an auto generated low-level Go binding around an Ethereum contract.
+type AggregatorRaw struct {
+	Contract *Aggregator // Generic contract binding to access the raw methods on
 }
 
-// SmartcontractsCallerRaw is an auto generated low-level read-only Go binding around an Ethereum contract.
-type SmartcontractsCallerRaw struct {
-	Contract *SmartcontractsCaller // Generic read-only contract binding to access the raw methods on
+// AggregatorCallerRaw is an auto generated low-level read-only Go binding around an Ethereum contract.
+type AggregatorCallerRaw struct {
+	Contract *AggregatorCaller // Generic read-only contract binding to access the raw methods on
 }
 
-// SmartcontractsTransactorRaw is an auto generated low-level write-only Go binding around an Ethereum contract.
-type SmartcontractsTransactorRaw struct {
-	Contract *SmartcontractsTransactor // Generic write-only contract binding to access the raw methods on
+// AggregatorTransactorRaw is an auto generated low-level write-only Go binding around an Ethereum contract.
+type AggregatorTransactorRaw struct {
+	Contract *AggregatorTransactor // Generic write-only contract binding to access the raw methods on
 }
 
-// NewSmartcontracts creates a new instance of Smartcontracts, bound to a specific deployed contract.
-func NewSmartcontracts(address common.Address, backend bind.ContractBackend) (*Smartcontracts, error) {
-	contract, err := bindSmartcontracts(address, backend, backend, backend)
+// NewAggregator creates a new instance of Aggregator, bound to a specific deployed contract.
+func NewAggregator(address common.Address, backend bind.ContractBackend) (*Aggregator, error) {
+	contract, err := bindAggregator(address, backend, backend, backend)
 	if err != nil {
 		return nil, err
 	}
-	return &Smartcontracts{SmartcontractsCaller: SmartcontractsCaller{contract: contract}, SmartcontractsTransactor: SmartcontractsTransactor{contract: contract}, SmartcontractsFilterer: SmartcontractsFilterer{contract: contract}}, nil
+	return &Aggregator{AggregatorCaller: AggregatorCaller{contract: contract}, AggregatorTransactor: AggregatorTransactor{contract: contract}, AggregatorFilterer: AggregatorFilterer{contract: contract}}, nil
 }
 
-// NewSmartcontractsCaller creates a new read-only instance of Smartcontracts, bound to a specific deployed contract.
-func NewSmartcontractsCaller(address common.Address, caller bind.ContractCaller) (*SmartcontractsCaller, error) {
-	contract, err := bindSmartcontracts(address, caller, nil, nil)
+// NewAggregatorCaller creates a new read-only instance of Aggregator, bound to a specific deployed contract.
+func NewAggregatorCaller(address common.Address, caller bind.ContractCaller) (*AggregatorCaller, error) {
+	contract, err := bindAggregator(address, caller, nil, nil)
 	if err != nil {
 		return nil, err
 	}
-	return &SmartcontractsCaller{contract: contract}, nil
+	return &AggregatorCaller{contract: contract}, nil
 }
 
-// NewSmartcontractsTransactor creates a new write-only instance of Smartcontracts, bound to a specific deployed contract.
-func NewSmartcontractsTransactor(address common.Address, transactor bind.ContractTransactor) (*SmartcontractsTransactor, error) {
-	contract, err := bindSmartcontracts(address, nil, transactor, nil)
+// NewAggregatorTransactor creates a new write-only instance of Aggregator, bound to a specific deployed contract.
+func NewAggregatorTransactor(address common.Address, transactor bind.ContractTransactor) (*AggregatorTransactor, error) {
+	contract, err := bindAggregator(address, nil, transactor, nil)
 	if err != nil {
 		return nil, err
 	}
-	return &SmartcontractsTransactor{contract: contract}, nil
+	return &AggregatorTransactor{contract: contract}, nil
 }
 
-// NewSmartcontractsFilterer creates a new log filterer instance of Smartcontracts, bound to a specific deployed contract.
-func NewSmartcontractsFilterer(address common.Address, filterer bind.ContractFilterer) (*SmartcontractsFilterer, error) {
-	contract, err := bindSmartcontracts(address, nil, nil, filterer)
+// NewAggregatorFilterer creates a new log filterer instance of Aggregator, bound to a specific deployed contract.
+func NewAggregatorFilterer(address common.Address, filterer bind.ContractFilterer) (*AggregatorFilterer, error) {
+	contract, err := bindAggregator(address, nil, nil, filterer)
 	if err != nil {
 		return nil, err
 	}
-	return &SmartcontractsFilterer{contract: contract}, nil
+	return &AggregatorFilterer{contract: contract}, nil
 }
 
-// bindSmartcontracts binds a generic wrapper to an already deployed contract.
-func bindSmartcontracts(address common.Address, caller bind.ContractCaller, transactor bind.ContractTransactor, filterer bind.ContractFilterer) (*bind.BoundContract, error) {
-	parsed, err := abi.JSON(strings.NewReader(SmartcontractsABI))
+// bindAggregator binds a generic wrapper to an already deployed contract.
+func bindAggregator(address common.Address, caller bind.ContractCaller, transactor bind.ContractTransactor, filterer bind.ContractFilterer) (*bind.BoundContract, error) {
+	parsed, err := abi.JSON(strings.NewReader(AggregatorABI))
 	if err != nil {
 		return nil, err
 	}
@@ -137,57 +137,57 @@ func bindSmartcontracts(address common.Address, caller bind.ContractCaller, tran
 // sets the output to result. The result type might be a single field for simple
 // returns, a slice of interfaces for anonymous returns and a struct for named
 // returns.
-func (_Smartcontracts *SmartcontractsRaw) Call(opts *bind.CallOpts, result interface{}, method string, params ...interface{}) error {
-	return _Smartcontracts.Contract.SmartcontractsCaller.contract.Call(opts, result, method, params...)
+func (_Aggregator *AggregatorRaw) Call(opts *bind.CallOpts, result interface{}, method string, params ...interface{}) error {
+	return _Aggregator.Contract.AggregatorCaller.contract.Call(opts, result, method, params...)
 }
 
 // Transfer initiates a plain transaction to move funds to the contract, calling
 // its default method if one is available.
-func (_Smartcontracts *SmartcontractsRaw) Transfer(opts *bind.TransactOpts) (*types.Transaction, error) {
-	return _Smartcontracts.Contract.SmartcontractsTransactor.contract.Transfer(opts)
+func (_Aggregator *AggregatorRaw) Transfer(opts *bind.TransactOpts) (*types.Transaction, error) {
+	return _Aggregator.Contract.AggregatorTransactor.contract.Transfer(opts)
 }
 
 // Transact invokes the (paid) contract method with params as input values.
-func (_Smartcontracts *SmartcontractsRaw) Transact(opts *bind.TransactOpts, method string, params ...interface{}) (*types.Transaction, error) {
-	return _Smartcontracts.Contract.SmartcontractsTransactor.contract.Transact(opts, method, params...)
+func (_Aggregator *AggregatorRaw) Transact(opts *bind.TransactOpts, method string, params ...interface{}) (*types.Transaction, error) {
+	return _Aggregator.Contract.AggregatorTransactor.contract.Transact(opts, method, params...)
 }
 
 // Call invokes the (constant) contract method with params as input values and
 // sets the output to result. The result type might be a single field for simple
 // returns, a slice of interfaces for anonymous returns and a struct for named
 // returns.
-func (_Smartcontracts *SmartcontractsCallerRaw) Call(opts *bind.CallOpts, result interface{}, method string, params ...interface{}) error {
-	return _Smartcontracts.Contract.contract.Call(opts, result, method, params...)
+func (_Aggregator *AggregatorCallerRaw) Call(opts *bind.CallOpts, result interface{}, method string, params ...interface{}) error {
+	return _Aggregator.Contract.contract.Call(opts, result, method, params...)
 }
 
 // Transfer initiates a plain transaction to move funds to the contract, calling
 // its default method if one is available.
-func (_Smartcontracts *SmartcontractsTransactorRaw) Transfer(opts *bind.TransactOpts) (*types.Transaction, error) {
-	return _Smartcontracts.Contract.contract.Transfer(opts)
+func (_Aggregator *AggregatorTransactorRaw) Transfer(opts *bind.TransactOpts) (*types.Transaction, error) {
+	return _Aggregator.Contract.contract.Transfer(opts)
 }
 
 // Transact invokes the (paid) contract method with params as input values.
-func (_Smartcontracts *SmartcontractsTransactorRaw) Transact(opts *bind.TransactOpts, method string, params ...interface{}) (*types.Transaction, error) {
-	return _Smartcontracts.Contract.contract.Transact(opts, method, params...)
+func (_Aggregator *AggregatorTransactorRaw) Transact(opts *bind.TransactOpts, method string, params ...interface{}) (*types.Transaction, error) {
+	return _Aggregator.Contract.contract.Transact(opts, method, params...)
 }
 
 // CollectData is a paid mutator transaction binding the contract method 0x05187092.
 //
 // Solidity: function collectData(uint256 reqID, string data, address callbackAddress, bytes4 callbackMethodID) returns()
-func (_Smartcontracts *SmartcontractsTransactor) CollectData(opts *bind.TransactOpts, reqID *big.Int, data string, callbackAddress common.Address, callbackMethodID [4]byte) (*types.Transaction, error) {
-	return _Smartcontracts.contract.Transact(opts, "collectData", reqID, data, callbackAddress, callbackMethodID)
+func (_Aggregator *AggregatorTransactor) CollectData(opts *bind.TransactOpts, reqID *big.Int, data string, callbackAddress common.Address, callbackMethodID [4]byte) (*types.Transaction, error) {
+	return _Aggregator.contract.Transact(opts, "collectData", reqID, data, callbackAddress, callbackMethodID)
 }
 
 // CollectData is a paid mutator transaction binding the contract method 0x05187092.
 //
 // Solidity: function collectData(uint256 reqID, string data, address callbackAddress, bytes4 callbackMethodID) returns()
-func (_Smartcontracts *SmartcontractsSession) CollectData(reqID *big.Int, data string, callbackAddress common.Address, callbackMethodID [4]byte) (*types.Transaction, error) {
-	return _Smartcontracts.Contract.CollectData(&_Smartcontracts.TransactOpts, reqID, data, callbackAddress, callbackMethodID)
+func (_Aggregator *AggregatorSession) CollectData(reqID *big.Int, data string, callbackAddress common.Address, callbackMethodID [4]byte) (*types.Transaction, error) {
+	return _Aggregator.Contract.CollectData(&_Aggregator.TransactOpts, reqID, data, callbackAddress, callbackMethodID)
 }
 
 // CollectData is a paid mutator transaction binding the contract method 0x05187092.
 //
 // Solidity: function collectData(uint256 reqID, string data, address callbackAddress, bytes4 callbackMethodID) returns()
-func (_Smartcontracts *SmartcontractsTransactorSession) CollectData(reqID *big.Int, data string, callbackAddress common.Address, callbackMethodID [4]byte) (*types.Transaction, error) {
-	return _Smartcontracts.Contract.CollectData(&_Smartcontracts.TransactOpts, reqID, data, callbackAddress, callbackMethodID)
+func (_Aggregator *AggregatorTransactorSession) CollectData(reqID *big.Int, data string, callbackAddress common.Address, callbackMethodID [4]byte) (*types.Transaction, error) {
+	return _Aggregator.Contract.CollectData(&_Aggregator.TransactOpts, reqID, data, callbackAddress, callbackMethodID)
 }

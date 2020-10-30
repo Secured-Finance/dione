@@ -1,7 +1,6 @@
 pragma solidity 0.6.12;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
 import "@openzeppelin/contracts/math/SafeMath.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
@@ -13,7 +12,6 @@ import "./DioneToken.sol";
 // The ownership of the contract would be transfered to 24 hours Timelock
 contract DioneStaking is Ownable, ReentrancyGuard {
     using SafeMath for uint256;
-    using SafeERC20 for IERC20;
 
     // MinerInfo contains total DIONEs staked by miner, how much tasks been already computed
     // and timestamp of first deposit
@@ -47,7 +45,7 @@ contract DioneStaking is Ownable, ReentrancyGuard {
         address _aggregatorAddr,
         uint256 _minerReward,
         uint256 _startBlock,
-        uint256 _minimumStake;
+        uint256 _minimumStake
     ) public {
         dione = _dione;
         aggregatorAddr = _aggregatorAddr;
@@ -60,31 +58,31 @@ contract DioneStaking is Ownable, ReentrancyGuard {
     function mine(address _minerAddr) public nonReentrant {
         require(msg.sender == aggregatorAddr, "not aggregator contract");
         MinerInfo storage miner = minerInfo[_minerAddr];
-        require(miner.amount >= minimumStake)
+        require(miner.amount >= minimumStake);
         dione.mint(_minerAddr, minerReward);
         miner.lastRewardBlock = block.number;
-        emit Mine(_minerAddr, block.number)
+        emit Mine(_minerAddr, block.number);
     }
 
     // Mine new dione oracle task and stake miner reward, only can be executed by aggregator contract
     function mineAndStake(address _minerAddr) public nonReentrant {
         require(msg.sender == aggregatorAddr, "not aggregator contract");
         MinerInfo storage miner = minerInfo[_minerAddr];
-        require(miner.amount >= minimumStake)
+        require(miner.amount >= minimumStake);
         dione.mint(address(this), minerReward);
         _totalStake = _totalStake.add(minerReward);
         miner.amount = miner.amount.add(minerReward);
         miner.lastRewardBlock = block.number;
-        emit Mine(_minerAddr, block.number)
+        emit Mine(_minerAddr, block.number);
     }
 
     // Deposit DIONE tokens to mine on dione network
     function stake(uint256 _amount) public nonReentrant {
         require(_amount > 0, "Cannot stake 0");
         MinerInfo storage miner = minerInfo[msg.sender];
-        _totalStake = _totalStake.add(amount);
+        _totalStake = _totalStake.add(_amount);
         miner.amount = miner.amount.add(_amount);
-        dione.safeTransferFrom(address(msg.sender), address(this), _amount);
+        dione.transferFrom(address(msg.sender), address(this), _amount);
         if (miner.firstStakeBlock == 0 && miner.amount >= minimumStake) {
             miner.firstStakeBlock = block.number > startBlock ? block.number : startBlock;
         }
@@ -96,9 +94,9 @@ contract DioneStaking is Ownable, ReentrancyGuard {
         MinerInfo storage miner = minerInfo[msg.sender];
         require(miner.amount >= _amount, "withdraw: not enough tokens");
         if(_amount > 0) {
-            _totalStake = _totalStake.sub(amount);
+            _totalStake = _totalStake.sub(_amount);
             miner.amount = miner.amount.sub(_amount);
-            dione.safeTransfer(address(msg.sender), _amount);
+            dione.transfer(address(msg.sender), _amount);
         }
         emit Withdraw(msg.sender, _amount);
     }
@@ -110,7 +108,7 @@ contract DioneStaking is Ownable, ReentrancyGuard {
 
     function minerStake(address _minerAddr) external view returns (uint256) {
         MinerInfo storage miner = minerInfo[_minerAddr];
-        return miner.amount
+        return miner.amount;
     }
 
     // Update miner reward in DIONE tokens, only can be executed by owner of the contract

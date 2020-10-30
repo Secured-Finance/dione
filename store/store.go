@@ -20,3 +20,5 @@ func NewStore(db *sql.DB, node *node.Node, genesisTs uint64) *Store {
 		genesisTs: genesisTs,
 	}
 }
+
+//	TODO: connect data base; specify the table for stake storage; queries for stake storage

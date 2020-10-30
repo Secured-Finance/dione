@@ -4,6 +4,7 @@ import (
 	"context"
 	"math/big"
 
+	stakingContract "github.com/Secured-Finance/dione/contracts/DioneStaking"
 	"github.com/Secured-Finance/dione/contracts/aggregator"
 	"github.com/Secured-Finance/dione/contracts/oracleemitter"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
@@ -13,11 +14,13 @@ import (
 	"github.com/ethereum/go-ethereum/event"
 )
 
+//	TODO: change artifacts for other contracts
 type EthereumClient struct {
 	client         *ethclient.Client
 	authTransactor *bind.TransactOpts
-	oracleEmitter  *oracleemitter.SmartcontractsSession
-	aggregator     *aggregator.SmartcontractsSession
+	oracleEmitter  *oracleemitter.OracleEmitterSession
+	aggregator     *aggregator.AggregatorSession
+	dioneStaking   *stakingContract.DioneStakingSession
 }
 
 type OracleEvent struct {
@@ -53,15 +56,15 @@ func (c *EthereumClient) Initialize(ctx context.Context, url, privateKey, oracle
 	authTransactor := bind.NewKeyedTransactor(ecdsaKey)
 	c.authTransactor = authTransactor
 
-	oracleEmitter, err := oracleemitter.NewSmartcontracts(common.HexToAddress(oracleEmitterContractAddress), client)
+	oracleEmitter, err := oracleemitter.NewOracleEmitter(common.HexToAddress(oracleEmitterContractAddress), client)
 	if err != nil {
 		return err
 	}
-	aggregatorPlainSC, err := aggregator.NewSmartcontracts(common.HexToAddress(aggregatorContractAddress), client)
+	aggregatorPlainSC, err := aggregator.NewAggregator(common.HexToAddress(aggregatorContractAddress), client)
 	if err != nil {
 		return err
 	}
-	c.oracleEmitter = &oracleemitter.SmartcontractsSession{
+	c.oracleEmitter = &oracleemitter.OracleEmitterSession{
 		Contract: oracleEmitter,
 		CallOpts: bind.CallOpts{
 			Pending: true,
@@ -76,7 +79,7 @@ func (c *EthereumClient) Initialize(ctx context.Context, url, privateKey, oracle
 			Context:  context.Background(),
 		},
 	}
-	c.aggregator = &aggregator.SmartcontractsSession{
+	c.aggregator = &aggregator.AggregatorSession{
 		Contract: aggregatorPlainSC,
 		CallOpts: bind.CallOpts{
 			Pending: true,
@@ -175,8 +178,8 @@ func (c *EthereumClient) Initialize(ctx context.Context, url, privateKey, oracle
 // 	return address
 // }
 
-func (c *EthereumClient) SubscribeOnOracleEvents(incomingEventsChan chan *oracleemitter.SmartcontractsNewOracleRequest) (event.Subscription, error) {
-	requestsFilter := c.oracleEmitter.Contract.SmartcontractsFilterer
+func (c *EthereumClient) SubscribeOnOracleEvents(incomingEventsChan chan *oracleemitter.OracleEmitterNewOracleRequest) (event.Subscription, error) {
+	requestsFilter := c.oracleEmitter.Contract.OracleEmitterFilterer
 	subscription, err := requestsFilter.WatchNewOracleRequest(&bind.WatchOpts{
 		Start:   nil, //last block
 		Context: nil,
@@ -219,4 +222,20 @@ func (c *EthereumClient) SubmitRequestAnswer(reqID *big.Int, data string, callba
 	}
 
 	return nil
+}
+
+func (c *EthereumClient) GetTotalStake() (*big.Int, error) {
+	totalStake, err := c.dioneStaking.TotalStake()
+	if err != nil {
+		return nil, err
+	}
+	return totalStake, nil
+}
+
+func (c *EthereumClient) GetMinerStake(minerAddress common.Address) (*big.Int, error) {
+	minerStake, err := c.dioneStaking.MinerStake(minerAddress)
+	if err != nil {
+		return nil, err
+	}
+	return minerStake, nil
 }
