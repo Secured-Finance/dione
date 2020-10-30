@@ -4,10 +4,10 @@ import (
 	"context"
 	"sync"
 
-	"github.com/Secured-Finance/dione/lib/sigs"
 	"github.com/Secured-Finance/dione/types"
 	"github.com/filecoin-project/go-address"
 	"github.com/filecoin-project/go-state-types/crypto"
+	"github.com/filecoin-project/lotus/lib/sigs"
 	"github.com/sirupsen/logrus"
 	"golang.org/x/xerrors"
 )

@@ -75,7 +75,7 @@ func IsRoundWinner(ctx context.Context, round types.TaskEpoch,
 	}
 
 	ep := &types.ElectionProof{VRFProof: vrfout}
-	j := ep.ComputeWinCount(mbi.MinerPower, mbi.NetworkPower)
+	j := ep.ComputeWinCount(mbi.MinerStake, mbi.NetworkStake)
 	ep.WinCount = j
 	if j < 1 {
 		return nil, nil
