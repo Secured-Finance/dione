@@ -11,6 +11,8 @@ import (
 //	TaskEpoch represents the timestamp of Task computed by the Dione miner
 type TaskEpoch int64
 
+const TicketRandomnessLookback = TaskEpoch(1)
+
 func (e TaskEpoch) String() string {
 	return strconv.FormatInt(int64(e), 10)
 }

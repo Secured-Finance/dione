@@ -17,6 +17,7 @@ import (
 //	TODO: change artifacts for other contracts
 type EthereumClient struct {
 	client         *ethclient.Client
+	ethAddress     *common.Address
 	authTransactor *bind.TransactOpts
 	oracleEmitter  *oracleemitter.OracleEmitterSession
 	aggregator     *aggregator.AggregatorSession
@@ -53,6 +54,7 @@ func (c *EthereumClient) Initialize(ctx context.Context, url, privateKey, oracle
 	if err != nil {
 		return err
 	}
+	c.ethAddress = &c.authTransactor.From
 	authTransactor := bind.NewKeyedTransactor(ecdsaKey)
 	c.authTransactor = authTransactor
 
@@ -158,26 +160,6 @@ func (c *EthereumClient) Initialize(ctx context.Context, url, privateKey, oracle
 // 	return TxHash
 // }
 
-// func (c *EthereumClient) GenerateAddressFromPrivateKey(private_key string) string {
-// 	privateKey, err := crypto.HexToECDSA(private_key)
-// 	if err != nil {
-// 		c.Logger.Fatal("Failed to generate private key", err)
-// 	}
-
-// 	publicKey := privateKey.Public()
-// 	publicKeyECDSA, ok := publicKey.(*ecdsa.PublicKey)
-// 	if !ok {
-// 		c.Logger.Fatal("cannot assert type: publicKey is not of type *ecdsa.PublicKey")
-// 	}
-
-// 	publicKeyBytes := crypto.FromECDSAPub(publicKeyECDSA)
-// 	c.Logger.Info(hexutil.Encode(publicKeyBytes)[4:])
-
-// 	address := crypto.PubkeyToAddress(*publicKeyECDSA).Hex()
-
-// 	return address
-// }
-
 func (c *EthereumClient) SubscribeOnOracleEvents(incomingEventsChan chan *oracleemitter.OracleEmitterNewOracleRequest) (event.Subscription, error) {
 	requestsFilter := c.oracleEmitter.Contract.OracleEmitterFilterer
 	subscription, err := requestsFilter.WatchNewOracleRequest(&bind.WatchOpts{
@@ -224,6 +206,9 @@ func (c *EthereumClient) SubmitRequestAnswer(reqID *big.Int, data string, callba
 	return nil
 }
 
+// Getting total stake in DioneStaking contract, this function could
+// be used for storing the total stake and veryfing the stake tokens
+// on new tasks
 func (c *EthereumClient) GetTotalStake() (*big.Int, error) {
 	totalStake, err := c.dioneStaking.TotalStake()
 	if err != nil {
@@ -232,6 +217,9 @@ func (c *EthereumClient) GetTotalStake() (*big.Int, error) {
 	return totalStake, nil
 }
 
+// Getting miner stake in DioneStaking contract, this function could
+// be used for storing the miner's stake and veryfing the stake tokens
+// on new tasks
 func (c *EthereumClient) GetMinerStake(minerAddress common.Address) (*big.Int, error) {
 	minerStake, err := c.dioneStaking.MinerStake(minerAddress)
 	if err != nil {

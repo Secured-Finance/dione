@@ -1,24 +1,45 @@
 package store
 
 import (
-	"database/sql"
-
 	"github.com/Secured-Finance/dione/node"
+	"github.com/jmoiron/sqlx"
 )
 
 type Store struct {
-	db        *sql.DB
-	node      *node.Node
-	genesisTs uint64
+	db           *sqlx.DB
+	node         *node.Node
+	genesisTs    uint64
+	StakeStorage DioneStakeInfo
 	// genesisTask *types.DioneTask
 }
 
-func NewStore(db *sql.DB, node *node.Node, genesisTs uint64) *Store {
+func NewStore(node *node.Node, genesisTs uint64) (*Store, error) {
+	db, err := newDB(node.Config.Store.DatabaseURL)
+	if err != nil {
+		return nil, err
+	}
+
+	defer db.Close()
+
 	return &Store{
 		db:        db,
 		node:      node,
 		genesisTs: genesisTs,
-	}
+	}, nil
 }
 
-//	TODO: connect data base; specify the table for stake storage; queries for stake storage
+func newDB(databaseURL string) (*sqlx.DB, error) {
+	db, err := sqlx.Connect("postgres", databaseURL)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := db.Ping(); err != nil {
+		return nil, err
+	}
+
+	return db, nil
+}
+
+//	TODO: Discuss with ChronosX88 about using custom database to decrease I/O bound
+// 	specify the migrations for stake storage;

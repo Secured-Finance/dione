@@ -13,18 +13,6 @@ import (
 	"golang.org/x/xerrors"
 )
 
-type MinerWallet interface {
-	WalletSign(context.Context, address.Address, []byte) (*crypto.Signature, error)
-}
-
-type MinerBase struct {
-	MinerStake      types.BigInt
-	NetworkStake    types.BigInt
-	WorkerKey       address.Address
-	PrevBeaconEntry types.BeaconEntry
-	BeaconEntries   []types.BeaconEntry
-}
-
 type SignFunc func(context.Context, address.Address, []byte) (*crypto.Signature, error)
 
 func ComputeVRF(ctx context.Context, sign SignFunc, worker address.Address, sigInput []byte) ([]byte, error) {
@@ -57,7 +45,7 @@ func VerifyVRF(ctx context.Context, worker address.Address, vrfBase, vrfproof []
 }
 
 func IsRoundWinner(ctx context.Context, round types.TaskEpoch,
-	worker address.Address, brand types.BeaconEntry, mbi *MinerBase, a MinerWallet) (*types.ElectionProof, error) {
+	worker address.Address, brand types.BeaconEntry, mb *MinerBase, a MinerAPI) (*types.ElectionProof, error) {
 
 	buf := new(bytes.Buffer)
 	if err := worker.MarshalCBOR(buf); err != nil {
@@ -69,13 +57,13 @@ func IsRoundWinner(ctx context.Context, round types.TaskEpoch,
 		return nil, xerrors.Errorf("failed to draw randomness: %w", err)
 	}
 
-	vrfout, err := ComputeVRF(ctx, a.WalletSign, mbi.WorkerKey, electionRand)
+	vrfout, err := ComputeVRF(ctx, a.WalletSign, mb.WorkerKey, electionRand)
 	if err != nil {
 		return nil, xerrors.Errorf("failed to compute VRF: %w", err)
 	}
 
 	ep := &types.ElectionProof{VRFProof: vrfout}
-	j := ep.ComputeWinCount(mbi.MinerStake, mbi.NetworkStake)
+	j := ep.ComputeWinCount(mb.MinerStake, mb.NetworkStake)
 	ep.WinCount = j
 	if j < 1 {
 		return nil, nil

@@ -1,6 +1,8 @@
 package config
 
 import (
+	"fmt"
+
 	"github.com/spf13/viper"
 )
 
@@ -13,6 +15,7 @@ type Config struct {
 	Ethereum               EthereumConfig `mapstructure:"ethereum"`
 	Filecoin               FilecoinConfig `mapstructure:"filecoin"`
 	PubSub                 PubSubConfig   `mapstructure:"pubSub"`
+	Store                  StoreConfig    `mapstructure:"store"`
 }
 
 type EthereumConfig struct {
@@ -31,8 +34,17 @@ type PubSubConfig struct {
 	ProtocolID string `mapstructure:"protocolID"`
 }
 
+type StoreConfig struct {
+	DatabaseURL string `mapstructure:"database_url"`
+}
+
 // NewConfig creates a new config based on default values or provided .env file
 func NewConfig(configPath string) (*Config, error) {
+	dbName := "dione"
+	username := "user"
+	password := "password"
+	dbURL := fmt.Sprintf("host=localhost user=%s password=%s dbname=%s sslmode=disable", username, password, dbName)
+
 	cfg := &Config{
 		ListenAddr:             "localhost",
 		ListenPort:             ":8000",
@@ -44,6 +56,9 @@ func NewConfig(configPath string) (*Config, error) {
 		},
 		PubSub: PubSubConfig{
 			ProtocolID: "p2p-oracle",
+		},
+		Store: StoreConfig{
+			DatabaseURL: dbURL,
 		},
 	}
 
