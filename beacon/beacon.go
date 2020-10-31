@@ -45,7 +45,7 @@ type RandomBeacon interface {
 func ValidateTaskValues(bSchedule Schedule, t *types.DioneTask, parentEpoch types.TaskEpoch, prevEntry types.BeaconEntry) error {
 	{
 		parentBeacon := bSchedule.BeaconForEpoch(parentEpoch)
-		currBeacon := bSchedule.BeaconForEpoch(t.Height)
+		currBeacon := bSchedule.BeaconForEpoch(t.Epoch)
 		if parentBeacon != currBeacon {
 			if len(t.BeaconEntries) != 2 {
 				return fmt.Errorf("expected two beacon entries at beacon fork, got %d", len(t.BeaconEntries))
@@ -60,8 +60,8 @@ func ValidateTaskValues(bSchedule Schedule, t *types.DioneTask, parentEpoch type
 	}
 
 	// TODO: fork logic
-	b := bSchedule.BeaconForEpoch(t.Height)
-	maxRound := b.MaxBeaconRoundForEpoch(t.Height)
+	b := bSchedule.BeaconForEpoch(t.Epoch)
+	maxRound := b.MaxBeaconRoundForEpoch(t.Epoch)
 	if maxRound == prevEntry.Round {
 		if len(t.BeaconEntries) != 0 {
 			return fmt.Errorf("expected not to have any beacon entries in this task, got %d", len(t.BeaconEntries))

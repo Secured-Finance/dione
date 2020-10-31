@@ -25,7 +25,8 @@ type DioneTask struct {
 	ElectionProof *ElectionProof
 	BeaconEntries []BeaconEntry
 	Signature     *crypto.Signature
-	Height        TaskEpoch
+	Epoch         TaskEpoch
+	Payload       []byte
 }
 
 var tasksPerEpoch = NewInt(config.TasksPerEpoch)

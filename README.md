@@ -23,7 +23,7 @@
 
 Dione oracle network is solving the interoperability problem between multiple blockchain networks. Blockchains themself could be describled as deterministic state machine replicated on full-nodes that retains consensus safety. And having the network that handles state changes validation across multiple protocols is crucial for [Secured Finance](https://github.com/Secured-Finance) first-layer transactions execution. Using Dione network Secured Finance could provide completely decentralized service for it's users.
 
-Simple explanation for Dione is a blockchain that tracks the state of another blockchains. Dione network itself has fast-finality because of the pBFT (Practical Byzantine Fault Tolerance) consensus and has a role to establish finality for the blockchain it connects (Ethereum, Bitcoin networks has probabilistic-finality). 
+Simple explanation for Dione is a distributed network that tracks the state of another blockchains by computing cross-chain tasks. Dione network itself has fast-finality because of the pBFT (Practical Byzantine Fault Tolerance) consensus and has a role to establish finality for the blockchain it connects (Ethereum, Bitcoin networks has probabilistic-finality). 
 
 The networking layer of Dione node is based on [libp2p](https://github.com/libp2p/go-libp2p), a flexible cross-platform network framework for peer-to-peer applications. Projects like [ETH2 (Ethereum 2.0)](https://github.com/ethereum/eth2.0-specs), [Filecoin](https://github.com/filecoin-project) and Polkadot's [Substrate](https://github.com/paritytech/substrate) is based on libp2p making it's the standard for future decentralized infrastructures.
 
@@ -53,7 +53,7 @@ DIONE token is a ERC20 token on Ethereum blockchain used as a staking token to r
 
 Staking mechanism would encourage node operators to behave correctly as well as malicious nodes would lose their stakes. In order to run Dione node the operator has to stake at least 10,000 DIONE tokens. 
 
-Total supply of DIONE tokens is 2,000,000. By that the maximum amount of nodes participating in Dione is limited to 200 at the initial start of Dione network. 30% of DIONE tokens would be allocated to Secured Finance team.
+Initial supply of DIONE tokens is 2,000,000. By that the maximum amount of nodes participating in Dione is limited to 200 at the initial start of Dione network. 30% of DIONE tokens would be allocated to Secured Finance team. On every block Dione miners would get 50 DIONE tokens as the mining reward.
 
 Governance mechanism would take place on [snapshot.page](https://snapshot.page/#/). The main application of governance descision is around required amount of DIONE tokens to stake in order to run Dione node. Additional governance descision could be proposed by DIONE token holders among the way.
 

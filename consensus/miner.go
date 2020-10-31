@@ -3,6 +3,7 @@ package consensus
 import (
 	"bytes"
 	"context"
+	"sync"
 
 	"github.com/Secured-Finance/dione/types"
 	"github.com/ethereum/go-ethereum/common"
@@ -15,6 +16,7 @@ import (
 type Miner struct {
 	address address.Address
 	api     MinerAPI
+	mutex   sync.Mutex
 }
 
 type MinerAPI interface {
@@ -82,7 +84,7 @@ func (m *Miner) MineTask(ctx context.Context, base *MiningBase, mb *MinerBase) (
 		ElectionProof: winner,
 		BeaconEntries: mb.BeaconEntries,
 		// TODO: signature
-		Height: round,
+		Epoch: round,
 	}, nil
 }
 
