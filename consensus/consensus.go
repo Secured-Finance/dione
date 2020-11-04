@@ -31,6 +31,7 @@ type ConsensusData struct {
 	mutex         sync.Mutex
 	result        string
 	test          bool
+	onConsensusFinishCallback func(finalData string)
 }
 
 func NewPBFTConsensusManager(psb *pb.PubSubRouter, maxFaultNodes int) *PBFTConsensusManager {
@@ -42,10 +43,11 @@ func NewPBFTConsensusManager(psb *pb.PubSubRouter, maxFaultNodes int) *PBFTConse
 	return pcm
 }
 
-func (pcm *PBFTConsensusManager) NewTestConsensus(data string, consensusID string) {
+func (pcm *PBFTConsensusManager) NewTestConsensus(data string, consensusID string, onConsensusFinishCallback func(finalData string)) {
 	//consensusID := uuid.New().String()
 	cData := &ConsensusData{}
 	cData.test = true
+	cData.onConsensusFinishCallback = onConsensusFinishCallback
 	pcm.Consensuses[consensusID] = cData
 
 	msg := models.Message{}
@@ -109,6 +111,8 @@ func (pcm *PBFTConsensusManager) handleCommitMessage(message *models.Message) {
 	}
 	data := pcm.Consensuses[consensusID]
 
+	data.mutex.Lock()
+	defer data.mutex.Unlock()
 	if data.State == consensusCommitted {
 		logrus.Debug("consensus already finished, dropping COMMIT message")
 		return
@@ -116,13 +120,12 @@ func (pcm *PBFTConsensusManager) handleCommitMessage(message *models.Message) {
 
 	logrus.Debug("received commit msg")
 
-	data.mutex.Lock()
 	data.commitCount++
-	data.mutex.Unlock()
 
 	if data.commitCount > 2*pcm.maxFaultNodes+1 {
 		data.State = consensusCommitted
 		data.result = message.Payload["data"].(string)
 		logrus.Debug("consensus successfully finished with result: " + data.result)
+		data.onConsensusFinishCallback(data.result)
 	}
 }

@@ -7,7 +7,7 @@ import (
 )
 
 type Config struct {
-	ListenPort     string         `mapstructure:"listen_port"`
+	ListenPort     int         `mapstructure:"listen_port"`
 	ListenAddr     string         `mapstructure:"listen_addr"`
 	BootstrapNodes []string       `mapstructure:"bootstrap_node_multiaddr"`
 	Rendezvous     string         `mapstructure:"rendezvous"`
@@ -47,7 +47,7 @@ func NewConfig(configPath string) (*Config, error) {
 
 	cfg := &Config{
 		ListenAddr:     "localhost",
-		ListenPort:     ":8000",
+		ListenPort:     8000,
 		BootstrapNodes: []string{"/ip4/127.0.0.1/tcp/0"},
 		Rendezvous:     "filecoin-p2p-oracle",
 		Ethereum: EthereumConfig{

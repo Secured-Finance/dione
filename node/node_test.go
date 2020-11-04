@@ -3,6 +3,8 @@ package node
 import (
 	"context"
 	"fmt"
+	"math/rand"
+	"sync"
 	"testing"
 	"time"
 
@@ -14,44 +16,55 @@ func TestConsensus(t *testing.T) {
 	logrus.SetLevel(logrus.DebugLevel)
 	//log.SetAllLoggers(log.LevelDebug)
 
+	boolgen := newBoolgen()
+	rand.Seed(time.Now().UnixNano())
+	port := rand.Intn(100) + 10000
+
 	cfg := &config.Config{
-		ListenPort: "1234",
+		ListenPort: port,
 		ListenAddr: "0.0.0.0",
 		Rendezvous: "dione",
 		PubSub: config.PubSubConfig{
-			ProtocolID: "/test/1.0",
+			ProtocolID: "/dione/1.0",
 		},
+		ConsensusMaxFaultNodes: 3,
 	}
 
-	//cfg.BootstrapNodes = "/dnsaddr/bootstrap.libp2p.io/p2p/QmNnooDu7bfjPFoTZYxMNLWUQJyrVwtbZg5gBMjTezGAJN"
+	var nodes []*Node
 
-	// setup first node
-	node1 := newNode(cfg)
+	bNode := newNode(cfg)
+	t.Logf("Bootstrap ID: %s", bNode.Host.ID())
+	cfg.BootstrapNodes = []string{bNode.Host.Addrs()[0].String() + fmt.Sprintf("/p2p/%s", bNode.Host.ID().String())}
+	nodes = append(nodes, bNode)
 
-	// setup second node
-	cfg.ListenPort = "1235"
-	cfg.BootstrapNodes = []string{node1.Host.Addrs()[0].String() + fmt.Sprintf("/p2p/%s", node1.Host.ID().String())}
-	node2 := newNode(cfg)
+	maxNodes := 10
 
-	// setup third node
-	cfg.ListenPort = "1236"
-	node3 := newNode(cfg)
+	for i := 1; i <= maxNodes; i++ {
+		cfg.ListenPort += 1
+		node := newNode(cfg)
+		nodes = append(nodes, node)
+	}
 
-	cfg.ListenPort = "1237"
-	node4 := newNode(cfg)
-	cfg.ListenPort = "1238"
-	node5 := newNode(cfg)
-	cfg.ListenPort = "1239"
-	node6 := newNode(cfg)
+	time.Sleep(5*time.Second)
 
-	time.Sleep(10 * time.Second)
-	go node2.ConsensusManager.NewTestConsensus("test", "123")
-	go node1.ConsensusManager.NewTestConsensus("test1", "123")
-	go node3.ConsensusManager.NewTestConsensus("test", "123")
-	go node4.ConsensusManager.NewTestConsensus("test1", "123")
-	go node5.ConsensusManager.NewTestConsensus("test", "123")
-	go node6.ConsensusManager.NewTestConsensus("test2", "123")
-	select {}
+	var wg sync.WaitGroup
+
+	wg.Add(len(nodes))
+	for _, n := range nodes {
+		var testData string
+		if boolgen.Bool() {
+			testData = "test"
+		} else {
+			testData = "test1"
+		}
+		n.ConsensusManager.NewTestConsensus(testData, "123", func(finalData string) {
+			if finalData != "test" {
+				t.Errorf("Expected final data %s, not %s", "test", finalData)
+			}
+			wg.Done()
+		})
+	}
+	wg.Wait()
 }
 
 func newNode(cfg *config.Config) *Node {
@@ -67,6 +80,28 @@ func newNode(cfg *config.Config) *Node {
 		GlobalCtx:       ctx,
 		GlobalCtxCancel: ctxCancel,
 	}
-	node.setupNode(ctx, privKey, 1*time.Second, 3)
+	node.setupNode(ctx, privKey, 1*time.Second)
 	return node
+}
+
+type boolgen struct {
+	src       rand.Source
+	cache     int64
+	remaining int
+}
+
+func newBoolgen() *boolgen {
+	return &boolgen{src: rand.NewSource(time.Now().UnixNano())}
+}
+
+func (b *boolgen) Bool() bool {
+	if b.remaining == 0 {
+		b.cache, b.remaining = b.src.Int63(), 63
+	}
+
+	result := b.cache&0x01 == 1
+	b.cache >>= 1
+	b.remaining--
+
+	return result
 }

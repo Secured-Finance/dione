@@ -49,12 +49,12 @@ func NewNode(configPath string) (*Node, error) {
 	return node, nil
 }
 
-func (n *Node) setupNode(ctx context.Context, prvKey crypto.PrivKey, pexDiscoveryUpdateTime time.Duration, maxFaultNodes int) {
+func (n *Node) setupNode(ctx context.Context, prvKey crypto.PrivKey, pexDiscoveryUpdateTime time.Duration) {
 	n.setupLibp2pHost(context.TODO(), prvKey, pexDiscoveryUpdateTime)
 	//n.setupEthereumClient()
 	//n.setupFilecoinClient()
 	n.setupPubsub()
-	n.setupConsensusManager(maxFaultNodes)
+	n.setupConsensusManager(n.Config.ConsensusMaxFaultNodes)
 }
 
 func (n *Node) setupEthereumClient() error {
@@ -84,7 +84,7 @@ func (n *Node) setupConsensusManager(maxFaultNodes int) {
 }
 
 func (n *Node) setupLibp2pHost(ctx context.Context, privateKey crypto.PrivKey, pexDiscoveryUpdateTime time.Duration) {
-	listenMultiAddr, err := multiaddr.NewMultiaddr(fmt.Sprintf("/ip4/%s/tcp/%s", n.Config.ListenAddr, n.Config.ListenPort))
+	listenMultiAddr, err := multiaddr.NewMultiaddr(fmt.Sprintf("/ip4/%s/tcp/%d", n.Config.ListenAddr, n.Config.ListenPort))
 	if err != nil {
 		logrus.Fatal("Failed to generate new node multiaddress:", err)
 	}
@@ -98,7 +98,7 @@ func (n *Node) setupLibp2pHost(ctx context.Context, privateKey crypto.PrivKey, p
 	}
 	n.Host = host
 
-	logrus.Info(fmt.Sprintf("[*] Your Multiaddress Is: /ip4/%s/tcp/%v/p2p/%s", n.Config.ListenAddr, n.Config.ListenPort, host.ID().Pretty()))
+	logrus.Info(fmt.Sprintf("[*] Your Multiaddress Is: /ip4/%s/tcp/%d/p2p/%s", n.Config.ListenAddr, n.Config.ListenPort, host.ID().Pretty()))
 
 	var bootstrapMaddrs []multiaddr.Multiaddr
 	for _, a := range n.Config.BootstrapNodes {
@@ -178,7 +178,7 @@ func Start() error {
 	node.GlobalCtx = ctx
 	node.GlobalCtxCancel = ctxCancel
 
-	node.setupNode(ctx, privKey, DefaultPEXUpdateTime, node.Config.ConsensusMaxFaultNodes)
+	node.setupNode(ctx, privKey, DefaultPEXUpdateTime)
 	for {
 		select {
 		case <-ctx.Done():
