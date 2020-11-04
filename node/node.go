@@ -5,10 +5,8 @@ import (
 	"crypto/rand"
 	"flag"
 	"fmt"
-	"sync"
+	pex "github.com/Secured-Finance/go-libp2p-pex"
 	"time"
-
-	"github.com/libp2p/go-libp2p-kad-dht/dual"
 
 	"github.com/Secured-Finance/dione/config"
 	"github.com/Secured-Finance/dione/consensus"
@@ -18,11 +16,12 @@ import (
 	"github.com/libp2p/go-libp2p"
 	crypto "github.com/libp2p/go-libp2p-core/crypto"
 	"github.com/libp2p/go-libp2p-core/host"
-	peer "github.com/libp2p/go-libp2p-core/peer"
-	discovery "github.com/libp2p/go-libp2p-discovery"
-	peerstore "github.com/libp2p/go-libp2p-peerstore"
 	"github.com/multiformats/go-multiaddr"
 	"github.com/sirupsen/logrus"
+)
+
+const (
+	DefaultPEXUpdateTime = 1*time.Minute
 )
 
 type Node struct {
@@ -50,12 +49,12 @@ func NewNode(configPath string) (*Node, error) {
 	return node, nil
 }
 
-func (n *Node) setupNode(ctx context.Context, prvKey crypto.PrivKey) {
-	n.setupLibp2pHost(context.TODO(), prvKey)
+func (n *Node) setupNode(ctx context.Context, prvKey crypto.PrivKey, pexDiscoveryUpdateTime time.Duration, maxFaultNodes int) {
+	n.setupLibp2pHost(context.TODO(), prvKey, pexDiscoveryUpdateTime)
 	//n.setupEthereumClient()
 	//n.setupFilecoinClient()
 	n.setupPubsub()
-	n.setupConsensusManager()
+	n.setupConsensusManager(maxFaultNodes)
 }
 
 func (n *Node) setupEthereumClient() error {
@@ -77,14 +76,14 @@ func (n *Node) setupFilecoinClient() {
 func (n *Node) setupPubsub() {
 	n.PubSubRouter = pb.NewPubSubRouter(n.Host, n.OracleTopic)
 	// wait for setting up pubsub
-	time.Sleep(3 * time.Second)
+	//time.Sleep(3 * time.Second)
 }
 
-func (n *Node) setupConsensusManager() {
-	n.ConsensusManager = consensus.NewPBFTConsensusManager(n.PubSubRouter, 2)
+func (n *Node) setupConsensusManager(maxFaultNodes int) {
+	n.ConsensusManager = consensus.NewPBFTConsensusManager(n.PubSubRouter, maxFaultNodes)
 }
 
-func (n *Node) setupLibp2pHost(ctx context.Context, privateKey crypto.PrivKey) {
+func (n *Node) setupLibp2pHost(ctx context.Context, privateKey crypto.PrivKey, pexDiscoveryUpdateTime time.Duration) {
 	listenMultiAddr, err := multiaddr.NewMultiaddr(fmt.Sprintf("/ip4/%s/tcp/%s", n.Config.ListenAddr, n.Config.ListenPort))
 	if err != nil {
 		logrus.Fatal("Failed to generate new node multiaddress:", err)
@@ -101,42 +100,27 @@ func (n *Node) setupLibp2pHost(ctx context.Context, privateKey crypto.PrivKey) {
 
 	logrus.Info(fmt.Sprintf("[*] Your Multiaddress Is: /ip4/%s/tcp/%v/p2p/%s", n.Config.ListenAddr, n.Config.ListenPort, host.ID().Pretty()))
 
-	kademliaDHT, err := dual.New(context.Background(), n.Host)
-	if err != nil {
-		logrus.Fatal("Failed to create new DHT instance: ", err)
-	}
-
-	if err = kademliaDHT.Bootstrap(context.Background()); err != nil {
-		logrus.Fatal(err)
-	}
-
-	if !n.Config.Bootstrap {
-		var wg sync.WaitGroup
-		bootstrapMultiaddr, err := multiaddr.NewMultiaddr(n.Config.BootstrapNodeMultiaddr)
+	var bootstrapMaddrs []multiaddr.Multiaddr
+	for _, a := range n.Config.BootstrapNodes {
+		maddr, err := multiaddr.NewMultiaddr(a)
 		if err != nil {
-			logrus.Fatal(err)
+			logrus.Fatalf("Invalid multiaddress of bootstrap node: %s", err.Error())
 		}
-		peerinfo, _ := peer.AddrInfoFromP2pAddr(bootstrapMultiaddr)
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
-			if err := n.Host.Connect(context.Background(), *peerinfo); err != nil {
-				logrus.Fatal(err)
-			}
-			logrus.Info("Connection established with bootstrap node:", *peerinfo)
-		}()
-		wg.Wait()
+		bootstrapMaddrs = append(bootstrapMaddrs, maddr)
 	}
+
+	discovery, err := pex.NewPEXDiscovery(host, bootstrapMaddrs, pexDiscoveryUpdateTime)
 
 	logrus.Info("Announcing ourselves...")
-	routingDiscovery := discovery.NewRoutingDiscovery(kademliaDHT)
-	discovery.Advertise(context.Background(), routingDiscovery, n.Config.Rendezvous)
+	_, err = discovery.Advertise(context.TODO(), n.Config.Rendezvous)
+	if err != nil {
+		logrus.Fatalf("Failed to announce this node to the network: %s", err.Error())
+	}
 	logrus.Info("Successfully announced!")
 
-	// Randezvous string = service tag
-	// Discover all peers with our service
+	// Discover unbounded count of peers
 	logrus.Info("Searching for other peers...")
-	peerChan, err := routingDiscovery.FindPeers(context.Background(), n.Config.Rendezvous)
+	peerChan, err := discovery.FindPeers(context.TODO(), n.Config.Rendezvous)
 	if err != nil {
 		logrus.Fatal("Failed to find new peers, exiting...", err)
 	}
@@ -154,13 +138,12 @@ func (n *Node) setupLibp2pHost(ctx context.Context, privateKey crypto.PrivKey) {
 					if newPeer.ID.String() == n.Host.ID().String() {
 						continue
 					}
-					logrus.Info("Found peer:", newPeer, ", put it to the peerstore")
-					n.Host.Peerstore().AddAddr(newPeer.ID, newPeer.Addrs[0], peerstore.PermanentAddrTTL)
+					logrus.Infof("Found peer: %s", newPeer)
 					// Connect to the peer
 					if err := n.Host.Connect(ctx, newPeer); err != nil {
 						logrus.Warn("Connection failed: ", err)
 					}
-					logrus.Info("Connected to: ", newPeer)
+					logrus.Info("Connected to newly discovered peer: ", newPeer)
 				}
 			}
 		}
@@ -195,7 +178,7 @@ func Start() error {
 	node.GlobalCtx = ctx
 	node.GlobalCtxCancel = ctxCancel
 
-	node.setupNode(ctx, privKey)
+	node.setupNode(ctx, privKey, DefaultPEXUpdateTime, node.Config.ConsensusMaxFaultNodes)
 	for {
 		select {
 		case <-ctx.Done():

@@ -7,15 +7,15 @@ import (
 )
 
 type Config struct {
-	ListenPort             string         `mapstructure:"listen_port"`
-	ListenAddr             string         `mapstructure:"listen_addr"`
-	Bootstrap              bool           `mapstructure:"is_bootstrap"`
-	BootstrapNodeMultiaddr string         `mapstructure:"bootstrap_node_multiaddr"`
-	Rendezvous             string         `mapstructure:"rendezvous"`
-	Ethereum               EthereumConfig `mapstructure:"ethereum"`
-	Filecoin               FilecoinConfig `mapstructure:"filecoin"`
-	PubSub                 PubSubConfig   `mapstructure:"pubSub"`
-	Store                  StoreConfig    `mapstructure:"store"`
+	ListenPort     string         `mapstructure:"listen_port"`
+	ListenAddr     string         `mapstructure:"listen_addr"`
+	BootstrapNodes []string       `mapstructure:"bootstrap_node_multiaddr"`
+	Rendezvous     string         `mapstructure:"rendezvous"`
+	Ethereum       EthereumConfig `mapstructure:"ethereum"`
+	Filecoin       FilecoinConfig `mapstructure:"filecoin"`
+	PubSub         PubSubConfig   `mapstructure:"pubSub"`
+	Store          StoreConfig    `mapstructure:"store"`
+	ConsensusMaxFaultNodes int `mapstructure:"consensus_max_fault_nodes"`
 }
 
 type EthereumConfig struct {
@@ -46,11 +46,10 @@ func NewConfig(configPath string) (*Config, error) {
 	dbURL := fmt.Sprintf("host=localhost user=%s password=%s dbname=%s sslmode=disable", username, password, dbName)
 
 	cfg := &Config{
-		ListenAddr:             "localhost",
-		ListenPort:             ":8000",
-		Bootstrap:              false,
-		BootstrapNodeMultiaddr: "/ip4/127.0.0.1/tcp/0",
-		Rendezvous:             "filecoin-p2p-oracle",
+		ListenAddr:     "localhost",
+		ListenPort:     ":8000",
+		BootstrapNodes: []string{"/ip4/127.0.0.1/tcp/0"},
+		Rendezvous:     "filecoin-p2p-oracle",
 		Ethereum: EthereumConfig{
 			PrivateKey: "",
 		},

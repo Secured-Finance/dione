@@ -17,22 +17,20 @@ func TestConsensus(t *testing.T) {
 	cfg := &config.Config{
 		ListenPort: "1234",
 		ListenAddr: "0.0.0.0",
-		Bootstrap:  true,
 		Rendezvous: "dione",
 		PubSub: config.PubSubConfig{
 			ProtocolID: "/test/1.0",
 		},
 	}
 
-	//cfg.BootstrapNodeMultiaddr = "/dnsaddr/bootstrap.libp2p.io/p2p/QmNnooDu7bfjPFoTZYxMNLWUQJyrVwtbZg5gBMjTezGAJN"
+	//cfg.BootstrapNodes = "/dnsaddr/bootstrap.libp2p.io/p2p/QmNnooDu7bfjPFoTZYxMNLWUQJyrVwtbZg5gBMjTezGAJN"
 
 	// setup first node
 	node1 := newNode(cfg)
 
 	// setup second node
 	cfg.ListenPort = "1235"
-	cfg.Bootstrap = false
-	cfg.BootstrapNodeMultiaddr = node1.Host.Addrs()[0].String() + fmt.Sprintf("/p2p/%s", node1.Host.ID().String())
+	cfg.BootstrapNodes = []string{node1.Host.Addrs()[0].String() + fmt.Sprintf("/p2p/%s", node1.Host.ID().String())}
 	node2 := newNode(cfg)
 
 	// setup third node
@@ -69,6 +67,6 @@ func newNode(cfg *config.Config) *Node {
 		GlobalCtx:       ctx,
 		GlobalCtxCancel: ctxCancel,
 	}
-	node.setupNode(ctx, privKey)
+	node.setupNode(ctx, privKey, 1*time.Second, 3)
 	return node
 }

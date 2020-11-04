@@ -4,8 +4,8 @@ import (
 	"context"
 	"math/big"
 
-	stakingContract "github.com/Secured-Finance/dione/contracts/DioneStaking"
 	"github.com/Secured-Finance/dione/contracts/aggregator"
+	stakingContract "github.com/Secured-Finance/dione/contracts/dioneStaking"
 	"github.com/Secured-Finance/dione/contracts/oracleemitter"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
