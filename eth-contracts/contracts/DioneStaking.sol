@@ -22,7 +22,7 @@ contract DioneStaking is Ownable, ReentrancyGuard {
     }
 
     DioneToken public dione;
-    // Agregator contract address.
+    // Aggregator contract address.
     address public aggregatorAddr;
     // Miner rewards in DIONE tokens.
     uint256 public minerReward;
@@ -106,8 +106,14 @@ contract DioneStaking is Ownable, ReentrancyGuard {
         return _totalStake;
     }
 
-    function minerStake(address _minerAddr) external view returns (uint256) {
-        MinerInfo storage miner = minerInfo[_minerAddr];
+// disabled for security reason
+//    function minerStake(address _minerAddr) external view returns (uint256) {
+//        MinerInfo storage miner = minerInfo[_minerAddr];
+//        return miner.amount;
+//    }
+
+    function minerStake() external view returns (uint256) {
+        MinerInfo storage miner = minerInfo[msg.sender];
         return miner.amount;
     }
 

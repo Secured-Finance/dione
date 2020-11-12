@@ -1,7 +1,7 @@
 {
-  "name": "p2p-oracle-smart-contracts",
+  "name": "dione-smart-contracts",
   "version": "0.0.1",
-  "description": "Smart contracts for p2p oracle network",
+  "description": "Smart contracts for Dione network",
   "main": "truffle-config.js",
   "directories": {
     "test": "test"
