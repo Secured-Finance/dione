@@ -15,9 +15,9 @@ type Response struct {
 	Err   error
 }
 
-type Schedule []BeaconPoint
+type Queue []BeaconPoint
 
-func (bs Schedule) BeaconForEpoch(e types.TaskEpoch) RandomBeacon {
+func (bs Queue) BeaconForEpoch(e types.TaskEpoch) RandomBeacon {
 	for i := len(bs) - 1; i >= 0; i-- {
 		bp := bs[i]
 		if e >= bp.Start {
@@ -42,10 +42,10 @@ type RandomBeacon interface {
 	MaxBeaconRoundForEpoch(types.TaskEpoch) uint64
 }
 
-func ValidateTaskValues(bSchedule Schedule, t *types.DioneTask, parentEpoch types.TaskEpoch, prevEntry types.BeaconEntry) error {
+func ValidateTaskValues(bQueue Queue, t *types.DioneTask, parentEpoch types.TaskEpoch, prevEntry types.BeaconEntry) error {
 	{
-		parentBeacon := bSchedule.BeaconForEpoch(parentEpoch)
-		currBeacon := bSchedule.BeaconForEpoch(t.Epoch)
+		parentBeacon := bQueue.BeaconForEpoch(parentEpoch)
+		currBeacon := bQueue.BeaconForEpoch(t.Epoch)
 		if parentBeacon != currBeacon {
 			if len(t.BeaconEntries) != 2 {
 				return fmt.Errorf("expected two beacon entries at beacon fork, got %d", len(t.BeaconEntries))
@@ -60,7 +60,7 @@ func ValidateTaskValues(bSchedule Schedule, t *types.DioneTask, parentEpoch type
 	}
 
 	// TODO: fork logic
-	b := bSchedule.BeaconForEpoch(t.Epoch)
+	b := bQueue.BeaconForEpoch(t.Epoch)
 	maxRound := b.MaxBeaconRoundForEpoch(t.Epoch)
 	if maxRound == prevEntry.Round {
 		if len(t.BeaconEntries) != 0 {
@@ -88,7 +88,7 @@ func ValidateTaskValues(bSchedule Schedule, t *types.DioneTask, parentEpoch type
 	return nil
 }
 
-func BeaconEntriesForTask(ctx context.Context, bSchedule Schedule, epoch types.TaskEpoch, parentEpoch types.TaskEpoch, prev types.BeaconEntry) ([]types.BeaconEntry, error) {
+func BeaconEntriesForTask(ctx context.Context, bSchedule Queue, epoch types.TaskEpoch, parentEpoch types.TaskEpoch, prev types.BeaconEntry) ([]types.BeaconEntry, error) {
 	{
 		parentBeacon := bSchedule.BeaconForEpoch(parentEpoch)
 		currBeacon := bSchedule.BeaconForEpoch(epoch)

@@ -12,7 +12,7 @@ import (
 	"github.com/Secured-Finance/dione/consensus"
 	"github.com/Secured-Finance/dione/pb"
 	"github.com/Secured-Finance/dione/rpc"
-	"github.com/Secured-Finance/dione/rpcclient"
+	"github.com/Secured-Finance/dione/ethclient"
 	"github.com/libp2p/go-libp2p"
 	crypto "github.com/libp2p/go-libp2p-core/crypto"
 	"github.com/libp2p/go-libp2p-core/host"
@@ -32,8 +32,9 @@ type Node struct {
 	OracleTopic      string
 	Config           *config.Config
 	Lotus            *rpc.LotusClient
-	Ethereum         *rpcclient.EthereumClient
+	Ethereum         *ethclient.EthereumClient
 	ConsensusManager *consensus.PBFTConsensusManager
+	MinerBase *consensus.MinerBase
 }
 
 func NewNode(configPath string) (*Node, error) {
@@ -57,8 +58,13 @@ func (n *Node) setupNode(ctx context.Context, prvKey crypto.PrivKey, pexDiscover
 	n.setupConsensusManager(n.Config.ConsensusMaxFaultNodes)
 }
 
+func (n *Node) setupMiner() error {
+	// here we do miner base setup
+	return nil
+}
+
 func (n *Node) setupEthereumClient() error {
-	ethereum := rpcclient.NewEthereumClient()
+	ethereum := ethclient.NewEthereumClient()
 	n.Ethereum = ethereum
 	return ethereum.Initialize(context.Background(),
 		n.Config.Ethereum.GatewayAddress,

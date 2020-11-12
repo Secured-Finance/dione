@@ -4,10 +4,11 @@ import (
 	"context"
 	"sync"
 
+	"github.com/libp2p/go-libp2p-core/peer"
+
+	"github.com/Secured-Finance/dione/sigs"
 	"github.com/Secured-Finance/dione/types"
 	"github.com/filecoin-project/go-address"
-	"github.com/filecoin-project/go-state-types/crypto"
-	"github.com/filecoin-project/lotus/lib/sigs"
 	"github.com/sirupsen/logrus"
 	"golang.org/x/xerrors"
 )
@@ -18,7 +19,7 @@ const (
 )
 
 type LocalWallet struct {
-	keys     map[address.Address]*Key
+	keys     map[peer.ID]*Key
 	keystore types.KeyStore
 
 	lk sync.Mutex
@@ -30,7 +31,7 @@ type Default interface {
 
 func NewWallet(keystore types.KeyStore) (*LocalWallet, error) {
 	w := &LocalWallet{
-		keys:     make(map[address.Address]*Key),
+		keys:     make(map[peer.ID]*Key),
 		keystore: keystore,
 	}
 
@@ -38,7 +39,7 @@ func NewWallet(keystore types.KeyStore) (*LocalWallet, error) {
 }
 
 func KeyWallet(keys ...*Key) *LocalWallet {
-	m := make(map[address.Address]*Key)
+	m := make(map[peer.ID]*Key)
 	for _, key := range keys {
 		m[key.Address] = key
 	}
@@ -48,7 +49,7 @@ func KeyWallet(keys ...*Key) *LocalWallet {
 	}
 }
 
-func (w *LocalWallet) WalletSign(ctx context.Context, addr address.Address, msg []byte) (*crypto.Signature, error) {
+func (w *LocalWallet) WalletSign(ctx context.Context, addr peer.ID, msg []byte) (*types.Signature, error) {
 	ki, err := w.findKey(addr)
 	if err != nil {
 		return nil, err
@@ -60,7 +61,7 @@ func (w *LocalWallet) WalletSign(ctx context.Context, addr address.Address, msg 
 	return sigs.Sign(ActSigType(ki.Type), ki.PrivateKey, msg)
 }
 
-func (w *LocalWallet) findKey(addr address.Address) (*Key, error) {
+func (w *LocalWallet) findKey(addr peer.ID) (*Key, error) {
 	w.lk.Lock()
 	defer w.lk.Unlock()
 
@@ -88,7 +89,7 @@ func (w *LocalWallet) findKey(addr address.Address) (*Key, error) {
 	return k, nil
 }
 
-func (w *LocalWallet) tryFind(addr address.Address) (types.KeyInfo, error) {
+func (w *LocalWallet) tryFind(addr peer.ID) (types.KeyInfo, error) {
 
 	ki, err := w.keystore.Get(KNamePrefix + addr.String())
 	if err == nil {
@@ -122,52 +123,52 @@ func (w *LocalWallet) tryFind(addr address.Address) (types.KeyInfo, error) {
 	return ki, nil
 }
 
-func (w *LocalWallet) GetDefault() (address.Address, error) {
+func (w *LocalWallet) GetDefault() (peer.ID, error) {
 	w.lk.Lock()
 	defer w.lk.Unlock()
 
 	ki, err := w.keystore.Get(KDefault)
 	if err != nil {
-		return address.Undef, xerrors.Errorf("failed to get default key: %w", err)
+		return "", xerrors.Errorf("failed to get default key: %w", err)
 	}
 
 	k, err := NewKey(ki)
 	if err != nil {
-		return address.Undef, xerrors.Errorf("failed to read default key from keystore: %w", err)
+		return "", xerrors.Errorf("failed to read default key from keystore: %w", err)
 	}
 
 	return k.Address, nil
 }
 
-func (w *LocalWallet) WalletNew(ctx context.Context, typ types.KeyType) (address.Address, error) {
+func (w *LocalWallet) WalletNew(ctx context.Context, typ types.KeyType) (peer.ID, error) {
 	w.lk.Lock()
 	defer w.lk.Unlock()
 
 	k, err := GenerateKey(typ)
 	if err != nil {
-		return address.Undef, err
+		return "", err
 	}
 
 	if err := w.keystore.Put(KNamePrefix+k.Address.String(), k.KeyInfo); err != nil {
-		return address.Undef, xerrors.Errorf("saving to keystore: %w", err)
+		return "", xerrors.Errorf("saving to keystore: %w", err)
 	}
 	w.keys[k.Address] = k
 
 	_, err = w.keystore.Get(KDefault)
 	if err != nil {
 		if !xerrors.Is(err, types.ErrKeyInfoNotFound) {
-			return address.Undef, err
+			return "", err
 		}
 
 		if err := w.keystore.Put(KDefault, k.KeyInfo); err != nil {
-			return address.Undef, xerrors.Errorf("failed to set new key as default: %w", err)
+			return "", xerrors.Errorf("failed to set new key as default: %w", err)
 		}
 	}
 
 	return k.Address, nil
 }
 
-func (w *LocalWallet) WalletHas(ctx context.Context, addr address.Address) (bool, error) {
+func (w *LocalWallet) WalletHas(ctx context.Context, addr peer.ID) (bool, error) {
 	k, err := w.findKey(addr)
 	if err != nil {
 		return false, err

@@ -1,43 +1,39 @@
 package consensus
 
 import (
-	"bytes"
 	"context"
 	"fmt"
 
+	"github.com/libp2p/go-libp2p-core/peer"
+
 	"github.com/Secured-Finance/dione/types"
-	"github.com/filecoin-project/go-address"
 	"github.com/filecoin-project/go-state-types/crypto"
-	"github.com/filecoin-project/lotus/lib/sigs"
-	"go.opencensus.io/trace"
 	"golang.org/x/xerrors"
 )
 
-type SignFunc func(context.Context, address.Address, []byte) (*crypto.Signature, error)
+type SignFunc func(context.Context, peer.ID, []byte) (*types.Signature, error)
 
-func ComputeVRF(ctx context.Context, sign SignFunc, worker address.Address, sigInput []byte) ([]byte, error) {
+func ComputeVRF(ctx context.Context, sign SignFunc, worker peer.ID, sigInput []byte) ([]byte, error) {
 	sig, err := sign(ctx, worker, sigInput)
 	if err != nil {
 		return nil, err
 	}
 
-	if sig.Type != crypto.SigTypeBLS {
-		return nil, fmt.Errorf("miner worker address was not a BLS key")
+	if sig.Type != types.SigTypeEd25519 {
+		return nil, fmt.Errorf("miner worker address was not a Ed25519 key")
 	}
 
 	return sig.Data, nil
 }
 
-func VerifyVRF(ctx context.Context, worker address.Address, vrfBase, vrfproof []byte) error {
-	_, span := trace.StartSpan(ctx, "VerifyVRF")
-	defer span.End()
-
-	sig := &crypto.Signature{
-		Type: crypto.SigTypeBLS,
-		Data: vrfproof,
+func VerifyVRF(ctx context.Context, worker peer.ID, vrfBase, vrfproof []byte) error {
+	pKey, err := worker.ExtractPublicKey()
+	if err != nil {
+		return xerrors.Errorf("failed to extract public key from worker address: %w", err)
 	}
 
-	if err := sigs.Verify(sig, worker, vrfBase); err != nil {
+	valid, err := pKey.Verify(vrfBase, vrfproof)
+	if err != nil || !valid {
 		return xerrors.Errorf("vrf was invalid: %w", err)
 	}
 
@@ -45,14 +41,14 @@ func VerifyVRF(ctx context.Context, worker address.Address, vrfBase, vrfproof []
 }
 
 func IsRoundWinner(ctx context.Context, round types.TaskEpoch,
-	worker address.Address, brand types.BeaconEntry, mb *MinerBase, a MinerAPI) (*types.ElectionProof, error) {
+	worker peer.ID, brand types.BeaconEntry, mb *MinerBase, a MinerAPI) (*types.ElectionProof, error) {
 
-	buf := new(bytes.Buffer)
-	if err := worker.MarshalCBOR(buf); err != nil {
-		return nil, xerrors.Errorf("failed to cbor marshal address: %w", err)
+	buf, err := worker.MarshalBinary()
+	if err != nil {
+		return nil, xerrors.Errorf("failed to marshal address: %w", err)
 	}
 
-	electionRand, err := DrawRandomness(brand.Data, crypto.DomainSeparationTag_ElectionProofProduction, round, buf.Bytes())
+	electionRand, err := DrawRandomness(brand.Data, crypto.DomainSeparationTag_ElectionProofProduction, round, buf)
 	if err != nil {
 		return nil, xerrors.Errorf("failed to draw randomness: %w", err)
 	}

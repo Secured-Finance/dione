@@ -4,8 +4,8 @@ import (
 	"math/big"
 	"time"
 
+	"github.com/Secured-Finance/dione/ethclient"
 	"github.com/Secured-Finance/dione/lib"
-	"github.com/Secured-Finance/dione/rpcclient"
 	"github.com/Secured-Finance/dione/types"
 	"github.com/ethereum/go-ethereum/common"
 	validation "github.com/go-ozzo/ozzo-validation"
@@ -15,17 +15,17 @@ type DioneStakeInfo struct {
 	ID             int
 	MinerStake     *big.Int
 	TotalStake     *big.Int
-	MinerWallet    string
+	MinerAddress   string
 	MinerEthWallet string
 	Timestamp      time.Time
-	Ethereum       *rpcclient.EthereumClient
+	Ethereum       *ethclient.EthereumClient
 }
 
-func NewDioneStakeInfo(minerStake, totalStake *big.Int, minerWallet, minerEthWallet string, ethereumClient *rpcclient.EthereumClient) *DioneStakeInfo {
+func NewDioneStakeInfo(minerStake, totalStake *big.Int, minerWallet, minerEthWallet string, ethereumClient *ethclient.EthereumClient) *DioneStakeInfo {
 	return &DioneStakeInfo{
 		MinerStake:     minerStake,
 		TotalStake:     totalStake,
-		MinerWallet:    minerWallet,
+		MinerAddress:   minerWallet,
 		MinerEthWallet: minerEthWallet,
 		Ethereum:       ethereumClient,
 	}
@@ -63,10 +63,10 @@ func (s *Store) CreateDioneStakeInfo(stakeStore *DioneStakeInfo) error {
 	now := lib.Clock.Now()
 
 	return s.db.QueryRow(
-		"INSERT INTO staking (miner_stake, total_stake, miner_wallet, miner_eth_wallet, timestamp) VALUES ($1, $2, $3, $4, $5) RETURNING id",
+		"INSERT INTO staking (miner_stake, total_stake, miner_address, miner_eth_wallet, timestamp) VALUES ($1, $2, $3, $4, $5) RETURNING id",
 		stakeStore.MinerStake,
 		stakeStore.TotalStake,
-		stakeStore.MinerWallet,
+		stakeStore.MinerAddress,
 		stakeStore.MinerEthWallet,
 		now,
 	).Scan(&stakeStore.ID)
@@ -75,7 +75,7 @@ func (s *Store) CreateDioneStakeInfo(stakeStore *DioneStakeInfo) error {
 func (s *Store) GetLastStakeInfo(wallet, ethWallet string) (*DioneStakeInfo, error) {
 	var stake *DioneStakeInfo
 	if err := s.db.Select(&stake,
-		`SELECT miner_stake, total_stake, miner_wallet, miner_eth_wallet, timestamp FROM staking ORDER BY TIMESTAMP DESC LIMIT 1 WHERE miner_wallet=$1, miner_eth_wallet=$2`,
+		`SELECT miner_stake, total_stake, miner_address, miner_eth_wallet, timestamp FROM staking ORDER BY TIMESTAMP DESC LIMIT 1 WHERE miner_address=$1, miner_eth_wallet=$2`,
 		wallet,
 		ethWallet,
 	); err != nil {
@@ -91,7 +91,7 @@ func (s *DioneStakeInfo) Validate() error {
 		s,
 		validation.Field(&s.MinerStake, validation.Required, validation.By(types.ValidateBigInt(s.MinerStake))),
 		validation.Field(&s.TotalStake, validation.Required, validation.By(types.ValidateBigInt(s.TotalStake))),
-		validation.Field(&s.MinerWallet, validation.Required),
+		validation.Field(&s.MinerAddress, validation.Required),
 		validation.Field(&s.MinerEthWallet, validation.Required),
 	)
 }

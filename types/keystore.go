@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/filecoin-project/go-state-types/crypto"
 	"github.com/sirupsen/logrus"
 )
 
@@ -17,8 +16,7 @@ var (
 type KeyType string
 
 const (
-	KTBLS       KeyType = "bls"
-	KTSecp256k1 KeyType = "secp256k1"
+	KTEd25519 KeyType = "ed25519"
 )
 
 func (kt *KeyType) UnmarshalJSON(bb []byte) error {
@@ -38,13 +36,11 @@ func (kt *KeyType) UnmarshalJSON(bb []byte) error {
 		if err != nil {
 			return fmt.Errorf("could not unmarshal KeyType either as string nor integer: %w", err)
 		}
-		bst := crypto.SigType(b)
+		bst := SigType(b)
 
 		switch bst {
-		case crypto.SigTypeBLS:
-			*kt = KTBLS
-		case crypto.SigTypeSecp256k1:
-			*kt = KTSecp256k1
+		case SigTypeEd25519:
+			*kt = KTEd25519
 		default:
 			return fmt.Errorf("unknown sigtype: %d", bst)
 		}

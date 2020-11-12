@@ -25,12 +25,12 @@ type PBFTConsensusManager struct {
 }
 
 type ConsensusData struct {
-	preparedCount int
-	commitCount   int
-	State         ConsensusState
-	mutex         sync.Mutex
-	result        string
-	test          bool
+	preparedCount             int
+	commitCount               int
+	State                     ConsensusState
+	mutex                     sync.Mutex
+	result                    string
+	test                      bool
 	onConsensusFinishCallback func(finalData string)
 }
 
@@ -49,6 +49,8 @@ func (pcm *PBFTConsensusManager) NewTestConsensus(data string, consensusID strin
 	cData.test = true
 	cData.onConsensusFinishCallback = onConsensusFinishCallback
 	pcm.Consensuses[consensusID] = cData
+
+	// here we will create DioneTask
 
 	msg := models.Message{}
 	msg.Type = "prepared"
@@ -71,16 +73,19 @@ func (pcm *PBFTConsensusManager) handlePreparedMessage(message *models.Message) 
 	logrus.Debug("received prepared msg")
 	data := pcm.Consensuses[consensusID]
 
-	// validate payload data
-	if data.test {
-		rData := message.Payload["data"].(string)
-		if rData != testValidData {
-			logrus.Error("Incorrect data was received! Ignoring this message, because it was sent from fault node!")
-			return
-		}
-	} else {
-		// TODO
-	}
+	//// validate payload data
+	//if data.test {
+	//	rData := message.Payload["data"].(string)
+	//	if rData != testValidData {
+	//		logrus.Error("Incorrect data was received! Ignoring this message, because it was sent from fault node!")
+	//		return
+	//	}
+	//} else {
+	//	// TODO
+	//}
+
+	// here we can validate miner which produced this task, is he winner, and so on
+	// we must to reconstruct transaction here for validating task itself
 
 	data.mutex.Lock()
 	data.preparedCount++
@@ -103,7 +108,7 @@ func (pcm *PBFTConsensusManager) handlePreparedMessage(message *models.Message) 
 
 func (pcm *PBFTConsensusManager) handleCommitMessage(message *models.Message) {
 	// TODO add check on view of the message
-	// TODO add validation of data to this stage
+	// TODO add validation of data by hash to this stage
 	consensusID := message.Payload["consensusID"].(string)
 	if _, ok := pcm.Consensuses[consensusID]; !ok {
 		logrus.Warn("Unknown consensus ID: " + consensusID)

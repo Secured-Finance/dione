@@ -3,6 +3,7 @@ package store
 import (
 	"github.com/Secured-Finance/dione/node"
 	"github.com/jmoiron/sqlx"
+	_ "github.com/mattn/go-sqlite3"
 )
 
 type Store struct {
@@ -29,7 +30,7 @@ func NewStore(node *node.Node, genesisTs uint64) (*Store, error) {
 }
 
 func newDB(databaseURL string) (*sqlx.DB, error) {
-	db, err := sqlx.Connect("postgres", databaseURL)
+	db, err := sqlx.Connect("sqlite3", databaseURL)
 	if err != nil {
 		return nil, err
 	}

@@ -1,33 +1,33 @@
 package consensus
 
 import (
-	"bytes"
 	"context"
 	"sync"
 
+	"github.com/libp2p/go-libp2p-core/peer"
+
 	"github.com/Secured-Finance/dione/types"
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/filecoin-project/go-address"
 	"github.com/filecoin-project/go-state-types/crypto"
 	"github.com/sirupsen/logrus"
 	"golang.org/x/xerrors"
 )
 
 type Miner struct {
-	address address.Address
+	address peer.ID
 	api     MinerAPI
 	mutex   sync.Mutex
 }
 
 type MinerAPI interface {
-	WalletSign(context.Context, address.Address, []byte) (*crypto.Signature, error)
+	WalletSign(context.Context, peer.ID, []byte) (*types.Signature, error)
 	//	TODO: get miner base based on epoch;
 }
 
 type MinerBase struct {
 	MinerStake      types.BigInt
 	NetworkStake    types.BigInt
-	WorkerKey       address.Address
+	WorkerKey       peer.ID
 	EthWallet       common.Address
 	PrevBeaconEntry types.BeaconEntry
 	BeaconEntries   []types.BeaconEntry
@@ -36,15 +36,15 @@ type MinerBase struct {
 
 type MiningBase struct {
 	epoch      types.TaskEpoch
-	nullRounds types.TaskEpoch
+	nullRounds types.TaskEpoch // currently not used
 }
 
-func NewMinerBase(minerStake, networkStake types.BigInt, minerWallet address.Address,
+func NewMinerBase(minerStake, networkStake types.BigInt, minerAddress peer.ID,
 	minerEthWallet common.Address, prev types.BeaconEntry, entries []types.BeaconEntry) *MinerBase {
 	return &MinerBase{
 		MinerStake:      minerStake,
 		NetworkStake:    networkStake,
-		WorkerKey:       minerWallet,
+		WorkerKey:       minerAddress,
 		EthWallet:       minerEthWallet,
 		PrevBeaconEntry: prev,
 		BeaconEntries:   entries,
@@ -82,21 +82,21 @@ func (m *Miner) MineTask(ctx context.Context, base *MiningBase, mb *MinerBase) (
 		Miner:         m.address,
 		Ticket:        ticket,
 		ElectionProof: winner,
-		BeaconEntries: mb.BeaconEntries,
+		BeaconEntries: mb.BeaconEntries, // TODO decide what we need to do with multiple beacon entries
 		// TODO: signature
 		Epoch: round,
 	}, nil
 }
 
 func (m *Miner) computeTicket(ctx context.Context, brand *types.BeaconEntry, base *MiningBase, mb *MinerBase) (*types.Ticket, error) {
-	buf := new(bytes.Buffer)
-	if err := m.address.MarshalCBOR(buf); err != nil {
-		return nil, xerrors.Errorf("failed to marshal address to cbor: %w", err)
+	buf, err := m.address.MarshalBinary()
+	if err != nil {
+		return nil, xerrors.Errorf("failed to marshal address: %w", err)
 	}
 
 	round := base.epoch + base.nullRounds + 1
 
-	input, err := DrawRandomness(brand.Data, crypto.DomainSeparationTag_TicketProduction, round-types.TicketRandomnessLookback, buf.Bytes())
+	input, err := DrawRandomness(brand.Data, crypto.DomainSeparationTag_TicketProduction, round-types.TicketRandomnessLookback, buf)
 	if err != nil {
 		return nil, err
 	}

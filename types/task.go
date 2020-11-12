@@ -3,9 +3,17 @@ package types
 import (
 	"strconv"
 
+	"github.com/libp2p/go-libp2p-core/peer"
+
 	"github.com/Secured-Finance/dione/config"
-	"github.com/filecoin-project/go-address"
-	"github.com/filecoin-project/go-state-types/crypto"
+)
+
+type TaskType byte
+
+const (
+	EthereumTaskType = TaskType(iota)
+	FilecoinTaskType
+	SolanaTaskType
 )
 
 //	TaskEpoch represents the timestamp of Task computed by the Dione miner
@@ -20,11 +28,12 @@ func (e TaskEpoch) String() string {
 //	DioneTask represents the values of task computation
 //	Miner is an address of miner node
 type DioneTask struct {
-	Miner         address.Address
+	Type          TaskType
+	Miner         peer.ID
 	Ticket        *Ticket
 	ElectionProof *ElectionProof
 	BeaconEntries []BeaconEntry
-	Signature     *crypto.Signature
+	Signature     *Signature
 	Epoch         TaskEpoch
 	Payload       []byte
 }
