@@ -59,7 +59,7 @@ func NewMiningBase() *MiningBase {
 	}
 }
 
-func (m *MinerBase) UpdateStake(c *ethclient.EthereumClient, miner common.Address) error {
+func (m *MinerBase) UpdateCurrentStakeInfo(c *ethclient.EthereumClient, miner common.Address) error {
 	mStake, err := c.GetMinerStake(miner)
 
 	if err != nil {
@@ -94,7 +94,7 @@ func (m *Miner) MineTask(ctx context.Context, base *MiningBase, mb *MinerBase, e
 		rbase = bvals[len(bvals)-1]
 	}
 
-	if err := mb.UpdateStake(ethClient, m.ethAddress); err != nil {
+	if err := mb.UpdateCurrentStakeInfo(ethClient, m.ethAddress); err != nil {
 		return nil, xerrors.Errorf("failed to update miner stake: %w", err)
 	}
 

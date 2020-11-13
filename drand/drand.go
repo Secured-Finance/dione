@@ -94,12 +94,12 @@ func NewDrandBeacon(genesisTs, interval uint64, ps *pubsub.PubSub) (*DrandBeacon
 	return db, nil
 }
 
-func (db *DrandBeacon) Entry(ctx context.Context, round uint64) <-chan beacon.Response {
-	out := make(chan beacon.Response, 1)
+func (db *DrandBeacon) Entry(ctx context.Context, round uint64) <-chan beacon.BeaconResult {
+	out := make(chan beacon.BeaconResult, 1)
 	if round != 0 {
 		be := db.getCachedValue(round)
 		if be != nil {
-			out <- beacon.Response{Entry: *be}
+			out <- beacon.BeaconResult{Entry: *be}
 			close(out)
 			return out
 		}
@@ -110,7 +110,7 @@ func (db *DrandBeacon) Entry(ctx context.Context, round uint64) <-chan beacon.Re
 		logrus.Info("start fetching randomness", "round", round)
 		resp, err := db.DrandClient.Get(ctx, round)
 
-		var br beacon.Response
+		var br beacon.BeaconResult
 		if err != nil {
 			br.Err = fmt.Errorf("drand failed Get request: %w", err)
 		} else {
@@ -171,4 +171,4 @@ func (db *DrandBeacon) MaxBeaconRoundForEpoch(taskEpoch types.TaskEpoch) uint64 
 	return dround
 }
 
-var _ beacon.RandomBeacon = (*DrandBeacon)(nil)
+var _ beacon.BeaconAPI = (*DrandBeacon)(nil)
