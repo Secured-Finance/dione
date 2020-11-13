@@ -5,14 +5,15 @@ import (
 	"crypto/rand"
 	"flag"
 	"fmt"
-	pex "github.com/Secured-Finance/go-libp2p-pex"
 	"time"
+
+	pex "github.com/Secured-Finance/go-libp2p-pex"
 
 	"github.com/Secured-Finance/dione/config"
 	"github.com/Secured-Finance/dione/consensus"
+	"github.com/Secured-Finance/dione/ethclient"
 	"github.com/Secured-Finance/dione/pb"
 	"github.com/Secured-Finance/dione/rpc"
-	"github.com/Secured-Finance/dione/ethclient"
 	"github.com/libp2p/go-libp2p"
 	crypto "github.com/libp2p/go-libp2p-core/crypto"
 	"github.com/libp2p/go-libp2p-core/host"
@@ -21,7 +22,7 @@ import (
 )
 
 const (
-	DefaultPEXUpdateTime = 1*time.Minute
+	DefaultPEXUpdateTime = 1 * time.Minute
 )
 
 type Node struct {
@@ -34,7 +35,7 @@ type Node struct {
 	Lotus            *rpc.LotusClient
 	Ethereum         *ethclient.EthereumClient
 	ConsensusManager *consensus.PBFTConsensusManager
-	MinerBase *consensus.MinerBase
+	MinerBase        *consensus.MinerBase
 }
 
 func NewNode(configPath string) (*Node, error) {
@@ -52,7 +53,9 @@ func NewNode(configPath string) (*Node, error) {
 
 func (n *Node) setupNode(ctx context.Context, prvKey crypto.PrivKey, pexDiscoveryUpdateTime time.Duration) {
 	n.setupLibp2pHost(context.TODO(), prvKey, pexDiscoveryUpdateTime)
-	//n.setupEthereumClient()
+	if err := n.setupEthereumClient(); err != nil {
+		logrus.Fatal("Can't set up an ethereum client, exiting... ", err)
+	}
 	//n.setupFilecoinClient()
 	n.setupPubsub()
 	n.setupConsensusManager(n.Config.ConsensusMaxFaultNodes)
@@ -116,6 +119,9 @@ func (n *Node) setupLibp2pHost(ctx context.Context, privateKey crypto.PrivKey, p
 	}
 
 	discovery, err := pex.NewPEXDiscovery(host, bootstrapMaddrs, pexDiscoveryUpdateTime)
+	if err != nil {
+		logrus.Fatal("Can't set up PEX discovery protocol, exiting... ", err)
+	}
 
 	logrus.Info("Announcing ourselves...")
 	_, err = discovery.Advertise(context.TODO(), n.Config.Rendezvous)

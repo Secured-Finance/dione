@@ -15,9 +15,10 @@ import (
 )
 
 type Miner struct {
-	address peer.ID
-	api     MinerAPI
-	mutex   sync.Mutex
+	address    peer.ID
+	ethAddress common.Address
+	api        MinerAPI
+	mutex      sync.Mutex
 }
 
 type MinerAPI interface {
@@ -81,7 +82,7 @@ func (m *MinerBase) UpdateStake(c *ethclient.EthereumClient, miner common.Addres
 
 // Start, Stop mining functions
 
-func (m *Miner) MineTask(ctx context.Context, base *MiningBase, mb *MinerBase) (*types.DioneTask, error) {
+func (m *Miner) MineTask(ctx context.Context, base *MiningBase, mb *MinerBase, ethClient *ethclient.EthereumClient) (*types.DioneTask, error) {
 	round := base.epoch + base.nullRounds + 1
 	logrus.Debug("attempting to mine the task at epoch: ", round)
 
@@ -91,6 +92,10 @@ func (m *Miner) MineTask(ctx context.Context, base *MiningBase, mb *MinerBase) (
 	rbase := prevEntry
 	if len(bvals) > 0 {
 		rbase = bvals[len(bvals)-1]
+	}
+
+	if err := mb.UpdateStake(ethClient, m.ethAddress); err != nil {
+		return nil, xerrors.Errorf("failed to update miner stake: %w", err)
 	}
 
 	ticket, err := m.computeTicket(ctx, &rbase, base, mb)
