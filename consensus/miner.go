@@ -64,13 +64,19 @@ func (m *Miner) MineTask(ctx context.Context, base *MiningBase, mb *MinerBase) (
 	logrus.Debug("attempting to mine the task at epoch: ", round)
 
 	prevEntry := mb.PrevBeaconEntry
+	bvals := mb.BeaconEntries
 
-	ticket, err := m.computeTicket(ctx, &prevEntry, base, mb)
+	rbase := prevEntry
+	if len(bvals) > 0 {
+		rbase = bvals[len(bvals)-1]
+	}
+
+	ticket, err := m.computeTicket(ctx, &rbase, base, mb)
 	if err != nil {
 		return nil, xerrors.Errorf("scratching ticket failed: %w", err)
 	}
 
-	winner, err := IsRoundWinner(ctx, round, m.address, prevEntry, mb, m.api)
+	winner, err := IsRoundWinner(ctx, round, m.address, rbase, mb, m.api)
 	if err != nil {
 		return nil, xerrors.Errorf("failed to check if we win next round: %w", err)
 	}

@@ -10,6 +10,7 @@ require (
 	github.com/cespare/cp v1.1.1 // indirect
 	github.com/deckarep/golang-set v1.7.1 // indirect
 	github.com/dgraph-io/badger/v2 v2.2007.2 // indirect
+	github.com/dgrr/fastws v1.0.0
 	github.com/drand/drand v1.2.1
 	github.com/drand/kyber v1.1.5
 	github.com/elastic/gosigar v0.10.5 // indirect
@@ -46,6 +47,7 @@ require (
 	github.com/raulk/clock v1.1.0
 	github.com/rjeczalik/notify v0.9.2 // indirect
 	github.com/rs/cors v1.7.0 // indirect
+	github.com/shengdoushi/base58 v1.0.0
 	github.com/sirupsen/logrus v1.7.0
 	github.com/smartystreets/assertions v1.0.1 // indirect
 	github.com/spf13/viper v1.7.1
@@ -54,12 +56,12 @@ require (
 	github.com/steakknife/hamming v0.0.0-20180906055917-c99c65617cd3 // indirect
 	github.com/stretchr/testify v1.6.1
 	github.com/tyler-smith/go-bip39 v1.0.2 // indirect
+	github.com/valyala/fasthttp v1.17.0
 	github.com/warpfork/go-wish v0.0.0-20200122115046-b9ea61034e4a // indirect
 	github.com/whyrusleeping/cbor-gen v0.0.0-20200826160007-0b9f6c5fb163
 	github.com/wsddn/go-ecdh v0.0.0-20161211032359-48726bab9208 // indirect
 	github.com/xorcare/golden v0.6.1-0.20191112154924-b87f686d7542
 	golang.org/x/lint v0.0.0-20200302205851-738671d3881b // indirect
-	golang.org/x/net v0.0.0-20200707034311-ab3426394381 // indirect
 	golang.org/x/tools v0.0.0-20200827010519-17fd2f27a9e3 // indirect
 	golang.org/x/xerrors v0.0.0-20200804184101-5ec99f83aff1
 	google.golang.org/protobuf v1.25.0 // indirect

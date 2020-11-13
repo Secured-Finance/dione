@@ -106,15 +106,9 @@ contract DioneStaking is Ownable, ReentrancyGuard {
         return _totalStake;
     }
 
-// disabled for security reason
-//    function minerStake(address _minerAddr) external view returns (uint256) {
-//        MinerInfo storage miner = minerInfo[_minerAddr];
-//        return miner.amount;
-//    }
-
-    function minerStake() external view returns (uint256) {
-        MinerInfo storage miner = minerInfo[msg.sender];
-        return miner.amount;
+    function minerStake(address _minerAddr) external view returns (uint256) {
+       MinerInfo storage miner = minerInfo[_minerAddr];
+       return miner.amount;
     }
 
     // Update miner reward in DIONE tokens, only can be executed by owner of the contract

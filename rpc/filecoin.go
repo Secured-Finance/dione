@@ -13,22 +13,6 @@ type LotusClient struct {
 	jwt  string
 }
 
-type RequestBody struct {
-	Jsonrpc string
-	Method  string
-	Params  []string
-	ID      int
-}
-
-func NewRequestBody(method string) *RequestBody {
-	return &RequestBody{
-		Jsonrpc: "2.0",
-		Method:  method,
-		Params:  []string{},
-		ID:      0,
-	}
-}
-
 // NewClient returns a new client.
 func NewLotusClient(host string, token string) *LotusClient {
 	return &LotusClient{
