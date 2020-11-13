@@ -6,7 +6,7 @@ import (
 	"log"
 
 	"github.com/Secured-Finance/dione/rpc"
-	types "github.com/Secured-Finance/dione/solana/types"
+	"github.com/Secured-Finance/dione/solana/types"
 	ws "github.com/dgrr/fastws"
 	"github.com/shengdoushi/base58"
 	"github.com/sirupsen/logrus"
@@ -18,6 +18,16 @@ var solanaAlphabet = base58.BitcoinAlphabet
 type SolanaClient struct {
 	url string
 	ws  string
+}
+
+type SubParams struct {
+	Encoding string `json:"encoding"`
+}
+
+func NewSubParam(encoding string) *SubParams {
+	return &SubParams{
+		Encoding: encoding,
+	}
 }
 
 // NewSolanaClient creates a new solana client structure.
@@ -60,8 +70,10 @@ func (c *SolanaClient) subsctibeOnProgram(programID string) {
 
 	requestBody := rpc.NewRequestBody("programSubscribe")
 	requestBody.Params = append(requestBody.Params, programID)
-
+	p := NewSubParam("jsonParsed")
+	requestBody.Params = append(requestBody.Params, p)
 	body, err := json.Marshal(requestBody)
+	logrus.Info(string(body))
 	if err != nil {
 		logrus.Errorf("Couldn't unmarshal parameters to request body %v", err)
 	}
@@ -82,7 +94,6 @@ func (c *SolanaClient) subsctibeOnProgram(programID string) {
 		}
 		json.Unmarshal(msg, &parsedSub)
 		logrus.Info("Subscription: ", parsedSub)
-		// TODO: 1) Unmarshal base58 data to program structure in order to read data
 		// 2) Save data from oracle event in redis cache
 		// 3) Start mining of Solana oracle event
 	}

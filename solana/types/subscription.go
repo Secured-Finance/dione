@@ -26,7 +26,7 @@ type Value struct {
 }
 
 type Account struct {
-	Data       string `json:"data"`
+	Data       Data   `json:"data"`
 	Executable bool   `json:"executable"`
 	Lamports   int    `json:"lamports"`
 	Owner      string `json:"owner"`

@@ -1,7 +1,6 @@
 package store
 
 import (
-	"math/big"
 	"time"
 
 	"github.com/Secured-Finance/dione/ethclient"
@@ -13,15 +12,15 @@ import (
 
 type DioneStakeInfo struct {
 	ID             int
-	MinerStake     *big.Int
-	TotalStake     *big.Int
+	MinerStake     *types.BigInt
+	TotalStake     *types.BigInt
 	MinerAddress   string
 	MinerEthWallet string
 	Timestamp      time.Time
 	Ethereum       *ethclient.EthereumClient
 }
 
-func NewDioneStakeInfo(minerStake, totalStake *big.Int, minerWallet, minerEthWallet string, ethereumClient *ethclient.EthereumClient) *DioneStakeInfo {
+func NewDioneStakeInfo(minerStake, totalStake *types.BigInt, minerWallet, minerEthWallet string, ethereumClient *ethclient.EthereumClient) *DioneStakeInfo {
 	return &DioneStakeInfo{
 		MinerStake:     minerStake,
 		TotalStake:     totalStake,
@@ -89,8 +88,8 @@ func (s *Store) GetLastStakeInfo(wallet, ethWallet string) (*DioneStakeInfo, err
 func (s *DioneStakeInfo) Validate() error {
 	return validation.ValidateStruct(
 		s,
-		validation.Field(&s.MinerStake, validation.Required, validation.By(types.ValidateBigInt(s.MinerStake))),
-		validation.Field(&s.TotalStake, validation.Required, validation.By(types.ValidateBigInt(s.TotalStake))),
+		validation.Field(&s.MinerStake, validation.Required, validation.By(types.ValidateBigInt(s.MinerStake.Int))),
+		validation.Field(&s.TotalStake, validation.Required, validation.By(types.ValidateBigInt(s.TotalStake.Int))),
 		validation.Field(&s.MinerAddress, validation.Required),
 		validation.Field(&s.MinerEthWallet, validation.Required),
 	)

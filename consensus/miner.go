@@ -6,6 +6,7 @@ import (
 
 	"github.com/libp2p/go-libp2p-core/peer"
 
+	"github.com/Secured-Finance/dione/ethclient"
 	"github.com/Secured-Finance/dione/types"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/filecoin-project/go-state-types/crypto"
@@ -55,6 +56,27 @@ func NewMiningBase() *MiningBase {
 	return &MiningBase{
 		nullRounds: 0,
 	}
+}
+
+func (m *MinerBase) UpdateStake(c *ethclient.EthereumClient, miner common.Address) error {
+	mStake, err := c.GetMinerStake(miner)
+
+	if err != nil {
+		logrus.Warn("Can't get miner stake", err)
+		return err
+	}
+
+	nStake, err := c.GetTotalStake()
+
+	if err != nil {
+		logrus.Warn("Can't get miner stake", err)
+		return err
+	}
+
+	m.MinerStake = *mStake
+	m.NetworkStake = *nStake
+
+	return nil
 }
 
 // Start, Stop mining functions
