@@ -1,24 +1,25 @@
 //SPDX-License-Identifier: MIT
 pragma solidity >= 0.5.0 < 0.7.0;
 
-import "./Whitelist.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 
-contract Aggregator {
-  Whitelist whitelist;
+interface IDioneStaking {
+    function mine(address _minerAddr) external;
+    function mineAndStake(address _minerAddr) external;
+    function isLegitMiner(address _minerAddr) external returns (bool);
+}
 
-  constructor(Whitelist _whitelist) public {
-    whitelist = _whitelist;
+contract Aggregator is Ownable, ReentrancyGuard {
+  IDioneStaking public dioneStaking;
+
+  // Set DioneStaking contract. Can only be called by the owner.
+  function setDioneStaking(IDioneStaking _dioneStaking) public onlyOwner {
+      dioneStaking = _dioneStaking;
   }
 
-  function collectData(uint256 reqID, string memory data, address callbackAddress, bytes4 callbackMethodID) public {
-    address[] memory nodes = whitelist.getNodes();
-    bool nodeInTheList = false;
-    for (uint256 i = 0; i < nodes.length-1; i++) {
-      if (nodes[i] == msg.sender) {
-        nodeInTheList = true;
-      }
-    }
-    require(nodeInTheList);
+  function collectData(uint256 reqID, string memory data, address callbackAddress, bytes4 callbackMethodID) public nonReentrant {
+    require(dioneStaking.isLegitMiner(msg.sender));
     (bool success,) = callbackAddress.call(abi.encode(callbackMethodID, reqID, data));
     require(success);
   }

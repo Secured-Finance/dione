@@ -117,9 +117,18 @@ contract DioneStaking is Ownable, ReentrancyGuard {
         minerReward = _minerReward;
     }
 
+    function isLegitMiner(address _minerAddr) external returns (bool) {
+        MinerInfo storage miner = minerInfo[_minerAddr];
+        if (miner.amount >= minimumStake) {
+            return true;
+        }
+        return false;
+    }
+
     // Update minimum stake in DIONE tokens for miners, only can be executed by owner of the contract
     function setMinimumStake(uint256 _minimumStake) public onlyOwner {
         require(_minimumStake > 0, "!minerReward-0");
         minimumStake = _minimumStake;
     }
+
 }

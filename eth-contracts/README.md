@@ -1,3 +1,3 @@
-# P2P Oracle Smart Contracts
+# Dione Smart Contracts
 
-Smart contracts to work with Secured Finance P2P oracle network.
+Smart contracts to work with Secured Finance Dione oracle network.

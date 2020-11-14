@@ -6,7 +6,7 @@ import (
 
 	"github.com/Secured-Finance/dione/contracts/aggregator"
 	stakingContract "github.com/Secured-Finance/dione/contracts/dioneStaking"
-	"github.com/Secured-Finance/dione/contracts/oracleemitter"
+	oracleEmitter "github.com/Secured-Finance/dione/contracts/oracleemitter"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
@@ -19,7 +19,7 @@ type EthereumClient struct {
 	client         *ethclient.Client
 	ethAddress     *common.Address
 	authTransactor *bind.TransactOpts
-	oracleEmitter  *oracleemitter.OracleEmitterSession
+	oracleEmitter  *oracleEmitter.OracleEmitterSession
 	aggregator     *aggregator.AggregatorSession
 	dioneStaking   *stakingContract.DioneStakingSession
 }
@@ -58,7 +58,7 @@ func (c *EthereumClient) Initialize(ctx context.Context, url, privateKey, oracle
 	c.authTransactor = authTransactor
 	c.ethAddress = &c.authTransactor.From
 
-	oracleEmitter, err := oracleemitter.NewOracleEmitter(common.HexToAddress(oracleEmitterContractAddress), client)
+	emitter, err := oracleEmitter.NewOracleEmitter(common.HexToAddress(oracleEmitterContractAddress), client)
 	if err != nil {
 		return err
 	}
@@ -66,8 +66,8 @@ func (c *EthereumClient) Initialize(ctx context.Context, url, privateKey, oracle
 	if err != nil {
 		return err
 	}
-	c.oracleEmitter = &oracleemitter.OracleEmitterSession{
-		Contract: oracleEmitter,
+	c.oracleEmitter = &oracleEmitter.OracleEmitterSession{
+		Contract: emitter,
 		CallOpts: bind.CallOpts{
 			Pending: true,
 			From:    authTransactor.From,
@@ -103,69 +103,8 @@ func (c *EthereumClient) GetEthAddress() *common.Address {
 	return c.ethAddress
 }
 
-// // Balance returns the balance of the given ethereum address.
-// func (c *EthereumClient) Balance(ctx context.Context, address string) (*big.Int, error) {
-// 	ethereumAddress := common.HexToAddress(address)
-// 	value, err := c.HttpClient.BalanceAt(ctx, ethereumAddress, nil)
-// 	if err != nil {
-// 		return nil, err
-// 	}
-// 	return value, nil
-// }
-
-// func (c *EthereumClient) SendTransaction(ctx context.Context, private_key, to string, amount int64) string {
-// 	privateKey, err := crypto.HexToECDSA(private_key)
-// 	if err != nil {
-// 		c.Logger.Fatal("Failed to parse private key", err)
-// 	}
-
-// 	publicKey := privateKey.Public()
-// 	publicKeyECDSA, ok := publicKey.(*ecdsa.PublicKey)
-// 	if !ok {
-// 		c.Logger.Fatal("Cannot assert type: publicKey is not of type *ecdsa.PublicKey", err)
-// 	}
-
-// 	fromAddress := crypto.PubkeyToAddress(*publicKeyECDSA)
-// 	nonce, err := c.HttpClient.PendingNonceAt(ctx, fromAddress)
-// 	if err != nil {
-// 		c.Logger.Fatal("Failed to generate wallet nonce value", err)
-// 	}
-
-// 	value := big.NewInt(amount)
-// 	gasLimit := uint64(21000) // in units
-// 	gasPrice, err := c.HttpClient.SuggestGasPrice(ctx)
-// 	if err != nil {
-// 		c.Logger.Fatal("Failed to suggest new gas price", err)
-// 	}
-
-// 	toAddress := common.HexToAddress(to)
-// 	var data []byte
-// 	tx := types.NewTransaction(nonce, toAddress, value, gasLimit, gasPrice, data)
-
-// 	chainID, err := c.HttpClient.NetworkID(ctx)
-// 	if err != nil {
-// 		c.Logger.Fatal("Failed to get network ID", err)
-// 	}
-
-// 	signedTx, err := types.SignTx(tx, types.NewEIP155Signer(chainID), privateKey)
-// 	if err != nil {
-// 		c.Logger.Fatal("Failed to sign transaction", err)
-// 	}
-
-// 	err = c.HttpClient.SendTransaction(ctx, signedTx)
-// 	if err != nil {
-// 		c.Logger.Fatal("Failed to send signed transaction", err)
-// 	}
-
-// 	TxHash := signedTx.Hash().Hex()
-
-// 	c.Logger.Info("Transaction sent: %s", TxHash)
-
-// 	return TxHash
-// }
-
-func (c *EthereumClient) SubscribeOnOracleEvents() (chan *oracleemitter.OracleEmitterNewOracleRequest, event.Subscription, error) {
-	resChan := make(chan *oracleemitter.OracleEmitterNewOracleRequest)
+func (c *EthereumClient) SubscribeOnOracleEvents() (chan *oracleEmitter.OracleEmitterNewOracleRequest, event.Subscription, error) {
+	resChan := make(chan *oracleEmitter.OracleEmitterNewOracleRequest)
 	requestsFilter := c.oracleEmitter.Contract.OracleEmitterFilterer
 	subscription, err := requestsFilter.WatchNewOracleRequest(&bind.WatchOpts{
 		Start:   nil, //last block

@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/Secured-Finance/dione/solana"
 	"github.com/Secured-Finance/dione/types"
 
 	"github.com/Secured-Finance/dione/wallet"
@@ -42,6 +43,7 @@ type Node struct {
 	Config           *config.Config
 	Lotus            *rpc.LotusClient
 	Ethereum         *ethclient.EthereumClient
+	Solana           *solana.SolanaClient
 	ConsensusManager *consensus.PBFTConsensusManager
 	Miner            *consensus.Miner
 	Beacon           beacon.BeaconNetworks
@@ -133,6 +135,11 @@ func (n *Node) setupEthereumClient() error {
 func (n *Node) setupFilecoinClient() {
 	lotus := rpc.NewLotusClient(n.Config.Filecoin.LotusHost, n.Config.Filecoin.LotusToken)
 	n.Lotus = lotus
+}
+
+func (n *Node) setupSolanaClient() {
+	solana := solana.NewSolanaClient()
+	n.Solana = solana
 }
 
 func (n *Node) setupPubsub() {

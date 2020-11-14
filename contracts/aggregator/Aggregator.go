@@ -27,7 +27,7 @@ var (
 )
 
 // AggregatorABI is the input ABI used to generate the binding from.
-const AggregatorABI = "[{\"inputs\":[{\"internalType\":\"contractWhitelist\",\"name\":\"_whitelist\",\"type\":\"address\"}],\"stateMutability\":\"nonpayable\",\"type\":\"constructor\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"reqID\",\"type\":\"uint256\"},{\"internalType\":\"string\",\"name\":\"data\",\"type\":\"string\"},{\"internalType\":\"address\",\"name\":\"callbackAddress\",\"type\":\"address\"},{\"internalType\":\"bytes4\",\"name\":\"callbackMethodID\",\"type\":\"bytes4\"}],\"name\":\"collectData\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"}]"
+const AggregatorABI = "[{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"address\",\"name\":\"previousOwner\",\"type\":\"address\"},{\"indexed\":true,\"internalType\":\"address\",\"name\":\"newOwner\",\"type\":\"address\"}],\"name\":\"OwnershipTransferred\",\"type\":\"event\"},{\"inputs\":[],\"name\":\"dioneStaking\",\"outputs\":[{\"internalType\":\"contractIDioneStaking\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"owner\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"renounceOwnership\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"newOwner\",\"type\":\"address\"}],\"name\":\"transferOwnership\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"contractIDioneStaking\",\"name\":\"_dioneStaking\",\"type\":\"address\"}],\"name\":\"setDioneStaking\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"reqID\",\"type\":\"uint256\"},{\"internalType\":\"string\",\"name\":\"data\",\"type\":\"string\"},{\"internalType\":\"address\",\"name\":\"callbackAddress\",\"type\":\"address\"},{\"internalType\":\"bytes4\",\"name\":\"callbackMethodID\",\"type\":\"bytes4\"}],\"name\":\"collectData\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"}]"
 
 // Aggregator is an auto generated Go binding around an Ethereum contract.
 type Aggregator struct {
@@ -171,6 +171,58 @@ func (_Aggregator *AggregatorTransactorRaw) Transact(opts *bind.TransactOpts, me
 	return _Aggregator.Contract.contract.Transact(opts, method, params...)
 }
 
+// DioneStaking is a free data retrieval call binding the contract method 0xe7013ddd.
+//
+// Solidity: function dioneStaking() view returns(address)
+func (_Aggregator *AggregatorCaller) DioneStaking(opts *bind.CallOpts) (common.Address, error) {
+	var (
+		ret0 = new(common.Address)
+	)
+	out := ret0
+	err := _Aggregator.contract.Call(opts, out, "dioneStaking")
+	return *ret0, err
+}
+
+// DioneStaking is a free data retrieval call binding the contract method 0xe7013ddd.
+//
+// Solidity: function dioneStaking() view returns(address)
+func (_Aggregator *AggregatorSession) DioneStaking() (common.Address, error) {
+	return _Aggregator.Contract.DioneStaking(&_Aggregator.CallOpts)
+}
+
+// DioneStaking is a free data retrieval call binding the contract method 0xe7013ddd.
+//
+// Solidity: function dioneStaking() view returns(address)
+func (_Aggregator *AggregatorCallerSession) DioneStaking() (common.Address, error) {
+	return _Aggregator.Contract.DioneStaking(&_Aggregator.CallOpts)
+}
+
+// Owner is a free data retrieval call binding the contract method 0x8da5cb5b.
+//
+// Solidity: function owner() view returns(address)
+func (_Aggregator *AggregatorCaller) Owner(opts *bind.CallOpts) (common.Address, error) {
+	var (
+		ret0 = new(common.Address)
+	)
+	out := ret0
+	err := _Aggregator.contract.Call(opts, out, "owner")
+	return *ret0, err
+}
+
+// Owner is a free data retrieval call binding the contract method 0x8da5cb5b.
+//
+// Solidity: function owner() view returns(address)
+func (_Aggregator *AggregatorSession) Owner() (common.Address, error) {
+	return _Aggregator.Contract.Owner(&_Aggregator.CallOpts)
+}
+
+// Owner is a free data retrieval call binding the contract method 0x8da5cb5b.
+//
+// Solidity: function owner() view returns(address)
+func (_Aggregator *AggregatorCallerSession) Owner() (common.Address, error) {
+	return _Aggregator.Contract.Owner(&_Aggregator.CallOpts)
+}
+
 // CollectData is a paid mutator transaction binding the contract method 0x05187092.
 //
 // Solidity: function collectData(uint256 reqID, string data, address callbackAddress, bytes4 callbackMethodID) returns()
@@ -190,4 +242,219 @@ func (_Aggregator *AggregatorSession) CollectData(reqID *big.Int, data string, c
 // Solidity: function collectData(uint256 reqID, string data, address callbackAddress, bytes4 callbackMethodID) returns()
 func (_Aggregator *AggregatorTransactorSession) CollectData(reqID *big.Int, data string, callbackAddress common.Address, callbackMethodID [4]byte) (*types.Transaction, error) {
 	return _Aggregator.Contract.CollectData(&_Aggregator.TransactOpts, reqID, data, callbackAddress, callbackMethodID)
+}
+
+// RenounceOwnership is a paid mutator transaction binding the contract method 0x715018a6.
+//
+// Solidity: function renounceOwnership() returns()
+func (_Aggregator *AggregatorTransactor) RenounceOwnership(opts *bind.TransactOpts) (*types.Transaction, error) {
+	return _Aggregator.contract.Transact(opts, "renounceOwnership")
+}
+
+// RenounceOwnership is a paid mutator transaction binding the contract method 0x715018a6.
+//
+// Solidity: function renounceOwnership() returns()
+func (_Aggregator *AggregatorSession) RenounceOwnership() (*types.Transaction, error) {
+	return _Aggregator.Contract.RenounceOwnership(&_Aggregator.TransactOpts)
+}
+
+// RenounceOwnership is a paid mutator transaction binding the contract method 0x715018a6.
+//
+// Solidity: function renounceOwnership() returns()
+func (_Aggregator *AggregatorTransactorSession) RenounceOwnership() (*types.Transaction, error) {
+	return _Aggregator.Contract.RenounceOwnership(&_Aggregator.TransactOpts)
+}
+
+// SetDioneStaking is a paid mutator transaction binding the contract method 0xc2cf98a4.
+//
+// Solidity: function setDioneStaking(address _dioneStaking) returns()
+func (_Aggregator *AggregatorTransactor) SetDioneStaking(opts *bind.TransactOpts, _dioneStaking common.Address) (*types.Transaction, error) {
+	return _Aggregator.contract.Transact(opts, "setDioneStaking", _dioneStaking)
+}
+
+// SetDioneStaking is a paid mutator transaction binding the contract method 0xc2cf98a4.
+//
+// Solidity: function setDioneStaking(address _dioneStaking) returns()
+func (_Aggregator *AggregatorSession) SetDioneStaking(_dioneStaking common.Address) (*types.Transaction, error) {
+	return _Aggregator.Contract.SetDioneStaking(&_Aggregator.TransactOpts, _dioneStaking)
+}
+
+// SetDioneStaking is a paid mutator transaction binding the contract method 0xc2cf98a4.
+//
+// Solidity: function setDioneStaking(address _dioneStaking) returns()
+func (_Aggregator *AggregatorTransactorSession) SetDioneStaking(_dioneStaking common.Address) (*types.Transaction, error) {
+	return _Aggregator.Contract.SetDioneStaking(&_Aggregator.TransactOpts, _dioneStaking)
+}
+
+// TransferOwnership is a paid mutator transaction binding the contract method 0xf2fde38b.
+//
+// Solidity: function transferOwnership(address newOwner) returns()
+func (_Aggregator *AggregatorTransactor) TransferOwnership(opts *bind.TransactOpts, newOwner common.Address) (*types.Transaction, error) {
+	return _Aggregator.contract.Transact(opts, "transferOwnership", newOwner)
+}
+
+// TransferOwnership is a paid mutator transaction binding the contract method 0xf2fde38b.
+//
+// Solidity: function transferOwnership(address newOwner) returns()
+func (_Aggregator *AggregatorSession) TransferOwnership(newOwner common.Address) (*types.Transaction, error) {
+	return _Aggregator.Contract.TransferOwnership(&_Aggregator.TransactOpts, newOwner)
+}
+
+// TransferOwnership is a paid mutator transaction binding the contract method 0xf2fde38b.
+//
+// Solidity: function transferOwnership(address newOwner) returns()
+func (_Aggregator *AggregatorTransactorSession) TransferOwnership(newOwner common.Address) (*types.Transaction, error) {
+	return _Aggregator.Contract.TransferOwnership(&_Aggregator.TransactOpts, newOwner)
+}
+
+// AggregatorOwnershipTransferredIterator is returned from FilterOwnershipTransferred and is used to iterate over the raw logs and unpacked data for OwnershipTransferred events raised by the Aggregator contract.
+type AggregatorOwnershipTransferredIterator struct {
+	Event *AggregatorOwnershipTransferred // Event containing the contract specifics and raw log
+
+	contract *bind.BoundContract // Generic contract to use for unpacking event data
+	event    string              // Event name to use for unpacking event data
+
+	logs chan types.Log        // Log channel receiving the found contract events
+	sub  ethereum.Subscription // Subscription for errors, completion and termination
+	done bool                  // Whether the subscription completed delivering logs
+	fail error                 // Occurred error to stop iteration
+}
+
+// Next advances the iterator to the subsequent event, returning whether there
+// are any more events found. In case of a retrieval or parsing error, false is
+// returned and Error() can be queried for the exact failure.
+func (it *AggregatorOwnershipTransferredIterator) Next() bool {
+	// If the iterator failed, stop iterating
+	if it.fail != nil {
+		return false
+	}
+	// If the iterator completed, deliver directly whatever's available
+	if it.done {
+		select {
+		case log := <-it.logs:
+			it.Event = new(AggregatorOwnershipTransferred)
+			if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
+				it.fail = err
+				return false
+			}
+			it.Event.Raw = log
+			return true
+
+		default:
+			return false
+		}
+	}
+	// Iterator still in progress, wait for either a data or an error event
+	select {
+	case log := <-it.logs:
+		it.Event = new(AggregatorOwnershipTransferred)
+		if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
+			it.fail = err
+			return false
+		}
+		it.Event.Raw = log
+		return true
+
+	case err := <-it.sub.Err():
+		it.done = true
+		it.fail = err
+		return it.Next()
+	}
+}
+
+// Error returns any retrieval or parsing error occurred during filtering.
+func (it *AggregatorOwnershipTransferredIterator) Error() error {
+	return it.fail
+}
+
+// Close terminates the iteration process, releasing any pending underlying
+// resources.
+func (it *AggregatorOwnershipTransferredIterator) Close() error {
+	it.sub.Unsubscribe()
+	return nil
+}
+
+// AggregatorOwnershipTransferred represents a OwnershipTransferred event raised by the Aggregator contract.
+type AggregatorOwnershipTransferred struct {
+	PreviousOwner common.Address
+	NewOwner      common.Address
+	Raw           types.Log // Blockchain specific contextual infos
+}
+
+// FilterOwnershipTransferred is a free log retrieval operation binding the contract event 0x8be0079c531659141344cd1fd0a4f28419497f9722a3daafe3b4186f6b6457e0.
+//
+// Solidity: event OwnershipTransferred(address indexed previousOwner, address indexed newOwner)
+func (_Aggregator *AggregatorFilterer) FilterOwnershipTransferred(opts *bind.FilterOpts, previousOwner []common.Address, newOwner []common.Address) (*AggregatorOwnershipTransferredIterator, error) {
+
+	var previousOwnerRule []interface{}
+	for _, previousOwnerItem := range previousOwner {
+		previousOwnerRule = append(previousOwnerRule, previousOwnerItem)
+	}
+	var newOwnerRule []interface{}
+	for _, newOwnerItem := range newOwner {
+		newOwnerRule = append(newOwnerRule, newOwnerItem)
+	}
+
+	logs, sub, err := _Aggregator.contract.FilterLogs(opts, "OwnershipTransferred", previousOwnerRule, newOwnerRule)
+	if err != nil {
+		return nil, err
+	}
+	return &AggregatorOwnershipTransferredIterator{contract: _Aggregator.contract, event: "OwnershipTransferred", logs: logs, sub: sub}, nil
+}
+
+// WatchOwnershipTransferred is a free log subscription operation binding the contract event 0x8be0079c531659141344cd1fd0a4f28419497f9722a3daafe3b4186f6b6457e0.
+//
+// Solidity: event OwnershipTransferred(address indexed previousOwner, address indexed newOwner)
+func (_Aggregator *AggregatorFilterer) WatchOwnershipTransferred(opts *bind.WatchOpts, sink chan<- *AggregatorOwnershipTransferred, previousOwner []common.Address, newOwner []common.Address) (event.Subscription, error) {
+
+	var previousOwnerRule []interface{}
+	for _, previousOwnerItem := range previousOwner {
+		previousOwnerRule = append(previousOwnerRule, previousOwnerItem)
+	}
+	var newOwnerRule []interface{}
+	for _, newOwnerItem := range newOwner {
+		newOwnerRule = append(newOwnerRule, newOwnerItem)
+	}
+
+	logs, sub, err := _Aggregator.contract.WatchLogs(opts, "OwnershipTransferred", previousOwnerRule, newOwnerRule)
+	if err != nil {
+		return nil, err
+	}
+	return event.NewSubscription(func(quit <-chan struct{}) error {
+		defer sub.Unsubscribe()
+		for {
+			select {
+			case log := <-logs:
+				// New log arrived, parse the event and forward to the user
+				event := new(AggregatorOwnershipTransferred)
+				if err := _Aggregator.contract.UnpackLog(event, "OwnershipTransferred", log); err != nil {
+					return err
+				}
+				event.Raw = log
+
+				select {
+				case sink <- event:
+				case err := <-sub.Err():
+					return err
+				case <-quit:
+					return nil
+				}
+			case err := <-sub.Err():
+				return err
+			case <-quit:
+				return nil
+			}
+		}
+	}), nil
+}
+
+// ParseOwnershipTransferred is a log parse operation binding the contract event 0x8be0079c531659141344cd1fd0a4f28419497f9722a3daafe3b4186f6b6457e0.
+//
+// Solidity: event OwnershipTransferred(address indexed previousOwner, address indexed newOwner)
+func (_Aggregator *AggregatorFilterer) ParseOwnershipTransferred(log types.Log) (*AggregatorOwnershipTransferred, error) {
+	event := new(AggregatorOwnershipTransferred)
+	if err := _Aggregator.contract.UnpackLog(event, "OwnershipTransferred", log); err != nil {
+		return nil, err
+	}
+	return event, nil
 }

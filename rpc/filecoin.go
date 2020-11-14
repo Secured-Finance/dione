@@ -1,51 +1,52 @@
 package rpc
 
 import (
-	"bytes"
 	"encoding/json"
 	"fmt"
-	"net/http"
+
+	"github.com/Secured-Finance/dione/lib"
+	"github.com/sirupsen/logrus"
+	"github.com/valyala/fasthttp"
 )
+
+var filecoinURL = "https://filecoin.infura.io/"
 
 // client implements the `Client` interface.
 type LotusClient struct {
-	host string
-	jwt  string
+	host          string
+	projectID     string
+	projectSecret string
 }
 
 // NewClient returns a new client.
-func NewLotusClient(host string, token string) *LotusClient {
+func NewLotusClient(pID, secret string) *LotusClient {
 	return &LotusClient{
-		host: host,
-		jwt:  token,
+		host:          filecoinURL,
+		projectID:     pID,
+		projectSecret: secret,
 	}
 }
 
-func (c *LotusClient) GetMessage(txHash string) (*http.Response, error) {
-	requestBody := NewRequestBody("Filecoin.GetMessage")
+func (c *LotusClient) GetMessage(txHash string) (*fasthttp.Response, error) {
+	req := fasthttp.AcquireRequest()
+	req.SetRequestURI(c.host)
+	req.Header.SetMethod("POST")
+	req.Header.SetContentType("application/json")
+	req.Header.Set("Authorization", "Basic "+lib.BasicAuth(c.projectID, c.projectSecret))
+	requestBody := NewRequestBody("Filecoin.ChainGetMessage")
 	requestBody.Params = append(requestBody.Params, txHash)
 	body, err := json.Marshal(requestBody)
 	if err != nil {
 		return nil, fmt.Errorf("Failed to marshal request body %v", err)
 	}
-	client := http.Client{}
-	req, err := http.NewRequest("POST", c.host, bytes.NewBuffer(body))
-	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Authentication", "Bearer "+c.jwt)
-	if err != nil {
-		return nil, fmt.Errorf("Failed to construct lotus node rpc request %v", err)
+	req.AppendBody(body)
+	resp := fasthttp.AcquireResponse()
+	client := &fasthttp.Client{}
+	if err = client.Do(req, resp); err != nil {
+		logrus.Warn("Failed to construct filecoin node rpc request", err)
+		return nil, err
 	}
-	return client.Do(req)
-}
-
-// HandleRequest implements the `Client` interface.
-func (c *LotusClient) HandleRequest(r *http.Request, data []byte) (*http.Response, error) {
-	client := http.Client{}
-	req, err := http.NewRequest("POST", c.host, bytes.NewBuffer(data))
-	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Authentication", "Bearer "+c.jwt)
-	if err != nil {
-		return nil, fmt.Errorf("Failed to construct lotus node rpc request %v", err)
-	}
-	return client.Do(req)
+	bodyBytes := resp.Body()
+	logrus.Info(string(bodyBytes))
+	return resp, nil
 }
