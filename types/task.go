@@ -16,12 +16,12 @@ const (
 	SolanaTaskType
 )
 
-//	TaskEpoch represents the timestamp of Task computed by the Dione miner
-type TaskEpoch int64
+//	DrandRound represents the round number in DRAND
+type DrandRound int64
 
-const TicketRandomnessLookback = TaskEpoch(1)
+const TicketRandomnessLookback = DrandRound(1)
 
-func (e TaskEpoch) String() string {
+func (e DrandRound) String() string {
 	return strconv.FormatInt(int64(e), 10)
 }
 
@@ -34,7 +34,7 @@ type DioneTask struct {
 	ElectionProof *ElectionProof
 	BeaconEntries []BeaconEntry
 	Signature     *Signature
-	Epoch         TaskEpoch
+	DrandRound    DrandRound
 	Payload       []byte
 }
 

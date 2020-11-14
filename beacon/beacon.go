@@ -17,7 +17,7 @@ type BeaconResult struct {
 
 type BeaconNetworks []BeaconNetwork
 
-func (bn BeaconNetworks) BeaconNetworkForEpoch(e types.TaskEpoch) BeaconAPI {
+func (bn BeaconNetworks) BeaconNetworkForRound(e types.DrandRound) BeaconAPI {
 	for i := len(bn) - 1; i >= 0; i-- {
 		bp := bn[i]
 		if e >= bp.Start {
@@ -28,7 +28,7 @@ func (bn BeaconNetworks) BeaconNetworkForEpoch(e types.TaskEpoch) BeaconAPI {
 }
 
 type BeaconNetwork struct {
-	Start  types.TaskEpoch
+	Start  types.DrandRound
 	Beacon BeaconAPI
 }
 
@@ -39,12 +39,12 @@ type BeaconNetwork struct {
 type BeaconAPI interface {
 	Entry(context.Context, uint64) <-chan BeaconResult
 	VerifyEntry(types.BeaconEntry, types.BeaconEntry) error
-	MaxBeaconRoundForEpoch(types.TaskEpoch) uint64
+	LatestBeaconRound() uint64
 }
 
-func ValidateTaskBeacons(beaconNetworks BeaconNetworks, t *types.DioneTask, prevEpoch types.TaskEpoch, prevEntry types.BeaconEntry) error {
-	parentBeacon := beaconNetworks.BeaconNetworkForEpoch(prevEpoch)
-	currBeacon := beaconNetworks.BeaconNetworkForEpoch(t.Epoch)
+func ValidateTaskBeacons(beaconNetworks BeaconNetworks, t *types.DioneTask, prevEpoch types.DrandRound, prevEntry types.BeaconEntry) error {
+	parentBeacon := beaconNetworks.BeaconNetworkForRound(prevEpoch)
+	currBeacon := beaconNetworks.BeaconNetworkForRound(t.DrandRound)
 	if parentBeacon != currBeacon {
 		if len(t.BeaconEntries) != 2 {
 			return fmt.Errorf("expected two beacon entries at beacon fork, got %d", len(t.BeaconEntries))
@@ -58,9 +58,8 @@ func ValidateTaskBeacons(beaconNetworks BeaconNetworks, t *types.DioneTask, prev
 	}
 
 	// TODO: fork logic
-	bNetwork := beaconNetworks.BeaconNetworkForEpoch(t.Epoch)
-	maxRound := bNetwork.MaxBeaconRoundForEpoch(t.Epoch)
-	if maxRound == prevEntry.Round {
+	bNetwork := beaconNetworks.BeaconNetworkForRound(t.DrandRound)
+	if uint64(t.DrandRound) == prevEntry.Round {
 		if len(t.BeaconEntries) != 0 {
 			return fmt.Errorf("expected not to have any beacon entries in this task, got %d", len(t.BeaconEntries))
 		}
@@ -72,8 +71,8 @@ func ValidateTaskBeacons(beaconNetworks BeaconNetworks, t *types.DioneTask, prev
 	}
 
 	last := t.BeaconEntries[len(t.BeaconEntries)-1]
-	if last.Round != maxRound {
-		return fmt.Errorf("expected final beacon entry in task to be at round %d, got %d", maxRound, last.Round)
+	if last.Round != uint64(t.DrandRound) {
+		return fmt.Errorf("expected final beacon entry in task to be at round %d, got %d", uint64(t.DrandRound), last.Round)
 	}
 
 	for i, e := range t.BeaconEntries {
@@ -86,61 +85,58 @@ func ValidateTaskBeacons(beaconNetworks BeaconNetworks, t *types.DioneTask, prev
 	return nil
 }
 
-func BeaconEntriesForTask(ctx context.Context, beaconNetworks BeaconNetworks, epoch types.TaskEpoch, prevEpoch types.TaskEpoch, prev types.BeaconEntry) ([]types.BeaconEntry, error) {
-	prevBeacon := beaconNetworks.BeaconNetworkForEpoch(prevEpoch)
-	currBeacon := beaconNetworks.BeaconNetworkForEpoch(epoch)
-	if prevBeacon != currBeacon {
-		// Fork logic
-		round := currBeacon.MaxBeaconRoundForEpoch(epoch)
-		out := make([]types.BeaconEntry, 2)
-		rch := currBeacon.Entry(ctx, round-1)
-		res := <-rch
-		if res.Err != nil {
-			return nil, fmt.Errorf("getting entry %d returned error: %w", round-1, res.Err)
-		}
-		out[0] = res.Entry
-		rch = currBeacon.Entry(ctx, round)
-		res = <-rch
-		if res.Err != nil {
-			return nil, fmt.Errorf("getting entry %d returned error: %w", round, res.Err)
-		}
-		out[1] = res.Entry
-		return out, nil
-	}
+func BeaconEntriesForTask(ctx context.Context, beaconNetworks BeaconNetworks) ([]types.BeaconEntry, error) {
+	beacon := beaconNetworks.BeaconNetworkForRound(0)
+	round := beacon.LatestBeaconRound()
 
-	beacon := beaconNetworks.BeaconNetworkForEpoch(epoch)
+	//prevBeacon := beaconNetworks.BeaconNetworkForRound(prevRound)
+	//currBeacon := beaconNetworks.BeaconNetworkForRound(round)
+	//if prevBeacon != currBeacon {
+	//	// Fork logic
+	//	round := currBeacon.LatestBeaconRound()
+	//	out := make([]types.BeaconEntry, 2)
+	//	rch := currBeacon.Entry(ctx, round-1)
+	//	res := <-rch
+	//	if res.Err != nil {
+	//		return nil, fmt.Errorf("getting entry %d returned error: %w", round-1, res.Err)
+	//	}
+	//	out[0] = res.Entry
+	//	rch = currBeacon.Entry(ctx, round)
+	//	res = <-rch
+	//	if res.Err != nil {
+	//		return nil, fmt.Errorf("getting entry %d returned error: %w", round, res.Err)
+	//	}
+	//	out[1] = res.Entry
+	//	return out, nil
+	//}
 
 	start := lib.Clock.Now()
 
-	maxRound := beacon.MaxBeaconRoundForEpoch(epoch)
-	if maxRound == prev.Round {
-		return nil, nil
-	}
+	//if round == prev.Round {
+	//	return nil, nil
+	//}
+	//
+	//// TODO: this is a sketchy way to handle the genesis block not having a beacon entry
+	//if prev.Round == 0 {
+	//	prev.Round = round - 1
+	//}
 
-	// TODO: this is a sketchy way to handle the genesis block not having a beacon entry
-	if prev.Round == 0 {
-		prev.Round = maxRound - 1
+	out := make([]types.BeaconEntry, 2)
+	rch := beacon.Entry(ctx, round-1)
+	res := <-rch
+	if res.Err != nil {
+		return nil, fmt.Errorf("getting entry %d returned error: %w", round-1, res.Err)
 	}
-
-	cur := maxRound
-	var out []types.BeaconEntry
-	for cur > prev.Round {
-		rch := beacon.Entry(ctx, cur)
-		select {
-		case resp := <-rch:
-			if resp.Err != nil {
-				return nil, fmt.Errorf("beacon entry request returned error: %w", resp.Err)
-			}
-
-			out = append(out, resp.Entry)
-			cur = resp.Entry.Round - 1
-		case <-ctx.Done():
-			return nil, fmt.Errorf("context timed out waiting on beacon entry to come back for epoch %d: %w", epoch, ctx.Err())
-		}
+	out[0] = res.Entry
+	rch = beacon.Entry(ctx, round)
+	res = <-rch
+	if res.Err != nil {
+		return nil, fmt.Errorf("getting entry %d returned error: %w", round, res.Err)
 	}
+	out[1] = res.Entry
 
 	logrus.Debug("fetching beacon entries", "took", lib.Clock.Since(start), "numEntries", len(out))
-	reverse(out)
+	//reverse(out)
 	return out, nil
 }
 

@@ -9,7 +9,7 @@ import (
 	"golang.org/x/xerrors"
 )
 
-func DrawRandomness(rbase []byte, pers crypto.DomainSeparationTag, round types.TaskEpoch, entropy []byte) ([]byte, error) {
+func DrawRandomness(rbase []byte, pers crypto.DomainSeparationTag, round types.DrandRound, entropy []byte) ([]byte, error) {
 	h := blake2b.New256()
 	if err := binary.Write(h, binary.BigEndian, int64(pers)); err != nil {
 		return nil, xerrors.Errorf("deriving randomness: %w", err)

@@ -159,16 +159,12 @@ func (db *DrandBeacon) VerifyEntry(curr, prev types.BeaconEntry) error {
 	return err
 }
 
-func (db *DrandBeacon) MaxBeaconRoundForEpoch(taskEpoch types.TaskEpoch) uint64 {
-	var latestTs uint64
-	if taskEpoch == 0 {
-		latestTs = db.chainGenesisTime
-	} else {
-		latestTs = ((uint64(taskEpoch) * db.chainRoundTime) + db.chainGenesisTime) - db.chainRoundTime
+func (db *DrandBeacon) LatestBeaconRound() uint64 {
+	latestDround, err := db.DrandClient.Get(context.TODO(), 0)
+	if err != nil {
+		logrus.Errorf("failed to get latest drand round: %w", err)
 	}
-
-	dround := (latestTs - db.drandGenesisTime) / uint64(db.Interval.Seconds())
-	return dround
+	return latestDround.Round()
 }
 
 var _ beacon.BeaconAPI = (*DrandBeacon)(nil)

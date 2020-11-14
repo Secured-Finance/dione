@@ -4,6 +4,8 @@ import (
 	"context"
 	"sync"
 
+	"github.com/Secured-Finance/dione/beacon"
+
 	"github.com/libp2p/go-libp2p-core/peer"
 
 	"github.com/Secured-Finance/dione/ethclient"
@@ -15,10 +17,14 @@ import (
 )
 
 type Miner struct {
-	address    peer.ID
-	ethAddress common.Address
-	api        MinerAPI
-	mutex      sync.Mutex
+	address      peer.ID
+	ethAddress   common.Address
+	api          MinerAPI
+	mutex        sync.Mutex
+	beacon       beacon.BeaconNetworks
+	ethClient    *ethclient.EthereumClient
+	minerStake   types.BigInt
+	networkStake types.BigInt
 }
 
 type MinerAPI interface {
@@ -26,84 +32,46 @@ type MinerAPI interface {
 	//	TODO: get miner base based on epoch;
 }
 
-type MinerBase struct {
-	MinerStake      types.BigInt
-	NetworkStake    types.BigInt
-	WorkerKey       peer.ID
-	EthWallet       common.Address
-	PrevBeaconEntry types.BeaconEntry
-	BeaconEntries   []types.BeaconEntry
-	NullRounds      types.TaskEpoch
-}
-
-type MiningBase struct {
-	epoch      types.TaskEpoch
-	nullRounds types.TaskEpoch // currently not used
-}
-
-func NewMinerBase(minerStake, networkStake types.BigInt, minerAddress peer.ID,
-	minerEthWallet common.Address, prev types.BeaconEntry, entries []types.BeaconEntry) *MinerBase {
-	return &MinerBase{
-		MinerStake:      minerStake,
-		NetworkStake:    networkStake,
-		WorkerKey:       minerAddress,
-		EthWallet:       minerEthWallet,
-		PrevBeaconEntry: prev,
-		BeaconEntries:   entries,
-	}
-}
-
-func NewMiningBase() *MiningBase {
-	return &MiningBase{
-		nullRounds: 0,
-	}
-}
-
-func (m *MinerBase) UpdateCurrentStakeInfo(c *ethclient.EthereumClient, miner common.Address) error {
-	mStake, err := c.GetMinerStake(miner)
+func (m *Miner) UpdateCurrentStakeInfo() error {
+	mStake, err := m.ethClient.GetMinerStake(m.ethAddress)
 
 	if err != nil {
 		logrus.Warn("Can't get miner stake", err)
 		return err
 	}
 
-	nStake, err := c.GetTotalStake()
+	nStake, err := m.ethClient.GetTotalStake()
 
 	if err != nil {
 		logrus.Warn("Can't get miner stake", err)
 		return err
 	}
 
-	m.MinerStake = *mStake
-	m.NetworkStake = *nStake
+	m.minerStake = *mStake
+	m.networkStake = *nStake
 
 	return nil
 }
 
-// Start, Stop mining functions
-
-func (m *Miner) MineTask(ctx context.Context, base *MiningBase, mb *MinerBase, ethClient *ethclient.EthereumClient) (*types.DioneTask, error) {
-	round := base.epoch + base.nullRounds + 1
-	logrus.Debug("attempting to mine the task at epoch: ", round)
-
-	prevEntry := mb.PrevBeaconEntry
-	bvals := mb.BeaconEntries
-
-	rbase := prevEntry
-	if len(bvals) > 0 {
-		rbase = bvals[len(bvals)-1]
+func (m *Miner) MineTask(ctx context.Context) (*types.DioneTask, error) {
+	bvals, err := beacon.BeaconEntriesForTask(ctx, m.beacon)
+	if err != nil {
+		return nil, xerrors.Errorf("failed to get beacon entries: %w", err)
 	}
+	logrus.Debug("attempting to mine the task at epoch: ", bvals[1].Round)
 
-	if err := mb.UpdateCurrentStakeInfo(ethClient, m.ethAddress); err != nil {
+	rbase := bvals[1]
+
+	if err := m.UpdateCurrentStakeInfo(); err != nil {
 		return nil, xerrors.Errorf("failed to update miner stake: %w", err)
 	}
 
-	ticket, err := m.computeTicket(ctx, &rbase, base, mb)
+	ticket, err := m.computeTicket(ctx, &rbase)
 	if err != nil {
 		return nil, xerrors.Errorf("scratching ticket failed: %w", err)
 	}
 
-	winner, err := IsRoundWinner(ctx, round, m.address, rbase, mb, m.api)
+	winner, err := IsRoundWinner(ctx, types.DrandRound(rbase.Round), m.address, rbase, m.minerStake, m.networkStake, m.api)
 	if err != nil {
 		return nil, xerrors.Errorf("failed to check if we win next round: %w", err)
 	}
@@ -115,26 +83,26 @@ func (m *Miner) MineTask(ctx context.Context, base *MiningBase, mb *MinerBase, e
 		Miner:         m.address,
 		Ticket:        ticket,
 		ElectionProof: winner,
-		BeaconEntries: mb.BeaconEntries, // TODO decide what we need to do with multiple beacon entries
+		BeaconEntries: bvals,
 		// TODO: signature
-		Epoch: round,
+		DrandRound: types.DrandRound(rbase.Round),
 	}, nil
 }
 
-func (m *Miner) computeTicket(ctx context.Context, brand *types.BeaconEntry, base *MiningBase, mb *MinerBase) (*types.Ticket, error) {
+func (m *Miner) computeTicket(ctx context.Context, brand *types.BeaconEntry) (*types.Ticket, error) {
 	buf, err := m.address.MarshalBinary()
 	if err != nil {
 		return nil, xerrors.Errorf("failed to marshal address: %w", err)
 	}
 
-	round := base.epoch + base.nullRounds + 1
+	round := types.DrandRound(brand.Round)
 
 	input, err := DrawRandomness(brand.Data, crypto.DomainSeparationTag_TicketProduction, round-types.TicketRandomnessLookback, buf)
 	if err != nil {
 		return nil, err
 	}
 
-	vrfOut, err := ComputeVRF(ctx, m.api.WalletSign, mb.WorkerKey, input)
+	vrfOut, err := ComputeVRF(ctx, m.api.WalletSign, m.address, input)
 	if err != nil {
 		return nil, err
 	}

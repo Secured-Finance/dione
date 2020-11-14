@@ -3,19 +3,22 @@ package node
 import (
 	"fmt"
 
+	"github.com/Secured-Finance/dione/types"
+
 	"github.com/Secured-Finance/dione/beacon"
 	"github.com/Secured-Finance/dione/config"
 	"github.com/Secured-Finance/dione/drand"
 )
 
-// NewBeaconQueue creates a new beacon chain schedule
-func (n *Node) NewBeaconQueue() (beacon.BeaconNetworks, error) {
-	schedule := beacon.BeaconNetworks{}
+// NewBeaconClient creates a new beacon chain client
+func (n *Node) NewBeaconClient() (beacon.BeaconNetworks, error) {
+	networks := beacon.BeaconNetworks{}
 	bc, err := drand.NewDrandBeacon(config.ChainGenesis, config.TaskEpochInterval, n.PubSubRouter.Pubsub)
 	if err != nil {
 		return nil, fmt.Errorf("creating drand beacon: %w", err)
 	}
-	schedule = append(schedule, beacon.BeaconNetwork{Start: 0, Beacon: bc})
+	networks = append(networks, beacon.BeaconNetwork{Start: types.DrandRound(config.ChainGenesis), Beacon: bc})
+	// NOTE: currently we use only one network
 
-	return schedule, nil
+	return networks, nil
 }

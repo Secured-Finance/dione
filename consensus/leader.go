@@ -40,8 +40,8 @@ func VerifyVRF(ctx context.Context, worker peer.ID, vrfBase, vrfproof []byte) er
 	return nil
 }
 
-func IsRoundWinner(ctx context.Context, round types.TaskEpoch,
-	worker peer.ID, brand types.BeaconEntry, mb *MinerBase, a MinerAPI) (*types.ElectionProof, error) {
+func IsRoundWinner(ctx context.Context, round types.DrandRound,
+	worker peer.ID, brand types.BeaconEntry, minerStake, networkStake types.BigInt, a MinerAPI) (*types.ElectionProof, error) {
 
 	buf, err := worker.MarshalBinary()
 	if err != nil {
@@ -53,13 +53,13 @@ func IsRoundWinner(ctx context.Context, round types.TaskEpoch,
 		return nil, xerrors.Errorf("failed to draw randomness: %w", err)
 	}
 
-	vrfout, err := ComputeVRF(ctx, a.WalletSign, mb.WorkerKey, electionRand)
+	vrfout, err := ComputeVRF(ctx, a.WalletSign, worker, electionRand)
 	if err != nil {
 		return nil, xerrors.Errorf("failed to compute VRF: %w", err)
 	}
 
 	ep := &types.ElectionProof{VRFProof: vrfout}
-	j := ep.ComputeWinCount(mb.MinerStake, mb.NetworkStake)
+	j := ep.ComputeWinCount(minerStake, networkStake)
 	ep.WinCount = j
 	if j < 1 {
 		return nil, nil
