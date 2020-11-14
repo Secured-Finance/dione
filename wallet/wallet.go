@@ -55,7 +55,7 @@ func (w *LocalWallet) WalletSign(ctx context.Context, addr peer.ID, msg []byte) 
 		return nil, err
 	}
 	if ki == nil {
-		return nil, xerrors.Errorf("signing using key '%s': %w", addr.String(), types.ErrKeyInfoNotFound)
+		return nil, xerrors.Errorf("failed to find private key of %w: %w", addr.String(), types.ErrKeyInfoNotFound)
 	}
 
 	return sigs.Sign(ActSigType(ki.Type), ki.PrivateKey, msg)

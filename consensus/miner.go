@@ -19,7 +19,7 @@ import (
 type Miner struct {
 	address      peer.ID
 	ethAddress   common.Address
-	api          MinerAPI
+	api          WalletAPI
 	mutex        sync.Mutex
 	beacon       beacon.BeaconNetworks
 	ethClient    *ethclient.EthereumClient
@@ -27,9 +27,24 @@ type Miner struct {
 	networkStake types.BigInt
 }
 
-type MinerAPI interface {
+func NewMiner(
+	address peer.ID,
+	ethAddress common.Address,
+	api WalletAPI,
+	beacon beacon.BeaconNetworks,
+	ethClient *ethclient.EthereumClient,
+) *Miner {
+	return &Miner{
+		address:    address,
+		ethAddress: ethAddress,
+		api:        api,
+		beacon:     beacon,
+		ethClient:  ethClient,
+	}
+}
+
+type WalletAPI interface {
 	WalletSign(context.Context, peer.ID, []byte) (*types.Signature, error)
-	//	TODO: get miner base based on epoch;
 }
 
 func (m *Miner) UpdateCurrentStakeInfo() error {
@@ -53,7 +68,7 @@ func (m *Miner) UpdateCurrentStakeInfo() error {
 	return nil
 }
 
-func (m *Miner) MineTask(ctx context.Context) (*types.DioneTask, error) {
+func (m *Miner) MineTask(ctx context.Context, payload []byte) (*types.DioneTask, error) {
 	bvals, err := beacon.BeaconEntriesForTask(ctx, m.beacon)
 	if err != nil {
 		return nil, xerrors.Errorf("failed to get beacon entries: %w", err)
@@ -84,6 +99,7 @@ func (m *Miner) MineTask(ctx context.Context) (*types.DioneTask, error) {
 		Ticket:        ticket,
 		ElectionProof: winner,
 		BeaconEntries: bvals,
+		Payload:       payload,
 		// TODO: signature
 		DrandRound: types.DrandRound(rbase.Round),
 	}, nil

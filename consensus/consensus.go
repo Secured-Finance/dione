@@ -22,6 +22,7 @@ type PBFTConsensusManager struct {
 	psb           *pb.PubSubRouter
 	Consensuses   map[string]*ConsensusData
 	maxFaultNodes int
+	miner         *Miner
 }
 
 type ConsensusData struct {

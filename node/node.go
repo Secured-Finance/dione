@@ -7,6 +7,14 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/Secured-Finance/dione/types"
+
+	"github.com/Secured-Finance/dione/wallet"
+
+	"golang.org/x/xerrors"
+
+	"github.com/Secured-Finance/dione/beacon"
+
 	pex "github.com/Secured-Finance/go-libp2p-pex"
 
 	"github.com/Secured-Finance/dione/config"
@@ -35,7 +43,9 @@ type Node struct {
 	Lotus            *rpc.LotusClient
 	Ethereum         *ethclient.EthereumClient
 	ConsensusManager *consensus.PBFTConsensusManager
-	MinerBase        *consensus.MinerBase
+	Miner            *consensus.Miner
+	Beacon           beacon.BeaconNetworks
+	Wallet           *wallet.LocalWallet
 }
 
 func NewNode(configPath string) (*Node, error) {
@@ -53,16 +63,59 @@ func NewNode(configPath string) (*Node, error) {
 
 func (n *Node) setupNode(ctx context.Context, prvKey crypto.PrivKey, pexDiscoveryUpdateTime time.Duration) {
 	n.setupLibp2pHost(context.TODO(), prvKey, pexDiscoveryUpdateTime)
-	if err := n.setupEthereumClient(); err != nil {
-		logrus.Fatal("Can't set up an ethereum client, exiting... ", err)
-	}
 	//n.setupFilecoinClient()
+	err := n.setupEthereumClient()
+	if err != nil {
+		logrus.Fatal(err)
+	}
 	n.setupPubsub()
 	n.setupConsensusManager(n.Config.ConsensusMaxFaultNodes)
+	err = n.setupBeacon()
+	if err != nil {
+		logrus.Fatal(err)
+	}
+	err = n.setupWallet(prvKey)
+	if err != nil {
+		logrus.Fatal(err)
+	}
+	err = n.setupMiner()
+	if err != nil {
+		logrus.Fatal(err)
+	}
 }
 
 func (n *Node) setupMiner() error {
-	// here we do miner base setup
+	n.Miner = consensus.NewMiner(n.Host.ID(), *n.Ethereum.GetEthAddress(), n.Wallet, n.Beacon, n.Ethereum)
+	return nil
+}
+
+func (n *Node) setupBeacon() error {
+	beacon, err := n.NewBeaconClient()
+	if err != nil {
+		return xerrors.Errorf("failed to setup beacon: %w", err)
+	}
+	n.Beacon = beacon
+	return nil
+}
+
+func (n *Node) setupWallet(privKey crypto.PrivKey) error {
+	// TODO make persistent keystore
+	kstore := wallet.NewMemKeyStore()
+	pKeyBytes, err := privKey.Raw()
+	if err != nil {
+		return xerrors.Errorf("failed to get raw private key: %w", err)
+	}
+	keyInfo := types.KeyInfo{
+		Type:       types.KTEd25519,
+		PrivateKey: pKeyBytes,
+	}
+
+	kstore.Put(wallet.KNamePrefix+n.Host.ID().String(), keyInfo)
+	w, err := wallet.NewWallet(kstore)
+	if err != nil {
+		return xerrors.Errorf("failed to setup wallet: %w", err)
+	}
+	n.Wallet = w
 	return nil
 }
 
@@ -202,11 +255,11 @@ func Start() error {
 func generatePrivateKey() (crypto.PrivKey, error) {
 	r := rand.Reader
 	// Creates a new RSA key pair for this host.
-	prvKey, _, err := crypto.GenerateKeyPairWithReader(crypto.RSA, 2048, r)
+	prvKey, _, err := crypto.GenerateKeyPairWithReader(crypto.Ed25519, 2048, r)
 	if err != nil {
 		return nil, err
 	}
 	return prvKey, nil
 }
 
-// TODO generate MinerBase for the node
+// TODO generate Miner for the node

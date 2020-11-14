@@ -41,7 +41,7 @@ func VerifyVRF(ctx context.Context, worker peer.ID, vrfBase, vrfproof []byte) er
 }
 
 func IsRoundWinner(ctx context.Context, round types.DrandRound,
-	worker peer.ID, brand types.BeaconEntry, minerStake, networkStake types.BigInt, a MinerAPI) (*types.ElectionProof, error) {
+	worker peer.ID, brand types.BeaconEntry, minerStake, networkStake types.BigInt, a WalletAPI) (*types.ElectionProof, error) {
 
 	buf, err := worker.MarshalBinary()
 	if err != nil {

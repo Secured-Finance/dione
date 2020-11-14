@@ -54,9 +54,9 @@ func (c *EthereumClient) Initialize(ctx context.Context, url, privateKey, oracle
 	if err != nil {
 		return err
 	}
-	c.ethAddress = &c.authTransactor.From
 	authTransactor := bind.NewKeyedTransactor(ecdsaKey)
 	c.authTransactor = authTransactor
+	c.ethAddress = &c.authTransactor.From
 
 	oracleEmitter, err := oracleemitter.NewOracleEmitter(common.HexToAddress(oracleEmitterContractAddress), client)
 	if err != nil {
@@ -97,6 +97,10 @@ func (c *EthereumClient) Initialize(ctx context.Context, url, privateKey, oracle
 		},
 	}
 	return nil
+}
+
+func (c *EthereumClient) GetEthAddress() *common.Address {
+	return c.ethAddress
 }
 
 // // Balance returns the balance of the given ethereum address.
