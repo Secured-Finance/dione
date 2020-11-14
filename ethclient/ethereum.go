@@ -164,16 +164,17 @@ func (c *EthereumClient) GetEthAddress() *common.Address {
 // 	return TxHash
 // }
 
-func (c *EthereumClient) SubscribeOnOracleEvents(incomingEventsChan chan *oracleemitter.OracleEmitterNewOracleRequest) (event.Subscription, error) {
+func (c *EthereumClient) SubscribeOnOracleEvents() (chan *oracleemitter.OracleEmitterNewOracleRequest, event.Subscription, error) {
+	resChan := make(chan *oracleemitter.OracleEmitterNewOracleRequest)
 	requestsFilter := c.oracleEmitter.Contract.OracleEmitterFilterer
 	subscription, err := requestsFilter.WatchNewOracleRequest(&bind.WatchOpts{
 		Start:   nil, //last block
 		Context: nil,
-	}, incomingEventsChan)
+	}, resChan)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
-	return subscription, err
+	return resChan, subscription, err
 }
 
 func (c *EthereumClient) SubmitRequestAnswer(reqID *big.Int, data string, callbackAddress common.Address, callbackMethodID [4]byte) error {
