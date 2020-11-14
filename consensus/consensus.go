@@ -74,19 +74,15 @@ func (pcm *PBFTConsensusManager) handlePreparedMessage(message *models.Message) 
 	logrus.Debug("received prepared msg")
 	data := pcm.Consensuses[consensusID]
 
-	//// validate payload data
-	//if data.test {
-	//	rData := message.Payload["data"].(string)
-	//	if rData != testValidData {
-	//		logrus.Error("Incorrect data was received! Ignoring this message, because it was sent from fault node!")
-	//		return
-	//	}
-	//} else {
-	//	// TODO
-	//}
-
+	// TODO
 	// here we can validate miner which produced this task, is he winner, and so on
-	// we must to reconstruct transaction here for validating task itself
+	// validation steps:
+	// 1. validate sender eligibility to mine (check if it has minimal stake)
+	// 2. validate sender wincount
+	// 3. validate randomness
+	// 4. validate vrf
+	// 5. validate payload signature
+	// 6. validate transaction (get from rpc client and compare with received)
 
 	data.mutex.Lock()
 	data.preparedCount++
