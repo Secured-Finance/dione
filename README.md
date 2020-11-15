@@ -6,6 +6,10 @@
 
 [![badge](https://img.shields.io/badge/submit%20for-HackFS-blue)](https://hack.ethglobal.co/showcase/secured-finance-recTkx6c1RDoLeaQm)
 
+# Solana hackathon submission
+- [Dione presentation](https://docs.google.com/presentation/d/1fSvw2Ua5JEDRLkCKAlrSmFIJQA0UGs5JoEmvKFh2Dug/edit?usp=sharing)
+- [Dione video demo](https://www.youtube.com/watch?v=0XDrRRiERog)
+
 # Table of Contents
 
 - [Introduction](#introduction)
