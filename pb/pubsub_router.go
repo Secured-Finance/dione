@@ -16,7 +16,7 @@ type PubSubRouter struct {
 	Pubsub        *pubsub.PubSub
 	context       context.Context
 	contextCancel context.CancelFunc
-	handlers      map[string][]Handler
+	handlers      map[models.MessageType][]Handler
 	oracleTopic   string
 }
 
@@ -27,7 +27,7 @@ func NewPubSubRouter(h host.Host, oracleTopic string) *PubSubRouter {
 		node:          h,
 		context:       ctx,
 		contextCancel: ctxCancel,
-		handlers:      make(map[string][]Handler),
+		handlers:      make(map[models.MessageType][]Handler),
 	}
 
 	pb, err := pubsub.NewFloodSub(
@@ -83,10 +83,10 @@ func (psr *PubSubRouter) handleMessage(p *pubsub.Message) {
 		logrus.Warn("Unable to decode message data! " + err.Error())
 		return
 	}
-	message.From = senderPeerID.String()
+	message.From = senderPeerID
 	handlers, ok := psr.handlers[message.Type]
 	if !ok {
-		logrus.Warn("Dropping message " + message.Type + " because we don't have any handlers!")
+		logrus.Warn("Dropping message " + string(message.Type) + " because we don't have any handlers!")
 		return
 	}
 	for _, v := range handlers {
@@ -94,7 +94,7 @@ func (psr *PubSubRouter) handleMessage(p *pubsub.Message) {
 	}
 }
 
-func (psr *PubSubRouter) Hook(messageType string, handler Handler) {
+func (psr *PubSubRouter) Hook(messageType models.MessageType, handler Handler) {
 	handlers, ok := psr.handlers[messageType]
 	if !ok {
 		emptyArray := []Handler{}

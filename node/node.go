@@ -74,7 +74,10 @@ func (n *Node) setupNode(ctx context.Context, prvKey crypto.PrivKey, pexDiscover
 	}
 	n.setupSolanaClient()
 	n.setupPubsub()
-	n.setupConsensusManager(n.Config.ConsensusMaxFaultNodes)
+	err = n.setupConsensusManager(prvKey, n.Config.ConsensusMinApprovals)
+	if err != nil {
+		logrus.Fatalf("Failed to setup consensus manager: %w", err)
+	}
 	err = n.setupBeacon()
 	if err != nil {
 		logrus.Fatal(err)
@@ -153,8 +156,13 @@ func (n *Node) setupPubsub() {
 	//time.Sleep(3 * time.Second)
 }
 
-func (n *Node) setupConsensusManager(maxFaultNodes int) {
-	n.ConsensusManager = consensus.NewPBFTConsensusManager(n.PubSubRouter, maxFaultNodes)
+func (n *Node) setupConsensusManager(privateKey crypto.PrivKey, minApprovals int) error {
+	pkeyRaw, err := privateKey.Raw()
+	if err != nil {
+		return err
+	}
+	n.ConsensusManager = consensus.NewPBFTConsensusManager(n.PubSubRouter, minApprovals, pkeyRaw, n.Ethereum)
+	return nil
 }
 
 func (n *Node) setupLibp2pHost(ctx context.Context, privateKey crypto.PrivKey, pexDiscoveryUpdateTime time.Duration) {

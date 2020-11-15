@@ -136,7 +136,7 @@ func (c *EthereumClient) SubscribeOnOracleEvents(ctx context.Context) (chan *ora
 	return resChan, subscription, err
 }
 
-func (c *EthereumClient) SubmitRequestAnswer(reqID *big.Int, data string, callbackAddress common.Address, callbackMethodID [4]byte) error {
+func (c *EthereumClient) SubmitRequestAnswer(reqID *big.Int, data string, callbackAddress common.Address) error {
 	// privateKey, err := crypto.HexToECDSA(private_key)
 	// if err != nil {
 	// 	c.Logger.Fatal("Failed to generate private key", err)
