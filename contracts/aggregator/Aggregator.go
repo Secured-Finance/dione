@@ -27,7 +27,7 @@ var (
 )
 
 // AggregatorABI is the input ABI used to generate the binding from.
-const AggregatorABI = "[{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"address\",\"name\":\"previousOwner\",\"type\":\"address\"},{\"indexed\":true,\"internalType\":\"address\",\"name\":\"newOwner\",\"type\":\"address\"}],\"name\":\"OwnershipTransferred\",\"type\":\"event\"},{\"inputs\":[],\"name\":\"dioneStaking\",\"outputs\":[{\"internalType\":\"contractIDioneStaking\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"owner\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"renounceOwnership\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"newOwner\",\"type\":\"address\"}],\"name\":\"transferOwnership\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"contractIDioneStaking\",\"name\":\"_dioneStaking\",\"type\":\"address\"}],\"name\":\"setDioneStaking\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"reqID\",\"type\":\"uint256\"},{\"internalType\":\"string\",\"name\":\"data\",\"type\":\"string\"},{\"internalType\":\"address\",\"name\":\"callbackAddress\",\"type\":\"address\"},{\"internalType\":\"bytes4\",\"name\":\"callbackMethodID\",\"type\":\"bytes4\"}],\"name\":\"collectData\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"}]"
+const AggregatorABI = "[{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"address\",\"name\":\"previousOwner\",\"type\":\"address\"},{\"indexed\":true,\"internalType\":\"address\",\"name\":\"newOwner\",\"type\":\"address\"}],\"name\":\"OwnershipTransferred\",\"type\":\"event\"},{\"inputs\":[],\"name\":\"dioneStaking\",\"outputs\":[{\"internalType\":\"contractIDioneStaking\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"owner\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"renounceOwnership\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"newOwner\",\"type\":\"address\"}],\"name\":\"transferOwnership\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"contractIDioneStaking\",\"name\":\"_dioneStaking\",\"type\":\"address\"}],\"name\":\"setDioneStaking\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"reqID\",\"type\":\"uint256\"},{\"internalType\":\"string\",\"name\":\"data\",\"type\":\"string\"},{\"internalType\":\"contractIMediator\",\"name\":\"callbackAddress\",\"type\":\"address\"}],\"name\":\"collectData\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"}]"
 
 // Aggregator is an auto generated Go binding around an Ethereum contract.
 type Aggregator struct {
@@ -223,25 +223,25 @@ func (_Aggregator *AggregatorCallerSession) Owner() (common.Address, error) {
 	return _Aggregator.Contract.Owner(&_Aggregator.CallOpts)
 }
 
-// CollectData is a paid mutator transaction binding the contract method 0x05187092.
+// CollectData is a paid mutator transaction binding the contract method 0xce45d837.
 //
-// Solidity: function collectData(uint256 reqID, string data, address callbackAddress, bytes4 callbackMethodID) returns()
-func (_Aggregator *AggregatorTransactor) CollectData(opts *bind.TransactOpts, reqID *big.Int, data string, callbackAddress common.Address, callbackMethodID [4]byte) (*types.Transaction, error) {
-	return _Aggregator.contract.Transact(opts, "collectData", reqID, data, callbackAddress, callbackMethodID)
+// Solidity: function collectData(uint256 reqID, string data, address callbackAddress) returns()
+func (_Aggregator *AggregatorTransactor) CollectData(opts *bind.TransactOpts, reqID *big.Int, data string, callbackAddress common.Address) (*types.Transaction, error) {
+	return _Aggregator.contract.Transact(opts, "collectData", reqID, data, callbackAddress)
 }
 
-// CollectData is a paid mutator transaction binding the contract method 0x05187092.
+// CollectData is a paid mutator transaction binding the contract method 0xce45d837.
 //
-// Solidity: function collectData(uint256 reqID, string data, address callbackAddress, bytes4 callbackMethodID) returns()
-func (_Aggregator *AggregatorSession) CollectData(reqID *big.Int, data string, callbackAddress common.Address, callbackMethodID [4]byte) (*types.Transaction, error) {
-	return _Aggregator.Contract.CollectData(&_Aggregator.TransactOpts, reqID, data, callbackAddress, callbackMethodID)
+// Solidity: function collectData(uint256 reqID, string data, address callbackAddress) returns()
+func (_Aggregator *AggregatorSession) CollectData(reqID *big.Int, data string, callbackAddress common.Address) (*types.Transaction, error) {
+	return _Aggregator.Contract.CollectData(&_Aggregator.TransactOpts, reqID, data, callbackAddress)
 }
 
-// CollectData is a paid mutator transaction binding the contract method 0x05187092.
+// CollectData is a paid mutator transaction binding the contract method 0xce45d837.
 //
-// Solidity: function collectData(uint256 reqID, string data, address callbackAddress, bytes4 callbackMethodID) returns()
-func (_Aggregator *AggregatorTransactorSession) CollectData(reqID *big.Int, data string, callbackAddress common.Address, callbackMethodID [4]byte) (*types.Transaction, error) {
-	return _Aggregator.Contract.CollectData(&_Aggregator.TransactOpts, reqID, data, callbackAddress, callbackMethodID)
+// Solidity: function collectData(uint256 reqID, string data, address callbackAddress) returns()
+func (_Aggregator *AggregatorTransactorSession) CollectData(reqID *big.Int, data string, callbackAddress common.Address) (*types.Transaction, error) {
+	return _Aggregator.Contract.CollectData(&_Aggregator.TransactOpts, reqID, data, callbackAddress)
 }
 
 // RenounceOwnership is a paid mutator transaction binding the contract method 0x715018a6.

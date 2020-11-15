@@ -162,7 +162,7 @@ func (c *EthereumClient) SubmitRequestAnswer(reqID *big.Int, data string, callba
 	// 	c.Logger.Fatal(err)
 	// }
 
-	_, err := c.aggregator.CollectData(reqID, data, callbackAddress, callbackMethodID)
+	_, err := c.aggregator.CollectData(reqID, data, callbackAddress)
 	if err != nil {
 		return err
 	}
