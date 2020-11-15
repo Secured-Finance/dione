@@ -5,6 +5,8 @@ import (
 	"crypto/rand"
 	"flag"
 	"fmt"
+	"io/ioutil"
+	"os"
 	"time"
 
 	"github.com/Secured-Finance/dione/solana"
@@ -31,7 +33,7 @@ import (
 )
 
 const (
-	DefaultPEXUpdateTime = 1 * time.Minute
+	DefaultPEXUpdateTime = 6 * time.Second
 )
 
 type Node struct {
@@ -240,22 +242,37 @@ func Start() error {
 	if *verbose {
 		logrus.SetLevel(logrus.DebugLevel)
 	} else {
-		logrus.SetLevel(logrus.InfoLevel)
+		logrus.SetLevel(logrus.DebugLevel)
 	}
 	if err != nil {
 		logrus.Panic(err)
 	}
 
-	privKey, err := generatePrivateKey()
-	if err != nil {
-		logrus.Fatal(err)
+	var privateKey crypto.PrivKey
+
+	if node.Config.IsBootstrap {
+		if _, err := os.Stat(".bootstrap_privkey"); os.IsNotExist(err) {
+			privateKey, err = generatePrivateKey()
+			if err != nil {
+				logrus.Fatal(err)
+			}
+
+			f, _ := os.Create(".bootstrap_privkey")
+			r, _ := privateKey.Raw()
+			f.Write(r)
+		} else {
+			pkey, _ := ioutil.ReadFile(".bootstrap_privkey")
+			privateKey, _ = crypto.UnmarshalEd25519PrivateKey(pkey)
+		}
+	} else {
+		privateKey, err = generatePrivateKey()
 	}
 
 	ctx, ctxCancel := context.WithCancel(context.Background())
 	node.GlobalCtx = ctx
 	node.GlobalCtxCancel = ctxCancel
 
-	node.setupNode(ctx, privKey, DefaultPEXUpdateTime)
+	node.setupNode(ctx, privateKey, DefaultPEXUpdateTime)
 	for {
 		select {
 		case <-ctx.Done():

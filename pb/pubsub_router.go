@@ -30,7 +30,7 @@ func NewPubSubRouter(h host.Host, oracleTopic string) *PubSubRouter {
 		handlers:      make(map[string][]Handler),
 	}
 
-	pb, err := pubsub.NewGossipSub(
+	pb, err := pubsub.NewFloodSub(
 		context.TODO(),
 		psr.node, //pubsub.WithMessageSigning(true),
 		//pubsub.WithStrictSignatureVerification(true),

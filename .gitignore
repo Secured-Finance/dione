@@ -22,4 +22,6 @@ eth-contracts/node_modules
 /.dione-config.toml
 /.dione-config-2.toml
 /.dione-config-3.toml
+/.dione-config-4.toml
+.bootstrap_privkey
 eth-contracts/build

@@ -6,7 +6,7 @@ import (
 	"sync"
 
 	"github.com/Secured-Finance/dione/beacon"
-	"github.com/Secured-Finance/dione/contracts/oracleEmitter"
+	oracleEmitter "github.com/Secured-Finance/dione/contracts/oracleemitter"
 	"github.com/Secured-Finance/dione/solana"
 	solTypes "github.com/Secured-Finance/dione/solana/types"
 

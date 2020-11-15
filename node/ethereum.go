@@ -3,7 +3,6 @@ package node
 import (
 	"context"
 
-	"github.com/Secured-Finance/dione/consensus"
 	"github.com/sirupsen/logrus"
 )
 
@@ -23,21 +22,24 @@ func (n *Node) subscribeOnEthContracts(ctx context.Context) {
 					if err != nil {
 						logrus.Fatal("Error with mining algorithm, exiting... ", err)
 					}
+					if task == nil {
+						continue
+					}
 					logrus.Info("BlockHash for Solana transaction: ", task.BlockHash)
 					logrus.Info("Started new consensus round with ID: ", task.BlockHash)
 					n.ConsensusManager.NewTestConsensus(string(task.BlockHash), task.BlockHash, func(finalData string) {
 						if finalData != string(task.BlockHash) {
-							logrus.Warn("Expected final data to be %s, not %s", finalData)
+							logrus.Warnf("Expected final data to be %s, not %s", task.BlockHash, finalData)
+							return
 						}
-					})
-
-					if n.ConsensusManager.Consensuses[task.BlockHash].State == consensus.ConsensusCommitted {
 						logrus.Info("Consensus ID: ", task.BlockHash, " was successfull")
 						logrus.Info("Submitting on-chain result: ", task.BlockHash, "for consensus ID: ", task.BlockHash)
-						if err := n.Ethereum.SubmitRequestAnswer(event.RequestID, task.BlockHash, event.CallbackAddress, event.CallbackMethodID); err != nil {
-							logrus.Warn("Can't submit request to ethereum chain: ", err)
+						if task.Miner == n.Host.ID() {
+							if err := n.Ethereum.SubmitRequestAnswer(event.RequestID, task.BlockHash, event.CallbackAddress, event.CallbackMethodID); err != nil {
+								logrus.Warn("Can't submit request to ethereum chain: ", err)
+							}
 						}
-					}
+					})
 				}
 			case <-ctx.Done():
 				break EventLoop

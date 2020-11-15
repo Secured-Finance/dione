@@ -7,7 +7,7 @@ import (
 	"github.com/Secured-Finance/dione/contracts/aggregator"
 	"github.com/Secured-Finance/dione/contracts/dioneStaking"
 	stakingContract "github.com/Secured-Finance/dione/contracts/dioneStaking"
-	oracleEmitter "github.com/Secured-Finance/dione/contracts/oracleEmitter"
+	oracleEmitter "github.com/Secured-Finance/dione/contracts/oracleemitter"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
@@ -81,8 +81,8 @@ func (c *EthereumClient) Initialize(ctx context.Context, url, privateKey, oracle
 		TransactOpts: bind.TransactOpts{
 			From:     authTransactor.From,
 			Signer:   authTransactor.Signer,
-			GasLimit: 0,   // 0 automatically estimates gas limit
-			GasPrice: nil, // nil automatically suggests gas price
+			GasLimit: 200000, // 0 automatically estimates gas limit
+			GasPrice: nil,    // nil automatically suggests gas price
 			Context:  context.Background(),
 		},
 	}
@@ -96,8 +96,8 @@ func (c *EthereumClient) Initialize(ctx context.Context, url, privateKey, oracle
 		TransactOpts: bind.TransactOpts{
 			From:     authTransactor.From,
 			Signer:   authTransactor.Signer,
-			GasLimit: 0,   // 0 automatically estimates gas limit
-			GasPrice: nil, // nil automatically suggests gas price
+			GasLimit: 200000, // 0 automatically estimates gas limit
+			GasPrice: nil,    // nil automatically suggests gas price
 			Context:  context.Background(),
 		},
 	}
@@ -111,8 +111,8 @@ func (c *EthereumClient) Initialize(ctx context.Context, url, privateKey, oracle
 		TransactOpts: bind.TransactOpts{
 			From:     authTransactor.From,
 			Signer:   authTransactor.Signer,
-			GasLimit: 0,   // 0 automatically estimates gas limit
-			GasPrice: nil, // nil automatically suggests gas price
+			GasLimit: 200000,                 // 0 automatically estimates gas limit
+			GasPrice: big.NewInt(1860127603), // nil automatically suggests gas price
 			Context:  context.Background(),
 		},
 	}
