@@ -20,4 +20,6 @@
 eth-contracts/node_modules
 /dione
 /.dione-config.toml
+/.dione-config-2.toml
+/.dione-config-3.toml
 eth-contracts/build

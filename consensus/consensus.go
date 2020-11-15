@@ -11,9 +11,9 @@ import (
 type ConsensusState int
 
 const (
-	consensusPrePrepared ConsensusState = 0x0
-	consensusPrepared    ConsensusState = 0x1
-	consensusCommitted   ConsensusState = 0x2
+	ConsensusPrePrepared ConsensusState = 0x0
+	ConsensusPrepared    ConsensusState = 0x1
+	ConsensusCommitted   ConsensusState = 0x2
 
 	testValidData = "test"
 )
@@ -60,7 +60,7 @@ func (pcm *PBFTConsensusManager) NewTestConsensus(data string, consensusID strin
 	msg.Payload["data"] = data
 	pcm.psb.BroadcastToServiceTopic(&msg)
 
-	cData.State = consensusPrePrepared
+	cData.State = ConsensusPrePrepared
 	logrus.Debug("started new consensus: " + consensusID)
 }
 
@@ -99,7 +99,7 @@ func (pcm *PBFTConsensusManager) handlePreparedMessage(message *models.Message) 
 			logrus.Warn("Unable to send COMMIT message: " + err.Error())
 			return
 		}
-		data.State = consensusPrepared
+		data.State = ConsensusPrepared
 	}
 }
 
@@ -115,7 +115,7 @@ func (pcm *PBFTConsensusManager) handleCommitMessage(message *models.Message) {
 
 	data.mutex.Lock()
 	defer data.mutex.Unlock()
-	if data.State == consensusCommitted {
+	if data.State == ConsensusCommitted {
 		logrus.Debug("consensus already finished, dropping COMMIT message")
 		return
 	}
@@ -125,7 +125,7 @@ func (pcm *PBFTConsensusManager) handleCommitMessage(message *models.Message) {
 	data.commitCount++
 
 	if data.commitCount > 2*pcm.maxFaultNodes+1 {
-		data.State = consensusCommitted
+		data.State = ConsensusCommitted
 		data.result = message.Payload["data"].(string)
 		logrus.Debug("consensus successfully finished with result: " + data.result)
 		data.onConsensusFinishCallback(data.result)

@@ -70,6 +70,7 @@ func (n *Node) setupNode(ctx context.Context, prvKey crypto.PrivKey, pexDiscover
 	if err != nil {
 		logrus.Fatal(err)
 	}
+	n.setupSolanaClient()
 	n.setupPubsub()
 	n.setupConsensusManager(n.Config.ConsensusMaxFaultNodes)
 	err = n.setupBeacon()
@@ -84,10 +85,11 @@ func (n *Node) setupNode(ctx context.Context, prvKey crypto.PrivKey, pexDiscover
 	if err != nil {
 		logrus.Fatal(err)
 	}
+	n.subscribeOnEthContracts(ctx)
 }
 
 func (n *Node) setupMiner() error {
-	n.Miner = consensus.NewMiner(n.Host.ID(), *n.Ethereum.GetEthAddress(), n.Wallet, n.Beacon, n.Ethereum)
+	n.Miner = consensus.NewMiner(n.Host.ID(), *n.Ethereum.GetEthAddress(), n.Wallet, n.Beacon, n.Ethereum, n.Solana)
 	return nil
 }
 
@@ -129,6 +131,7 @@ func (n *Node) setupEthereumClient() error {
 		n.Config.Ethereum.PrivateKey,
 		n.Config.Ethereum.OracleEmitterContractAddress,
 		n.Config.Ethereum.AggregatorContractAddress,
+		n.Config.Ethereum.DioneStakingContractAddress,
 	)
 }
 
@@ -177,7 +180,9 @@ func (n *Node) setupLibp2pHost(ctx context.Context, privateKey crypto.PrivKey, p
 		}
 		bootstrapMaddrs = append(bootstrapMaddrs, maddr)
 	}
-
+	if n.Config.IsBootstrap {
+		bootstrapMaddrs = nil
+	}
 	discovery, err := pex.NewPEXDiscovery(host, bootstrapMaddrs, pexDiscoveryUpdateTime)
 	if err != nil {
 		logrus.Fatal("Can't set up PEX discovery protocol, exiting... ", err)

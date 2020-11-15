@@ -44,7 +44,7 @@ func (c *SolanaClient) GetTransaction(txHash string) (*fasthttp.Response, error)
 	req.Header.SetMethod("POST")
 	req.Header.SetContentType("application/json")
 	requestBody := rpc.NewRequestBody("getConfirmedTransaction")
-	requestBody.Params = append(requestBody.Params, txHash, "base58")
+	requestBody.Params = append(requestBody.Params, txHash, "json")
 	body, err := json.Marshal(requestBody)
 	if err != nil {
 		return nil, fmt.Errorf("Failed to marshal request body %v", err)

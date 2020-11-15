@@ -2,9 +2,13 @@ package consensus
 
 import (
 	"context"
+	"encoding/json"
 	"sync"
 
 	"github.com/Secured-Finance/dione/beacon"
+	"github.com/Secured-Finance/dione/contracts/oracleEmitter"
+	"github.com/Secured-Finance/dione/solana"
+	solTypes "github.com/Secured-Finance/dione/solana/types"
 
 	"github.com/libp2p/go-libp2p-core/peer"
 
@@ -23,6 +27,7 @@ type Miner struct {
 	mutex        sync.Mutex
 	beacon       beacon.BeaconNetworks
 	ethClient    *ethclient.EthereumClient
+	solanaClient *solana.SolanaClient
 	minerStake   types.BigInt
 	networkStake types.BigInt
 }
@@ -33,13 +38,15 @@ func NewMiner(
 	api WalletAPI,
 	beacon beacon.BeaconNetworks,
 	ethClient *ethclient.EthereumClient,
+	solanaClient *solana.SolanaClient,
 ) *Miner {
 	return &Miner{
-		address:    address,
-		ethAddress: ethAddress,
-		api:        api,
-		beacon:     beacon,
-		ethClient:  ethClient,
+		address:      address,
+		ethAddress:   ethAddress,
+		api:          api,
+		beacon:       beacon,
+		ethClient:    ethClient,
+		solanaClient: solanaClient,
 	}
 }
 
@@ -68,7 +75,7 @@ func (m *Miner) UpdateCurrentStakeInfo() error {
 	return nil
 }
 
-func (m *Miner) MineTask(ctx context.Context, payload []byte) (*types.DioneTask, error) {
+func (m *Miner) MineTask(ctx context.Context, event *oracleEmitter.OracleEmitterNewOracleRequest, sign SignFunc) (*types.DioneTask, error) {
 	bvals, err := beacon.BeaconEntriesForTask(ctx, m.beacon)
 	if err != nil {
 		return nil, xerrors.Errorf("failed to get beacon entries: %w", err)
@@ -94,14 +101,31 @@ func (m *Miner) MineTask(ctx context.Context, payload []byte) (*types.DioneTask,
 	if winner == nil {
 		return nil, nil
 	}
+
+	res, err := m.solanaClient.GetTransaction(event.RequestParams)
+	if err != nil {
+		return nil, xerrors.Errorf("Couldn't get solana request: %w", err)
+	}
+	response := res.Body()
+	var txRes solTypes.TxResponse
+	if err = json.Unmarshal(response, &txRes); err != nil {
+		return nil, xerrors.Errorf("Couldn't unmarshal solana response: %w", err)
+	}
+	blockHash := txRes.Result.Transaction.Message.RecentBlockhash
+	signature, err := sign(ctx, m.address, response)
+	if err != nil {
+		return nil, xerrors.Errorf("Couldn't sign solana response: %w", err)
+	}
+
 	return &types.DioneTask{
 		Miner:         m.address,
 		Ticket:        ticket,
 		ElectionProof: winner,
 		BeaconEntries: bvals,
-		Payload:       payload,
-		// TODO: signature
-		DrandRound: types.DrandRound(rbase.Round),
+		Payload:       response,
+		BlockHash:     blockHash,
+		Signature:     signature,
+		DrandRound:    types.DrandRound(rbase.Round),
 	}, nil
 }
 
