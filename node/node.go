@@ -26,7 +26,7 @@ import (
 	"github.com/Secured-Finance/dione/config"
 	"github.com/Secured-Finance/dione/consensus"
 	"github.com/Secured-Finance/dione/ethclient"
-	"github.com/Secured-Finance/dione/pb"
+	"github.com/Secured-Finance/dione/pubsub"
 	"github.com/libp2p/go-libp2p"
 	crypto "github.com/libp2p/go-libp2p-core/crypto"
 	"github.com/libp2p/go-libp2p-core/host"
@@ -40,7 +40,7 @@ const (
 
 type Node struct {
 	Host             host.Host
-	PubSubRouter     *pb.PubSubRouter
+	PubSubRouter     *pubsub.PubSubRouter
 	GlobalCtx        context.Context
 	GlobalCtxCancel  context.CancelFunc
 	OracleTopic      string
@@ -153,7 +153,7 @@ func (n *Node) setupSolanaClient() {
 }
 
 func (n *Node) setupPubsub() {
-	n.PubSubRouter = pb.NewPubSubRouter(n.Host, n.OracleTopic)
+	n.PubSubRouter = pubsub.NewPubSubRouter(n.Host, n.OracleTopic)
 	// wait for setting up pubsub
 	//time.Sleep(3 * time.Second)
 }

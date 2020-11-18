@@ -1,4 +1,4 @@
-package models
+package types
 
 import (
 	"github.com/libp2p/go-libp2p-core/peer"
@@ -15,6 +15,7 @@ const (
 )
 
 type ConsensusMessage struct {
+	_               struct{} `cbor:",toarray"`
 	ConsensusID     string
 	Signature       []byte
 	RequestID       string
@@ -23,7 +24,7 @@ type ConsensusMessage struct {
 }
 
 type Message struct {
-	Type    MessageType      `json:"type"`
-	Payload ConsensusMessage `json:"payload"`
-	From    peer.ID          `json:"-"`
+	Type    MessageType      `cbor:"1,keyasint"`
+	Payload ConsensusMessage `cbor:"2,keyasint"`
+	From    peer.ID          `cbor:"-"`
 }

@@ -1,10 +1,12 @@
-package pb
+package pubsub
 
 import (
 	"context"
-	"encoding/json"
 
-	"github.com/Secured-Finance/dione/models"
+	"github.com/fxamacker/cbor/v2"
+
+	"github.com/Secured-Finance/dione/consensus/types"
+
 	host "github.com/libp2p/go-libp2p-core/host"
 	peer "github.com/libp2p/go-libp2p-core/peer"
 	pubsub "github.com/libp2p/go-libp2p-pubsub"
@@ -12,12 +14,13 @@ import (
 )
 
 type PubSubRouter struct {
-	node          host.Host
-	Pubsub        *pubsub.PubSub
-	context       context.Context
-	contextCancel context.CancelFunc
-	handlers      map[models.MessageType][]Handler
-	oracleTopic   string
+	node                host.Host
+	Pubsub              *pubsub.PubSub
+	context             context.Context
+	contextCancel       context.CancelFunc
+	serviceSubscription *pubsub.Subscription
+	handlers            map[types.MessageType][]Handler
+	oracleTopic         string
 }
 
 func NewPubSubRouter(h host.Host, oracleTopic string) *PubSubRouter {
@@ -27,7 +30,7 @@ func NewPubSubRouter(h host.Host, oracleTopic string) *PubSubRouter {
 		node:          h,
 		context:       ctx,
 		contextCancel: ctxCancel,
-		handlers:      make(map[models.MessageType][]Handler),
+		handlers:      make(map[types.MessageType][]Handler),
 	}
 
 	pb, err := pubsub.NewFloodSub(
@@ -40,10 +43,13 @@ func NewPubSubRouter(h host.Host, oracleTopic string) *PubSubRouter {
 	}
 
 	psr.oracleTopic = oracleTopic
-	subscription, err := pb.Subscribe(oracleTopic)
+	topic, err := pb.Join(oracleTopic)
 	if err != nil {
 		logrus.Fatal("Error occurred when subscribing to service topic", err)
 	}
+
+	subscription, err := topic.Subscribe()
+	psr.serviceSubscription = subscription
 	psr.Pubsub = pb
 
 	go func() {
@@ -76,8 +82,8 @@ func (psr *PubSubRouter) handleMessage(p *pubsub.Message) {
 	if senderPeerID == psr.node.ID() {
 		return
 	}
-	var message models.Message
-	err = json.Unmarshal(p.Data, &message)
+	var message types.Message
+	err = cbor.Unmarshal(p.Data, &message)
 	if err != nil {
 		logrus.Warn("Unable to decode message data! " + err.Error())
 		return
@@ -93,7 +99,7 @@ func (psr *PubSubRouter) handleMessage(p *pubsub.Message) {
 	}
 }
 
-func (psr *PubSubRouter) Hook(messageType models.MessageType, handler Handler) {
+func (psr *PubSubRouter) Hook(messageType types.MessageType, handler Handler) {
 	handlers, ok := psr.handlers[messageType]
 	if !ok {
 		emptyArray := []Handler{}
@@ -103,8 +109,8 @@ func (psr *PubSubRouter) Hook(messageType models.MessageType, handler Handler) {
 	psr.handlers[messageType] = append(handlers, handler)
 }
 
-func (psr *PubSubRouter) BroadcastToServiceTopic(msg *models.Message) error {
-	data, err := json.Marshal(msg)
+func (psr *PubSubRouter) BroadcastToServiceTopic(msg *types.Message) error {
+	data, err := cbor.Marshal(msg)
 	if err != nil {
 		return err
 	}

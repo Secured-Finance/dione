@@ -3,17 +3,18 @@ package consensus
 import (
 	"math/big"
 
+	"github.com/Secured-Finance/dione/consensus/types"
+
 	"github.com/ethereum/go-ethereum/common"
 
 	"github.com/Secured-Finance/dione/ethclient"
 	"github.com/sirupsen/logrus"
 
-	"github.com/Secured-Finance/dione/models"
-	"github.com/Secured-Finance/dione/pb"
+	"github.com/Secured-Finance/dione/pubsub"
 )
 
 type PBFTConsensusManager struct {
-	psb *pb.PubSubRouter
+	psb *pubsub.PubSubRouter
 	//Consensuses map[string]*ConsensusData
 	//maxFaultNodes  int
 	minApprovals     int
@@ -34,7 +35,7 @@ type PBFTConsensusManager struct {
 //	onConsensusFinishCallback func(finalData string)
 //}
 
-func NewPBFTConsensusManager(psb *pb.PubSubRouter, minApprovals int, privKey []byte, ethereumClient *ethclient.EthereumClient) *PBFTConsensusManager {
+func NewPBFTConsensusManager(psb *pubsub.PubSubRouter, minApprovals int, privKey []byte, ethereumClient *ethclient.EthereumClient) *PBFTConsensusManager {
 	pcm := &PBFTConsensusManager{}
 	pcm.psb = psb
 	pcm.prePreparePool = NewPrePreparePool()
@@ -44,9 +45,9 @@ func NewPBFTConsensusManager(psb *pb.PubSubRouter, minApprovals int, privKey []b
 	pcm.privKey = privKey
 	pcm.ethereumClient = ethereumClient
 	pcm.consensusLeaders = map[string]bool{}
-	pcm.psb.Hook(models.MessageTypePrePrepare, pcm.handlePrePrepare)
-	pcm.psb.Hook(models.MessageTypePrepare, pcm.handlePrepare)
-	pcm.psb.Hook(models.MessageTypeCommit, pcm.handleCommit)
+	pcm.psb.Hook(types.MessageTypePrePrepare, pcm.handlePrePrepare)
+	pcm.psb.Hook(types.MessageTypePrepare, pcm.handlePrepare)
+	pcm.psb.Hook(types.MessageTypeCommit, pcm.handleCommit)
 	return pcm
 }
 
@@ -195,7 +196,7 @@ func (pcm *PBFTConsensusManager) Propose(consensusID, data string, requestID *bi
 	return nil
 }
 
-func (pcm *PBFTConsensusManager) handlePrePrepare(message *models.Message) {
+func (pcm *PBFTConsensusManager) handlePrePrepare(message *types.Message) {
 	if pcm.prePreparePool.IsExistingPrePrepare(message) {
 		logrus.Debug("received existing pre_prepare msg, dropping...")
 		return
@@ -213,7 +214,7 @@ func (pcm *PBFTConsensusManager) handlePrePrepare(message *models.Message) {
 	pcm.psb.BroadcastToServiceTopic(prepareMsg)
 }
 
-func (pcm *PBFTConsensusManager) handlePrepare(message *models.Message) {
+func (pcm *PBFTConsensusManager) handlePrepare(message *types.Message) {
 	if pcm.preparePool.IsExistingPrepare(message) {
 		logrus.Debug("received existing prepare msg, dropping...")
 		return
@@ -235,7 +236,7 @@ func (pcm *PBFTConsensusManager) handlePrepare(message *models.Message) {
 	}
 }
 
-func (pcm *PBFTConsensusManager) handleCommit(message *models.Message) {
+func (pcm *PBFTConsensusManager) handleCommit(message *types.Message) {
 	if pcm.commitPool.IsExistingCommit(message) {
 		logrus.Debug("received existing commit msg, dropping...")
 		return

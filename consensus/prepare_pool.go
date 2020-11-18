@@ -1,26 +1,26 @@
 package consensus
 
 import (
-	"github.com/Secured-Finance/dione/models"
+	types2 "github.com/Secured-Finance/dione/consensus/types"
 	"github.com/Secured-Finance/dione/sigs"
 	"github.com/Secured-Finance/dione/types"
 )
 
 type PreparePool struct {
-	prepareMsgs map[string][]*models.Message
+	prepareMsgs map[string][]*types2.Message
 	privateKey  []byte
 }
 
 func NewPreparePool() *PreparePool {
 	return &PreparePool{
-		prepareMsgs: map[string][]*models.Message{},
+		prepareMsgs: map[string][]*types2.Message{},
 	}
 }
 
-func (pp *PreparePool) CreatePrepare(prePrepareMsg *models.Message, privateKey []byte) (*models.Message, error) {
-	var message models.Message
-	message.Type = models.MessageTypePrepare
-	var consensusMsg models.ConsensusMessage
+func (pp *PreparePool) CreatePrepare(prePrepareMsg *types2.Message, privateKey []byte) (*types2.Message, error) {
+	var message types2.Message
+	message.Type = types2.MessageTypePrepare
+	var consensusMsg types2.ConsensusMessage
 	prepareCMessage := prePrepareMsg.Payload
 	consensusMsg.ConsensusID = prepareCMessage.ConsensusID
 	consensusMsg.RequestID = prePrepareMsg.Payload.RequestID
@@ -35,7 +35,7 @@ func (pp *PreparePool) CreatePrepare(prePrepareMsg *models.Message, privateKey [
 	return &message, nil
 }
 
-func (pp *PreparePool) IsExistingPrepare(prepareMsg *models.Message) bool {
+func (pp *PreparePool) IsExistingPrepare(prepareMsg *types2.Message) bool {
 	consensusMessage := prepareMsg.Payload
 	var exists bool
 	for _, v := range pp.prepareMsgs[consensusMessage.ConsensusID] {
@@ -46,7 +46,7 @@ func (pp *PreparePool) IsExistingPrepare(prepareMsg *models.Message) bool {
 	return exists
 }
 
-func (pp *PreparePool) IsValidPrepare(prepare *models.Message) bool {
+func (pp *PreparePool) IsValidPrepare(prepare *types2.Message) bool {
 	consensusMsg := prepare.Payload
 	err := sigs.Verify(&types.Signature{Type: types.SigTypeEd25519, Data: consensusMsg.Signature}, prepare.From, []byte(consensusMsg.Data))
 	if err != nil {
@@ -55,10 +55,10 @@ func (pp *PreparePool) IsValidPrepare(prepare *models.Message) bool {
 	return true
 }
 
-func (pp *PreparePool) AddPrepare(prepare *models.Message) {
+func (pp *PreparePool) AddPrepare(prepare *types2.Message) {
 	consensusID := prepare.Payload.ConsensusID
 	if _, ok := pp.prepareMsgs[consensusID]; !ok {
-		pp.prepareMsgs[consensusID] = []*models.Message{}
+		pp.prepareMsgs[consensusID] = []*types2.Message{}
 	}
 
 	pp.prepareMsgs[consensusID] = append(pp.prepareMsgs[consensusID], prepare)

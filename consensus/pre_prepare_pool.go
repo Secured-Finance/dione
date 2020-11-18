@@ -1,26 +1,26 @@
 package consensus
 
 import (
-	"github.com/Secured-Finance/dione/models"
+	types2 "github.com/Secured-Finance/dione/consensus/types"
 	"github.com/Secured-Finance/dione/sigs"
 	"github.com/Secured-Finance/dione/types"
 	"github.com/sirupsen/logrus"
 )
 
 type PrePreparePool struct {
-	prePrepareMsgs map[string][]*models.Message
+	prePrepareMsgs map[string][]*types2.Message
 }
 
 func NewPrePreparePool() *PrePreparePool {
 	return &PrePreparePool{
-		prePrepareMsgs: map[string][]*models.Message{},
+		prePrepareMsgs: map[string][]*types2.Message{},
 	}
 }
 
-func (pp *PrePreparePool) CreatePrePrepare(consensusID, data string, requestID string, callbackAddress string, privateKey []byte) (*models.Message, error) {
-	var message models.Message
-	message.Type = models.MessageTypePrePrepare
-	var consensusMsg models.ConsensusMessage
+func (pp *PrePreparePool) CreatePrePrepare(consensusID, data string, requestID string, callbackAddress string, privateKey []byte) (*types2.Message, error) {
+	var message types2.Message
+	message.Type = types2.MessageTypePrePrepare
+	var consensusMsg types2.ConsensusMessage
 	consensusMsg.ConsensusID = consensusID
 	consensusMsg.RequestID = requestID
 	consensusMsg.CallbackAddress = callbackAddress
@@ -34,7 +34,7 @@ func (pp *PrePreparePool) CreatePrePrepare(consensusID, data string, requestID s
 	return &message, nil
 }
 
-func (ppp *PrePreparePool) IsExistingPrePrepare(prepareMsg *models.Message) bool {
+func (ppp *PrePreparePool) IsExistingPrePrepare(prepareMsg *types2.Message) bool {
 	consensusMessage := prepareMsg.Payload
 	var exists bool
 	for _, v := range ppp.prePrepareMsgs[consensusMessage.ConsensusID] {
@@ -45,7 +45,7 @@ func (ppp *PrePreparePool) IsExistingPrePrepare(prepareMsg *models.Message) bool
 	return exists
 }
 
-func (ppp *PrePreparePool) IsValidPrePrepare(prePrepare *models.Message) bool {
+func (ppp *PrePreparePool) IsValidPrePrepare(prePrepare *types2.Message) bool {
 	// TODO here we need to do validation of tx itself
 	consensusMsg := prePrepare.Payload
 	err := sigs.Verify(&types.Signature{Type: types.SigTypeEd25519, Data: consensusMsg.Signature}, prePrepare.From, []byte(consensusMsg.Data))
@@ -56,10 +56,10 @@ func (ppp *PrePreparePool) IsValidPrePrepare(prePrepare *models.Message) bool {
 	return true
 }
 
-func (ppp *PrePreparePool) AddPrePrepare(prePrepare *models.Message) {
+func (ppp *PrePreparePool) AddPrePrepare(prePrepare *types2.Message) {
 	consensusID := prePrepare.Payload.ConsensusID
 	if _, ok := ppp.prePrepareMsgs[consensusID]; !ok {
-		ppp.prePrepareMsgs[consensusID] = []*models.Message{}
+		ppp.prePrepareMsgs[consensusID] = []*types2.Message{}
 	}
 
 	ppp.prePrepareMsgs[consensusID] = append(ppp.prePrepareMsgs[consensusID], prePrepare)

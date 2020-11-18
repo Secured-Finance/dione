@@ -1,25 +1,25 @@
 package consensus
 
 import (
-	"github.com/Secured-Finance/dione/models"
+	types2 "github.com/Secured-Finance/dione/consensus/types"
 	"github.com/Secured-Finance/dione/sigs"
 	"github.com/Secured-Finance/dione/types"
 )
 
 type CommitPool struct {
-	commitMsgs map[string][]*models.Message
+	commitMsgs map[string][]*types2.Message
 }
 
 func NewCommitPool() *CommitPool {
 	return &CommitPool{
-		commitMsgs: map[string][]*models.Message{},
+		commitMsgs: map[string][]*types2.Message{},
 	}
 }
 
-func (cp *CommitPool) CreateCommit(prepareMsg *models.Message, privateKey []byte) (*models.Message, error) {
-	var message models.Message
-	message.Type = models.MessageTypeCommit
-	var consensusMsg models.ConsensusMessage
+func (cp *CommitPool) CreateCommit(prepareMsg *types2.Message, privateKey []byte) (*types2.Message, error) {
+	var message types2.Message
+	message.Type = types2.MessageTypeCommit
+	var consensusMsg types2.ConsensusMessage
 	prepareCMessage := prepareMsg.Payload
 	consensusMsg.ConsensusID = prepareCMessage.ConsensusID
 	consensusMsg.RequestID = prepareMsg.Payload.RequestID
@@ -34,7 +34,7 @@ func (cp *CommitPool) CreateCommit(prepareMsg *models.Message, privateKey []byte
 	return &message, nil
 }
 
-func (cp *CommitPool) IsExistingCommit(commitMsg *models.Message) bool {
+func (cp *CommitPool) IsExistingCommit(commitMsg *types2.Message) bool {
 	consensusMessage := commitMsg.Payload
 	var exists bool
 	for _, v := range cp.commitMsgs[consensusMessage.ConsensusID] {
@@ -45,7 +45,7 @@ func (cp *CommitPool) IsExistingCommit(commitMsg *models.Message) bool {
 	return exists
 }
 
-func (cp *CommitPool) IsValidCommit(commit *models.Message) bool {
+func (cp *CommitPool) IsValidCommit(commit *types2.Message) bool {
 	consensusMsg := commit.Payload
 	err := sigs.Verify(&types.Signature{Type: types.SigTypeEd25519, Data: consensusMsg.Signature}, commit.From, []byte(consensusMsg.Data))
 	if err != nil {
@@ -54,10 +54,10 @@ func (cp *CommitPool) IsValidCommit(commit *models.Message) bool {
 	return true
 }
 
-func (cp *CommitPool) AddCommit(commit *models.Message) {
+func (cp *CommitPool) AddCommit(commit *types2.Message) {
 	consensusID := commit.Payload.ConsensusID
 	if _, ok := cp.commitMsgs[consensusID]; !ok {
-		cp.commitMsgs[consensusID] = []*models.Message{}
+		cp.commitMsgs[consensusID] = []*types2.Message{}
 	}
 
 	cp.commitMsgs[consensusID] = append(cp.commitMsgs[consensusID], commit)
