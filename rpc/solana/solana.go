@@ -5,8 +5,9 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/Secured-Finance/dione/rpc"
-	"github.com/Secured-Finance/dione/solana/types"
+	"github.com/Secured-Finance/dione/rpc/types"
+
+	stypes "github.com/Secured-Finance/dione/rpc/solana/types"
 	ws "github.com/dgrr/fastws"
 	"github.com/shengdoushi/base58"
 	"github.com/sirupsen/logrus"
@@ -38,12 +39,12 @@ func NewSolanaClient() *SolanaClient {
 	}
 }
 
-func (c *SolanaClient) GetTransaction(txHash string) (*fasthttp.Response, error) {
+func (c *SolanaClient) GetTransaction(txHash string) ([]byte, error) {
 	req := fasthttp.AcquireRequest()
 	req.SetRequestURI(c.url)
 	req.Header.SetMethod("POST")
 	req.Header.SetContentType("application/json")
-	requestBody := rpc.NewRequestBody("getConfirmedTransaction")
+	requestBody := types.NewRPCRequestBody("getConfirmedTransaction")
 	requestBody.Params = append(requestBody.Params, txHash, "json")
 	body, err := json.Marshal(requestBody)
 	if err != nil {
@@ -58,17 +59,17 @@ func (c *SolanaClient) GetTransaction(txHash string) (*fasthttp.Response, error)
 	}
 	bodyBytes := resp.Body()
 	logrus.Info(string(bodyBytes))
-	return resp, nil
+	return bodyBytes, nil
 }
 
-func (c *SolanaClient) subsctibeOnProgram(programID string) {
+func (c *SolanaClient) subscribeOnProgram(programID string) {
 	conn, err := ws.Dial(c.ws)
 	if err != nil {
 		log.Fatalln("Can't establish connection with Solana websocket: ", err)
 	}
 	defer conn.Close()
 
-	requestBody := rpc.NewRequestBody("programSubscribe")
+	requestBody := types.NewRPCRequestBody("programSubscribe")
 	requestBody.Params = append(requestBody.Params, programID)
 	p := NewSubParam("jsonParsed")
 	requestBody.Params = append(requestBody.Params, p)
@@ -86,7 +87,7 @@ func (c *SolanaClient) subsctibeOnProgram(programID string) {
 	logrus.Info("Subscription ID to drop websocket connection:", subscriptionID)
 
 	var msg []byte
-	var parsedSub *types.Subscription
+	var parsedSub *stypes.Subscription
 	for {
 		_, msg, err = conn.ReadMessage(msg[:0])
 		if err != nil {

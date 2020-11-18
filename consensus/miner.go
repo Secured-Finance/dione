@@ -5,11 +5,11 @@ import (
 	"encoding/json"
 	"sync"
 
+	solana2 "github.com/Secured-Finance/dione/rpc/solana"
+
 	"github.com/Secured-Finance/dione/beacon"
 	oracleEmitter "github.com/Secured-Finance/dione/contracts/oracleemitter"
-	"github.com/Secured-Finance/dione/solana"
-	solTypes "github.com/Secured-Finance/dione/solana/types"
-
+	solTypes "github.com/Secured-Finance/dione/rpc/solana/types"
 	"github.com/libp2p/go-libp2p-core/peer"
 
 	"github.com/Secured-Finance/dione/ethclient"
@@ -27,7 +27,7 @@ type Miner struct {
 	mutex        sync.Mutex
 	beacon       beacon.BeaconNetworks
 	ethClient    *ethclient.EthereumClient
-	solanaClient *solana.SolanaClient
+	solanaClient *solana2.SolanaClient
 	minerStake   types.BigInt
 	networkStake types.BigInt
 }
@@ -38,7 +38,7 @@ func NewMiner(
 	api WalletAPI,
 	beacon beacon.BeaconNetworks,
 	ethClient *ethclient.EthereumClient,
-	solanaClient *solana.SolanaClient,
+	solanaClient *solana2.SolanaClient,
 ) *Miner {
 	return &Miner{
 		address:      address,

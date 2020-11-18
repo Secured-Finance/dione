@@ -1,8 +1,10 @@
-package rpc
+package filecoin
 
 import (
 	"encoding/json"
 	"fmt"
+
+	"github.com/Secured-Finance/dione/rpc/types"
 
 	"github.com/Secured-Finance/dione/lib"
 	"github.com/sirupsen/logrus"
@@ -11,29 +13,29 @@ import (
 
 var filecoinURL = "https://filecoin.infura.io/"
 
-// client implements the `Client` interface.
 type LotusClient struct {
 	host          string
 	projectID     string
 	projectSecret string
+	httpClient    *fasthttp.Client
 }
 
-// NewClient returns a new client.
 func NewLotusClient(pID, secret string) *LotusClient {
 	return &LotusClient{
 		host:          filecoinURL,
 		projectID:     pID,
 		projectSecret: secret,
+		httpClient:    &fasthttp.Client{},
 	}
 }
 
-func (c *LotusClient) GetMessage(txHash string) (*fasthttp.Response, error) {
+func (c *LotusClient) GetTransaction(txHash string) ([]byte, error) {
 	req := fasthttp.AcquireRequest()
 	req.SetRequestURI(c.host)
 	req.Header.SetMethod("POST")
 	req.Header.SetContentType("application/json")
 	req.Header.Set("Authorization", "Basic "+lib.BasicAuth(c.projectID, c.projectSecret))
-	requestBody := NewRequestBody("Filecoin.ChainGetMessage")
+	requestBody := types.NewRPCRequestBody("Filecoin.ChainGetMessage")
 	requestBody.Params = append(requestBody.Params, txHash)
 	body, err := json.Marshal(requestBody)
 	if err != nil {
@@ -41,12 +43,11 @@ func (c *LotusClient) GetMessage(txHash string) (*fasthttp.Response, error) {
 	}
 	req.AppendBody(body)
 	resp := fasthttp.AcquireResponse()
-	client := &fasthttp.Client{}
-	if err = client.Do(req, resp); err != nil {
+	if err = c.httpClient.Do(req, resp); err != nil {
 		logrus.Warn("Failed to construct filecoin node rpc request", err)
 		return nil, err
 	}
 	bodyBytes := resp.Body()
-	logrus.Info(string(bodyBytes))
-	return resp, nil
+	logrus.Debug(string(bodyBytes))
+	return bodyBytes, nil
 }

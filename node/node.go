@@ -9,7 +9,10 @@ import (
 	"os"
 	"time"
 
-	"github.com/Secured-Finance/dione/solana"
+	solana2 "github.com/Secured-Finance/dione/rpc/solana"
+
+	"github.com/Secured-Finance/dione/rpc/filecoin"
+
 	"github.com/Secured-Finance/dione/types"
 
 	"github.com/Secured-Finance/dione/wallet"
@@ -24,7 +27,6 @@ import (
 	"github.com/Secured-Finance/dione/consensus"
 	"github.com/Secured-Finance/dione/ethclient"
 	"github.com/Secured-Finance/dione/pb"
-	"github.com/Secured-Finance/dione/rpc"
 	"github.com/libp2p/go-libp2p"
 	crypto "github.com/libp2p/go-libp2p-core/crypto"
 	"github.com/libp2p/go-libp2p-core/host"
@@ -43,9 +45,9 @@ type Node struct {
 	GlobalCtxCancel  context.CancelFunc
 	OracleTopic      string
 	Config           *config.Config
-	Lotus            *rpc.LotusClient
+	Lotus            *filecoin.LotusClient
 	Ethereum         *ethclient.EthereumClient
-	Solana           *solana.SolanaClient
+	Solana           *solana2.SolanaClient
 	ConsensusManager *consensus.PBFTConsensusManager
 	Miner            *consensus.Miner
 	Beacon           beacon.BeaconNetworks
@@ -141,12 +143,12 @@ func (n *Node) setupEthereumClient() error {
 }
 
 func (n *Node) setupFilecoinClient() {
-	lotus := rpc.NewLotusClient(n.Config.Filecoin.LotusHost, n.Config.Filecoin.LotusToken)
+	lotus := filecoin.NewLotusClient(n.Config.Filecoin.LotusHost, n.Config.Filecoin.LotusToken)
 	n.Lotus = lotus
 }
 
 func (n *Node) setupSolanaClient() {
-	solana := solana.NewSolanaClient()
+	solana := solana2.NewSolanaClient()
 	n.Solana = solana
 }
 
