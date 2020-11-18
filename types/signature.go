@@ -17,6 +17,17 @@ const (
 	SigTypeEd25519 = SigType(iota)
 )
 
+func (t SigType) Name() (string, error) {
+	switch t {
+	case SigTypeUnknown:
+		return "unknown", nil
+	case SigTypeEd25519:
+		return "ed25519", nil
+	default:
+		return "", fmt.Errorf("invalid signature type: %d", t)
+	}
+}
+
 const SignatureMaxLength = 200
 
 type Signature struct {

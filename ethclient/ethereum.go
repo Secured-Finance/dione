@@ -5,6 +5,7 @@ import (
 	"math/big"
 
 	"github.com/Secured-Finance/dione/contracts/aggregator"
+	"github.com/Secured-Finance/dione/contracts/dioneStaking"
 	stakingContract "github.com/Secured-Finance/dione/contracts/dioneStaking"
 	oracleEmitter "github.com/Secured-Finance/dione/contracts/oracleemitter"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
@@ -44,7 +45,7 @@ func NewEthereumClient() *EthereumClient {
 	return ethereumClient
 }
 
-func (c *EthereumClient) Initialize(ctx context.Context, url, privateKey, oracleEmitterContractAddress, aggregatorContractAddress string) error {
+func (c *EthereumClient) Initialize(ctx context.Context, url, privateKey, oracleEmitterContractAddress, aggregatorContractAddress, dioneStakingAddress string) error {
 	client, err := ethclient.Dial(url)
 	if err != nil {
 		return err
@@ -66,6 +67,10 @@ func (c *EthereumClient) Initialize(ctx context.Context, url, privateKey, oracle
 	if err != nil {
 		return err
 	}
+	stakingContract, err := dioneStaking.NewDioneStaking(common.HexToAddress(dioneStakingAddress), client)
+	if err != nil {
+		return err
+	}
 	c.oracleEmitter = &oracleEmitter.OracleEmitterSession{
 		Contract: emitter,
 		CallOpts: bind.CallOpts{
@@ -76,8 +81,8 @@ func (c *EthereumClient) Initialize(ctx context.Context, url, privateKey, oracle
 		TransactOpts: bind.TransactOpts{
 			From:     authTransactor.From,
 			Signer:   authTransactor.Signer,
-			GasLimit: 0,   // 0 automatically estimates gas limit
-			GasPrice: nil, // nil automatically suggests gas price
+			GasLimit: 200000, // 0 automatically estimates gas limit
+			GasPrice: nil,    // nil automatically suggests gas price
 			Context:  context.Background(),
 		},
 	}
@@ -91,8 +96,23 @@ func (c *EthereumClient) Initialize(ctx context.Context, url, privateKey, oracle
 		TransactOpts: bind.TransactOpts{
 			From:     authTransactor.From,
 			Signer:   authTransactor.Signer,
-			GasLimit: 0,   // 0 automatically estimates gas limit
-			GasPrice: nil, // nil automatically suggests gas price
+			GasLimit: 200000, // 0 automatically estimates gas limit
+			GasPrice: nil,    // nil automatically suggests gas price
+			Context:  context.Background(),
+		},
+	}
+	c.dioneStaking = &dioneStaking.DioneStakingSession{
+		Contract: stakingContract,
+		CallOpts: bind.CallOpts{
+			Pending: true,
+			From:    authTransactor.From,
+			Context: context.Background(),
+		},
+		TransactOpts: bind.TransactOpts{
+			From:     authTransactor.From,
+			Signer:   authTransactor.Signer,
+			GasLimit: 200000,                 // 0 automatically estimates gas limit
+			GasPrice: big.NewInt(1860127603), // nil automatically suggests gas price
 			Context:  context.Background(),
 		},
 	}
@@ -103,12 +123,12 @@ func (c *EthereumClient) GetEthAddress() *common.Address {
 	return c.ethAddress
 }
 
-func (c *EthereumClient) SubscribeOnOracleEvents() (chan *oracleEmitter.OracleEmitterNewOracleRequest, event.Subscription, error) {
+func (c *EthereumClient) SubscribeOnOracleEvents(ctx context.Context) (chan *oracleEmitter.OracleEmitterNewOracleRequest, event.Subscription, error) {
 	resChan := make(chan *oracleEmitter.OracleEmitterNewOracleRequest)
 	requestsFilter := c.oracleEmitter.Contract.OracleEmitterFilterer
 	subscription, err := requestsFilter.WatchNewOracleRequest(&bind.WatchOpts{
 		Start:   nil, //last block
-		Context: nil,
+		Context: ctx,
 	}, resChan)
 	if err != nil {
 		return nil, nil, err
@@ -116,7 +136,7 @@ func (c *EthereumClient) SubscribeOnOracleEvents() (chan *oracleEmitter.OracleEm
 	return resChan, subscription, err
 }
 
-func (c *EthereumClient) SubmitRequestAnswer(reqID *big.Int, data string, callbackAddress common.Address, callbackMethodID [4]byte) error {
+func (c *EthereumClient) SubmitRequestAnswer(reqID *big.Int, data string, callbackAddress common.Address) error {
 	// privateKey, err := crypto.HexToECDSA(private_key)
 	// if err != nil {
 	// 	c.Logger.Fatal("Failed to generate private key", err)
@@ -142,7 +162,7 @@ func (c *EthereumClient) SubmitRequestAnswer(reqID *big.Int, data string, callba
 	// 	c.Logger.Fatal(err)
 	// }
 
-	_, err := c.aggregator.CollectData(reqID, data, callbackAddress, callbackMethodID)
+	_, err := c.aggregator.CollectData(reqID, data, callbackAddress)
 	if err != nil {
 		return err
 	}

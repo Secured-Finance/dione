@@ -27,7 +27,7 @@ func TestConsensus(t *testing.T) {
 		PubSub: config.PubSubConfig{
 			ProtocolID: "/dione/1.0",
 		},
-		ConsensusMaxFaultNodes: 3,
+		ConsensusMinApprovals: 3,
 	}
 
 	var nodes []*Node
@@ -45,7 +45,7 @@ func TestConsensus(t *testing.T) {
 		nodes = append(nodes, node)
 	}
 
-	time.Sleep(5*time.Second)
+	time.Sleep(5 * time.Second)
 
 	var wg sync.WaitGroup
 

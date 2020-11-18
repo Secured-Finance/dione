@@ -10,6 +10,10 @@ interface IDioneStaking {
     function isLegitMiner(address _minerAddr) external returns (bool);
 }
 
+interface IMediator {
+    function _receiveDataCallback(uint256 reqID, string memory data) external;
+}
+
 contract Aggregator is Ownable, ReentrancyGuard {
   IDioneStaking public dioneStaking;
 
@@ -18,9 +22,7 @@ contract Aggregator is Ownable, ReentrancyGuard {
       dioneStaking = _dioneStaking;
   }
 
-  function collectData(uint256 reqID, string memory data, address callbackAddress, bytes4 callbackMethodID) public nonReentrant {
-    require(dioneStaking.isLegitMiner(msg.sender));
-    (bool success,) = callbackAddress.call(abi.encode(callbackMethodID, reqID, data));
-    require(success);
+  function collectData(uint256 reqID, string memory data, IMediator callbackAddress) public nonReentrant {
+    callbackAddress._receiveDataCallback(reqID, data);
   }
 }

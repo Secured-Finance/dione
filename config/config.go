@@ -7,15 +7,16 @@ import (
 )
 
 type Config struct {
-	ListenPort             int            `mapstructure:"listen_port"`
-	ListenAddr             string         `mapstructure:"listen_addr"`
-	BootstrapNodes         []string       `mapstructure:"bootstrap_node_multiaddr"`
-	Rendezvous             string         `mapstructure:"rendezvous"`
-	Ethereum               EthereumConfig `mapstructure:"ethereum"`
-	Filecoin               FilecoinConfig `mapstructure:"filecoin"`
-	PubSub                 PubSubConfig   `mapstructure:"pubSub"`
-	Store                  StoreConfig    `mapstructure:"store"`
-	ConsensusMaxFaultNodes int            `mapstructure:"consensus_max_fault_nodes"`
+	ListenPort            int            `mapstructure:"listen_port"`
+	ListenAddr            string         `mapstructure:"listen_addr"`
+	IsBootstrap           bool           `mapstructure:"is_bootstrap"`
+	BootstrapNodes        []string       `mapstructure:"bootstrap_node_multiaddr"`
+	Rendezvous            string         `mapstructure:"rendezvous"`
+	Ethereum              EthereumConfig `mapstructure:"ethereum"`
+	Filecoin              FilecoinConfig `mapstructure:"filecoin"`
+	PubSub                PubSubConfig   `mapstructure:"pubSub"`
+	Store                 StoreConfig    `mapstructure:"store"`
+	ConsensusMinApprovals int            `mapstructure:"consensus_min_approvals"`
 }
 
 type EthereumConfig struct {
@@ -23,6 +24,7 @@ type EthereumConfig struct {
 	PrivateKey                   string `mapstructure:"private_key"`
 	OracleEmitterContractAddress string `mapstructure:"oracle_emitter_contract_address"`
 	AggregatorContractAddress    string `mapstructure:"aggregator_contract_address"`
+	DioneStakingContractAddress  string `mapstructure:"dione_staking_address"`
 }
 
 type FilecoinConfig struct {

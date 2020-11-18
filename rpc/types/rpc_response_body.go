@@ -1,6 +1,6 @@
 package types
 
-type SolanaResponse struct {
+type RPCResponseBody struct {
 	Jsonrpc string `json:"jsonrpc"`
 	Result  []byte `json:"result"`
 	Error   Error  `json:"error"`

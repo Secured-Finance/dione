@@ -22,13 +22,13 @@ func (ed25519Signer) GenPrivate() ([]byte, error) {
 }
 
 func (ed25519Signer) ToPublic(priv []byte) ([]byte, error) {
-	privKey := ed25519.NewKeyFromSeed(priv)
+	var privKey ed25519.PrivateKey = priv
 	pubKey := privKey.Public().(ed25519.PublicKey)
 	return pubKey, nil
 }
 
 func (ed25519Signer) Sign(p []byte, msg []byte) ([]byte, error) {
-	privKey := ed25519.NewKeyFromSeed(p)
+	var privKey ed25519.PrivateKey = p
 	return ed25519.Sign(privKey, msg), nil
 }
 

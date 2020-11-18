@@ -7,6 +7,7 @@ import (
 	"github.com/libp2p/go-libp2p-core/peer"
 
 	"github.com/Secured-Finance/dione/sigs"
+	_ "github.com/Secured-Finance/dione/sigs/ed25519" // enable ed25519 signatures
 	"github.com/Secured-Finance/dione/types"
 	"github.com/filecoin-project/go-address"
 	"github.com/sirupsen/logrus"
@@ -107,11 +108,13 @@ func (w *LocalWallet) tryFind(addr peer.ID) (types.KeyInfo, error) {
 	if err != nil {
 		return types.KeyInfo{}, err
 	}
+	logrus.Info("tAddress: ", tAddress)
 
 	ki, err = w.keystore.Get(KNamePrefix + tAddress)
 	if err != nil {
 		return types.KeyInfo{}, err
 	}
+	logrus.Info("ki from tryFind: ", ki)
 
 	// We found it with the testnet prefix
 	// Add this KeyInfo with the mainnet prefix address string

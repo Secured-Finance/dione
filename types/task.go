@@ -36,6 +36,31 @@ type DioneTask struct {
 	Signature     *Signature
 	DrandRound    DrandRound
 	Payload       []byte
+	BlockHash     string
+}
+
+func NewDioneTask(
+	t TaskType,
+	miner peer.ID,
+	ticket *Ticket,
+	electionProof *ElectionProof,
+	beacon []BeaconEntry,
+	sig *Signature,
+	drand DrandRound,
+	payload []byte,
+	blockHash string,
+) *DioneTask {
+	return &DioneTask{
+		Type:          t,
+		Miner:         miner,
+		Ticket:        ticket,
+		ElectionProof: electionProof,
+		BeaconEntries: beacon,
+		Signature:     sig,
+		DrandRound:    drand,
+		Payload:       payload,
+		BlockHash:     blockHash,
+	}
 }
 
 var tasksPerEpoch = NewInt(config.TasksPerEpoch)

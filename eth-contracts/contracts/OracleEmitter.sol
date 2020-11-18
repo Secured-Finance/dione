@@ -5,15 +5,15 @@ contract OracleEmitter {
   uint256 requestCounter;
 
   event NewOracleRequest(
-    uint8 originChain,
-    uint8 requestType,
+    string originChain,
+    string requestType,
     string requestParams,
     address callbackAddress,
     bytes4 callbackMethodID,
     uint256 requestID
   );
 
-  function requestOracles(uint8 memory originChain, uint8 memory requestType, string memory requestParams, address callbackAddress, bytes4 callbackMethodID) public returns (uint256) {
+  function requestOracles(string memory originChain, string memory requestType, string memory requestParams, address callbackAddress, bytes4 callbackMethodID) public returns (uint256) {
     requestCounter++;
     emit NewOracleRequest(originChain, requestType, requestParams, callbackAddress, callbackMethodID, requestCounter);
     return requestCounter;

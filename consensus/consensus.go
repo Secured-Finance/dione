@@ -1,133 +1,266 @@
 package consensus
 
 import (
-	"sync"
+	"math/big"
+
+	"github.com/ethereum/go-ethereum/common"
+
+	"github.com/Secured-Finance/dione/ethclient"
+	"github.com/sirupsen/logrus"
 
 	"github.com/Secured-Finance/dione/models"
 	"github.com/Secured-Finance/dione/pb"
-	"github.com/sirupsen/logrus"
-)
-
-type ConsensusState int
-
-const (
-	consensusPrePrepared ConsensusState = 0x0
-	consensusPrepared    ConsensusState = 0x1
-	consensusCommitted   ConsensusState = 0x2
-
-	testValidData = "test"
 )
 
 type PBFTConsensusManager struct {
-	psb           *pb.PubSubRouter
-	Consensuses   map[string]*ConsensusData
-	maxFaultNodes int
-	miner         *Miner
+	psb *pb.PubSubRouter
+	//Consensuses map[string]*ConsensusData
+	//maxFaultNodes  int
+	minApprovals     int
+	privKey          []byte
+	prePreparePool   *PrePreparePool
+	preparePool      *PreparePool
+	commitPool       *CommitPool
+	consensusLeaders map[string]bool
+	ethereumClient   *ethclient.EthereumClient
 }
 
-type ConsensusData struct {
-	preparedCount             int
-	commitCount               int
-	State                     ConsensusState
-	mutex                     sync.Mutex
-	result                    string
-	test                      bool
-	onConsensusFinishCallback func(finalData string)
-}
+//type ConsensusData struct {
+//	preparedCount             int
+//	commitCount               int
+//	mutex                     sync.Mutex
+//	result                    string
+//	test                      bool
+//	onConsensusFinishCallback func(finalData string)
+//}
 
-func NewPBFTConsensusManager(psb *pb.PubSubRouter, maxFaultNodes int) *PBFTConsensusManager {
+func NewPBFTConsensusManager(psb *pb.PubSubRouter, minApprovals int, privKey []byte, ethereumClient *ethclient.EthereumClient) *PBFTConsensusManager {
 	pcm := &PBFTConsensusManager{}
-	pcm.Consensuses = make(map[string]*ConsensusData)
 	pcm.psb = psb
-	pcm.psb.Hook("prepared", pcm.handlePreparedMessage)
-	pcm.psb.Hook("commit", pcm.handleCommitMessage)
+	pcm.prePreparePool = NewPrePreparePool()
+	pcm.preparePool = NewPreparePool()
+	pcm.commitPool = NewCommitPool()
+	pcm.minApprovals = minApprovals
+	pcm.privKey = privKey
+	pcm.ethereumClient = ethereumClient
+	pcm.consensusLeaders = map[string]bool{}
+	pcm.psb.Hook(models.MessageTypePrePrepare, pcm.handlePrePrepare)
+	pcm.psb.Hook(models.MessageTypePrepare, pcm.handlePrepare)
+	pcm.psb.Hook(models.MessageTypeCommit, pcm.handleCommit)
 	return pcm
 }
 
-func (pcm *PBFTConsensusManager) NewTestConsensus(data string, consensusID string, onConsensusFinishCallback func(finalData string)) {
-	//consensusID := uuid.New().String()
-	cData := &ConsensusData{}
-	cData.test = true
-	cData.onConsensusFinishCallback = onConsensusFinishCallback
-	pcm.Consensuses[consensusID] = cData
+//func (pcm *PBFTConsensusManager) NewTestConsensus(data string, consensusID string, onConsensusFinishCallback func(finalData string)) {
+//	//consensusID := uuid.New().String()
+//	cData := &ConsensusData{}
+//	cData.test = true
+//	cData.onConsensusFinishCallback = onConsensusFinishCallback
+//	pcm.Consensuses[consensusID] = cData
+//
+//	// here we will create DioneTask
+//
+//	msg := models.Message{}
+//	msg.Type = "prepared"
+//	msg.Payload = make(map[string]interface{})
+//	msg.Payload["consensusID"] = consensusID
+//	msg.Payload["data"] = data
+//	sign, err := sigs.Sign(types.SigTypeEd25519, pcm.privKey, []byte(data))
+//	if err != nil {
+//		logrus.Warnf("failed to sign data: %w", err)
+//		return
+//	}
+//	msg.Payload["signature"] = string(sign.Data)
+//	pcm.psb.BroadcastToServiceTopic(&msg)
+//
+//	cData.State = ConsensusPrePrepared
+//	logrus.Debug("started new consensus: " + consensusID)
+//}
+//
+//func (pcm *PBFTConsensusManager) handlePrePrepareMessage(sender peer.ID, message *models.Message) {
+//	consensusID := message.Payload["consensusID"].(string)
+//	if _, ok := pcm.Consensuses[consensusID]; !ok {
+//		logrus.Warn("Unknown consensus ID,: " + consensusID + ", creating consensusInfo")
+//		pcm.Consensuses[consensusID] = &ConsensusData{
+//			State:                     ConsensusPrePrepared,
+//			onConsensusFinishCallback: func(finalData string) {},
+//		}
+//	}
+//	data := pcm.Consensuses[consensusID]
+//	logrus.Debug("received pre_prepare msg")
+//}
+//
+//func (pcm *PBFTConsensusManager) handlePreparedMessage(sender peer.ID, message *models.Message) {
+//	// TODO add check on view of the message
+//	consensusID := message.Payload["consensusID"].(string)
+//	if _, ok := pcm.Consensuses[consensusID]; !ok {
+//		logrus.Warn("Unknown consensus ID,: " + consensusID + ", creating consensusInfo")
+//		pcm.Consensuses[consensusID] = &ConsensusData{
+//			State:                     ConsensusPrePrepared,
+//			onConsensusFinishCallback: func(finalData string) {},
+//		}
+//	}
+//	data := pcm.Consensuses[consensusID]
+//	logrus.Debug("received prepared msg")
+//	//data := pcm.Consensuses[consensusID]
+//
+//	// TODO
+//	// here we can validate miner which produced this task, is he winner, and so on
+//	// validation steps:
+//	// 1. validate sender eligibility to mine (check if it has minimal stake)
+//	// 2. validate sender wincount
+//	// 3. validate randomness
+//	// 4. validate vrf
+//	// 5. validate payload signature
+//	// 6. validate transaction (get from rpc client and compare with received)
+//
+//	signStr := message.Payload["signature"].(string)
+//	signRaw := []byte(signStr)
+//	err := sigs.Verify(&types.Signature{Data: signRaw, Type: types.SigTypeEd25519}, sender, message.Payload["data"].([]byte))
+//	if err != nil {
+//		logrus.Warn("failed to verify data signature")
+//		return
+//	}
+//
+//	data.mutex.Lock()
+//	defer data.mutex.Unlock()
+//	data.preparedCount++
+//
+//	if data.preparedCount > 2*pcm.maxFaultNodes+1 {
+//		msg := models.Message{}
+//		msg.Payload = make(map[string]interface{})
+//		msg.Type = "commit"
+//		msg.Payload["consensusID"] = consensusID
+//		msg.Payload["data"] = message.Payload["data"]
+//		sign, err := sigs.Sign(types.SigTypeEd25519, pcm.privKey, message.Payload["data"].([]byte))
+//		if err != nil {
+//			logrus.Warnf("failed to sign data: %w", err)
+//			return
+//		}
+//		msg.Payload["signature"] = string(sign.Data)
+//		err = pcm.psb.BroadcastToServiceTopic(&msg)
+//		if err != nil {
+//			logrus.Warn("Unable to send COMMIT message: " + err.Error())
+//			return
+//		}
+//		data.State = ConsensusPrepared
+//	}
+//}
+//
+//func (pcm *PBFTConsensusManager) handleCommitMessage(sender peer.ID, message *models.Message) {
+//	// TODO add check on view of the message
+//	// TODO add validation of data by hash to this stage
+//	consensusID := message.Payload["consensusID"].(string)
+//	if _, ok := pcm.Consensuses[consensusID]; !ok {
+//		logrus.Warn("Unknown consensus ID: " + consensusID)
+//		return
+//	}
+//	data := pcm.Consensuses[consensusID]
+//
+//	data.mutex.Lock()
+//	defer data.mutex.Unlock()
+//	if data.State == ConsensusCommitted {
+//		logrus.Debug("consensus already finished, dropping COMMIT message")
+//		return
+//	}
+//
+//	logrus.Debug("received commit msg")
+//
+//	signStr := message.Payload["signature"].(string)
+//	signRaw := []byte(signStr)
+//	err := sigs.Verify(&types.Signature{Data: signRaw, Type: types.SigTypeEd25519}, sender, message.Payload["data"].([]byte))
+//	if err != nil {
+//		logrus.Warn("failed to verify data signature")
+//		return
+//	}
+//
+//	data.commitCount++
+//
+//	if data.commitCount > 2*pcm.maxFaultNodes+1 {
+//		data.State = ConsensusCommitted
+//		data.result = message.Payload["data"].(string)
+//		logrus.Debug("consensus successfully finished with result: " + data.result)
+//		data.onConsensusFinishCallback(data.result)
+//	}
+//}
 
-	// here we will create DioneTask
-
-	msg := models.Message{}
-	msg.Type = "prepared"
-	msg.Payload = make(map[string]interface{})
-	msg.Payload["consensusID"] = consensusID
-	msg.Payload["data"] = data
-	pcm.psb.BroadcastToServiceTopic(&msg)
-
-	cData.State = consensusPrePrepared
-	logrus.Debug("started new consensus: " + consensusID)
+func (pcm *PBFTConsensusManager) Propose(consensusID, data string, requestID *big.Int, callbackAddress common.Address) error {
+	pcm.consensusLeaders[consensusID] = true
+	reqIDRaw := requestID.String()
+	callbackAddressHex := callbackAddress.Hex()
+	prePrepareMsg, err := pcm.prePreparePool.CreatePrePrepare(consensusID, data, reqIDRaw, callbackAddressHex, pcm.privKey)
+	if err != nil {
+		return err
+	}
+	pcm.psb.BroadcastToServiceTopic(prePrepareMsg)
+	return nil
 }
 
-func (pcm *PBFTConsensusManager) handlePreparedMessage(message *models.Message) {
-	// TODO add check on view of the message
-	consensusID := message.Payload["consensusID"].(string)
-	if _, ok := pcm.Consensuses[consensusID]; !ok {
-		logrus.Warn("Unknown consensus ID: " + consensusID)
+func (pcm *PBFTConsensusManager) handlePrePrepare(message *models.Message) {
+	if pcm.prePreparePool.IsExistingPrePrepare(message) {
+		logrus.Debug("received existing pre_prepare msg, dropping...")
 		return
 	}
-	logrus.Debug("received prepared msg")
-	data := pcm.Consensuses[consensusID]
+	if !pcm.prePreparePool.IsValidPrePrepare(message) {
+		logrus.Debug("received invalid pre_prepare msg, dropping...")
+		return
+	}
 
-	// TODO
-	// here we can validate miner which produced this task, is he winner, and so on
-	// validation steps:
-	// 1. validate sender eligibility to mine (check if it has minimal stake)
-	// 2. validate sender wincount
-	// 3. validate randomness
-	// 4. validate vrf
-	// 5. validate payload signature
-	// 6. validate transaction (get from rpc client and compare with received)
+	pcm.psb.BroadcastToServiceTopic(message)
+	prepareMsg, err := pcm.preparePool.CreatePrepare(message, pcm.privKey)
+	if err != nil {
+		logrus.Errorf("failed to create prepare message: %w", err)
+	}
+	pcm.psb.BroadcastToServiceTopic(prepareMsg)
+}
 
-	data.mutex.Lock()
-	data.preparedCount++
-	data.mutex.Unlock()
+func (pcm *PBFTConsensusManager) handlePrepare(message *models.Message) {
+	if pcm.preparePool.IsExistingPrepare(message) {
+		logrus.Debug("received existing prepare msg, dropping...")
+		return
+	}
+	if !pcm.preparePool.IsValidPrepare(message) {
+		logrus.Debug("received invalid prepare msg, dropping...")
+		return
+	}
 
-	if data.preparedCount > 2*pcm.maxFaultNodes+1 {
-		msg := models.Message{}
-		msg.Payload = make(map[string]interface{})
-		msg.Type = "commit"
-		msg.Payload["consensusID"] = consensusID
-		msg.Payload["data"] = message.Payload["data"]
-		err := pcm.psb.BroadcastToServiceTopic(&msg)
+	pcm.preparePool.AddPrepare(message)
+	pcm.psb.BroadcastToServiceTopic(message)
+
+	if pcm.preparePool.PrepareSize(message.Payload.ConsensusID) >= pcm.minApprovals {
+		commitMsg, err := pcm.commitPool.CreateCommit(message, pcm.privKey)
 		if err != nil {
-			logrus.Warn("Unable to send COMMIT message: " + err.Error())
-			return
+			logrus.Errorf("failed to create commit message: %w", err)
 		}
-		data.State = consensusPrepared
+		pcm.psb.BroadcastToServiceTopic(commitMsg)
 	}
 }
 
-func (pcm *PBFTConsensusManager) handleCommitMessage(message *models.Message) {
-	// TODO add check on view of the message
-	// TODO add validation of data by hash to this stage
-	consensusID := message.Payload["consensusID"].(string)
-	if _, ok := pcm.Consensuses[consensusID]; !ok {
-		logrus.Warn("Unknown consensus ID: " + consensusID)
+func (pcm *PBFTConsensusManager) handleCommit(message *models.Message) {
+	if pcm.commitPool.IsExistingCommit(message) {
+		logrus.Debug("received existing commit msg, dropping...")
 		return
 	}
-	data := pcm.Consensuses[consensusID]
-
-	data.mutex.Lock()
-	defer data.mutex.Unlock()
-	if data.State == consensusCommitted {
-		logrus.Debug("consensus already finished, dropping COMMIT message")
+	if !pcm.commitPool.IsValidCommit(message) {
+		logrus.Debug("received invalid commit msg, dropping...")
 		return
 	}
 
-	logrus.Debug("received commit msg")
+	pcm.commitPool.AddCommit(message)
+	pcm.psb.BroadcastToServiceTopic(message)
 
-	data.commitCount++
-
-	if data.commitCount > 2*pcm.maxFaultNodes+1 {
-		data.State = consensusCommitted
-		data.result = message.Payload["data"].(string)
-		logrus.Debug("consensus successfully finished with result: " + data.result)
-		data.onConsensusFinishCallback(data.result)
+	consensusMsg := message.Payload
+	if pcm.commitPool.CommitSize(consensusMsg.ConsensusID) >= pcm.minApprovals {
+		if pcm.consensusLeaders[consensusMsg.ConsensusID] {
+			logrus.Infof("Submitting on-chain result for consensus ID: %s", consensusMsg.ConsensusID)
+			reqID, ok := new(big.Int).SetString(consensusMsg.RequestID, 10)
+			if !ok {
+				logrus.Errorf("Failed to parse big int: %v", consensusMsg.RequestID)
+			}
+			callbackAddress := common.HexToAddress(consensusMsg.CallbackAddress)
+			err := pcm.ethereumClient.SubmitRequestAnswer(reqID, consensusMsg.Data, callbackAddress)
+			if err != nil {
+				logrus.Errorf("Failed to submit on-chain result: %w", err)
+			}
+		}
 	}
 }

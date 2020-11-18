@@ -5,9 +5,14 @@ import (
 	"crypto/rand"
 	"flag"
 	"fmt"
+	"io/ioutil"
+	"os"
 	"time"
 
-	"github.com/Secured-Finance/dione/solana"
+	solana2 "github.com/Secured-Finance/dione/rpc/solana"
+
+	"github.com/Secured-Finance/dione/rpc/filecoin"
+
 	"github.com/Secured-Finance/dione/types"
 
 	"github.com/Secured-Finance/dione/wallet"
@@ -22,7 +27,6 @@ import (
 	"github.com/Secured-Finance/dione/consensus"
 	"github.com/Secured-Finance/dione/ethclient"
 	"github.com/Secured-Finance/dione/pb"
-	"github.com/Secured-Finance/dione/rpc"
 	"github.com/libp2p/go-libp2p"
 	crypto "github.com/libp2p/go-libp2p-core/crypto"
 	"github.com/libp2p/go-libp2p-core/host"
@@ -31,7 +35,7 @@ import (
 )
 
 const (
-	DefaultPEXUpdateTime = 1 * time.Minute
+	DefaultPEXUpdateTime = 6 * time.Second
 )
 
 type Node struct {
@@ -41,9 +45,9 @@ type Node struct {
 	GlobalCtxCancel  context.CancelFunc
 	OracleTopic      string
 	Config           *config.Config
-	Lotus            *rpc.LotusClient
+	Lotus            *filecoin.LotusClient
 	Ethereum         *ethclient.EthereumClient
-	Solana           *solana.SolanaClient
+	Solana           *solana2.SolanaClient
 	ConsensusManager *consensus.PBFTConsensusManager
 	Miner            *consensus.Miner
 	Beacon           beacon.BeaconNetworks
@@ -70,8 +74,12 @@ func (n *Node) setupNode(ctx context.Context, prvKey crypto.PrivKey, pexDiscover
 	if err != nil {
 		logrus.Fatal(err)
 	}
+	n.setupSolanaClient()
 	n.setupPubsub()
-	n.setupConsensusManager(n.Config.ConsensusMaxFaultNodes)
+	err = n.setupConsensusManager(prvKey, n.Config.ConsensusMinApprovals)
+	if err != nil {
+		logrus.Fatalf("Failed to setup consensus manager: %w", err)
+	}
 	err = n.setupBeacon()
 	if err != nil {
 		logrus.Fatal(err)
@@ -84,10 +92,11 @@ func (n *Node) setupNode(ctx context.Context, prvKey crypto.PrivKey, pexDiscover
 	if err != nil {
 		logrus.Fatal(err)
 	}
+	n.subscribeOnEthContracts(ctx)
 }
 
 func (n *Node) setupMiner() error {
-	n.Miner = consensus.NewMiner(n.Host.ID(), *n.Ethereum.GetEthAddress(), n.Wallet, n.Beacon, n.Ethereum)
+	n.Miner = consensus.NewMiner(n.Host.ID(), *n.Ethereum.GetEthAddress(), n.Wallet, n.Beacon, n.Ethereum, n.Solana)
 	return nil
 }
 
@@ -129,16 +138,17 @@ func (n *Node) setupEthereumClient() error {
 		n.Config.Ethereum.PrivateKey,
 		n.Config.Ethereum.OracleEmitterContractAddress,
 		n.Config.Ethereum.AggregatorContractAddress,
+		n.Config.Ethereum.DioneStakingContractAddress,
 	)
 }
 
 func (n *Node) setupFilecoinClient() {
-	lotus := rpc.NewLotusClient(n.Config.Filecoin.LotusHost, n.Config.Filecoin.LotusToken)
+	lotus := filecoin.NewLotusClient(n.Config.Filecoin.LotusHost, n.Config.Filecoin.LotusToken)
 	n.Lotus = lotus
 }
 
 func (n *Node) setupSolanaClient() {
-	solana := solana.NewSolanaClient()
+	solana := solana2.NewSolanaClient()
 	n.Solana = solana
 }
 
@@ -148,8 +158,13 @@ func (n *Node) setupPubsub() {
 	//time.Sleep(3 * time.Second)
 }
 
-func (n *Node) setupConsensusManager(maxFaultNodes int) {
-	n.ConsensusManager = consensus.NewPBFTConsensusManager(n.PubSubRouter, maxFaultNodes)
+func (n *Node) setupConsensusManager(privateKey crypto.PrivKey, minApprovals int) error {
+	pkeyRaw, err := privateKey.Raw()
+	if err != nil {
+		return err
+	}
+	n.ConsensusManager = consensus.NewPBFTConsensusManager(n.PubSubRouter, minApprovals, pkeyRaw, n.Ethereum)
+	return nil
 }
 
 func (n *Node) setupLibp2pHost(ctx context.Context, privateKey crypto.PrivKey, pexDiscoveryUpdateTime time.Duration) {
@@ -177,7 +192,9 @@ func (n *Node) setupLibp2pHost(ctx context.Context, privateKey crypto.PrivKey, p
 		}
 		bootstrapMaddrs = append(bootstrapMaddrs, maddr)
 	}
-
+	if n.Config.IsBootstrap {
+		bootstrapMaddrs = nil
+	}
 	discovery, err := pex.NewPEXDiscovery(host, bootstrapMaddrs, pexDiscoveryUpdateTime)
 	if err != nil {
 		logrus.Fatal("Can't set up PEX discovery protocol, exiting... ", err)
@@ -235,22 +252,37 @@ func Start() error {
 	if *verbose {
 		logrus.SetLevel(logrus.DebugLevel)
 	} else {
-		logrus.SetLevel(logrus.InfoLevel)
+		logrus.SetLevel(logrus.DebugLevel)
 	}
 	if err != nil {
 		logrus.Panic(err)
 	}
 
-	privKey, err := generatePrivateKey()
-	if err != nil {
-		logrus.Fatal(err)
+	var privateKey crypto.PrivKey
+
+	if node.Config.IsBootstrap {
+		if _, err := os.Stat(".bootstrap_privkey"); os.IsNotExist(err) {
+			privateKey, err = generatePrivateKey()
+			if err != nil {
+				logrus.Fatal(err)
+			}
+
+			f, _ := os.Create(".bootstrap_privkey")
+			r, _ := privateKey.Raw()
+			f.Write(r)
+		} else {
+			pkey, _ := ioutil.ReadFile(".bootstrap_privkey")
+			privateKey, _ = crypto.UnmarshalEd25519PrivateKey(pkey)
+		}
+	} else {
+		privateKey, err = generatePrivateKey()
 	}
 
 	ctx, ctxCancel := context.WithCancel(context.Background())
 	node.GlobalCtx = ctx
 	node.GlobalCtxCancel = ctxCancel
 
-	node.setupNode(ctx, privKey, DefaultPEXUpdateTime)
+	node.setupNode(ctx, privateKey, DefaultPEXUpdateTime)
 	for {
 		select {
 		case <-ctx.Done():
