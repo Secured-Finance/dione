@@ -1,8 +1,6 @@
 package consensus
 
 import (
-	"encoding/hex"
-
 	"github.com/Secured-Finance/dione/models"
 	"github.com/Secured-Finance/dione/sigs"
 	"github.com/Secured-Finance/dione/types"
@@ -31,7 +29,7 @@ func (cp *CommitPool) CreateCommit(prepareMsg *models.Message, privateKey []byte
 	if err != nil {
 		return nil, err
 	}
-	consensusMsg.Signature = hex.EncodeToString(signature.Data)
+	consensusMsg.Signature = signature.Data
 	message.Payload = consensusMsg
 	return &message, nil
 }
@@ -49,11 +47,7 @@ func (cp *CommitPool) IsExistingCommit(commitMsg *models.Message) bool {
 
 func (cp *CommitPool) IsValidCommit(commit *models.Message) bool {
 	consensusMsg := commit.Payload
-	buf, err := hex.DecodeString(consensusMsg.Signature)
-	if err != nil {
-		return false
-	}
-	err = sigs.Verify(&types.Signature{Type: types.SigTypeEd25519, Data: buf}, commit.From, []byte(consensusMsg.Data))
+	err := sigs.Verify(&types.Signature{Type: types.SigTypeEd25519, Data: consensusMsg.Signature}, commit.From, []byte(consensusMsg.Data))
 	if err != nil {
 		return false
 	}

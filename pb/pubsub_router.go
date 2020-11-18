@@ -74,7 +74,6 @@ func (psr *PubSubRouter) handleMessage(p *pubsub.Message) {
 	}
 	// We can receive our own messages when sending to the topic. So we should drop them.
 	if senderPeerID == psr.node.ID() {
-		logrus.Debug("Drop message because it came from the current node - a bug (or feature) in the pubsub system")
 		return
 	}
 	var message models.Message

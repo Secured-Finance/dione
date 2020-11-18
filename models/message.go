@@ -16,7 +16,7 @@ const (
 
 type ConsensusMessage struct {
 	ConsensusID     string
-	Signature       string
+	Signature       []byte
 	RequestID       string
 	CallbackAddress string
 	Data            string

@@ -1,11 +1,10 @@
 package consensus
 
 import (
-	"encoding/hex"
-
 	"github.com/Secured-Finance/dione/models"
 	"github.com/Secured-Finance/dione/sigs"
 	"github.com/Secured-Finance/dione/types"
+	"github.com/sirupsen/logrus"
 )
 
 type PrePreparePool struct {
@@ -30,7 +29,7 @@ func (pp *PrePreparePool) CreatePrePrepare(consensusID, data string, requestID s
 	if err != nil {
 		return nil, err
 	}
-	consensusMsg.Signature = hex.EncodeToString(signature.Data)
+	consensusMsg.Signature = signature.Data
 	message.Payload = consensusMsg
 	return &message, nil
 }
@@ -49,12 +48,9 @@ func (ppp *PrePreparePool) IsExistingPrePrepare(prepareMsg *models.Message) bool
 func (ppp *PrePreparePool) IsValidPrePrepare(prePrepare *models.Message) bool {
 	// TODO here we need to do validation of tx itself
 	consensusMsg := prePrepare.Payload
-	buf, err := hex.DecodeString(consensusMsg.Signature)
+	err := sigs.Verify(&types.Signature{Type: types.SigTypeEd25519, Data: consensusMsg.Signature}, prePrepare.From, []byte(consensusMsg.Data))
 	if err != nil {
-		return false
-	}
-	err = sigs.Verify(&types.Signature{Type: types.SigTypeEd25519, Data: buf}, prePrepare.From, []byte(consensusMsg.Data))
-	if err != nil {
+		logrus.Errorf("unable to verify signature: %v", err)
 		return false
 	}
 	return true

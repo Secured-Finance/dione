@@ -1,8 +1,6 @@
 package consensus
 
 import (
-	"encoding/hex"
-
 	"github.com/Secured-Finance/dione/models"
 	"github.com/Secured-Finance/dione/sigs"
 	"github.com/Secured-Finance/dione/types"
@@ -32,7 +30,7 @@ func (pp *PreparePool) CreatePrepare(prePrepareMsg *models.Message, privateKey [
 	if err != nil {
 		return nil, err
 	}
-	consensusMsg.Signature = hex.EncodeToString(signature.Data)
+	consensusMsg.Signature = signature.Data
 	message.Payload = consensusMsg
 	return &message, nil
 }
@@ -50,11 +48,7 @@ func (pp *PreparePool) IsExistingPrepare(prepareMsg *models.Message) bool {
 
 func (pp *PreparePool) IsValidPrepare(prepare *models.Message) bool {
 	consensusMsg := prepare.Payload
-	buf, err := hex.DecodeString(consensusMsg.Signature)
-	if err != nil {
-		return false
-	}
-	err = sigs.Verify(&types.Signature{Type: types.SigTypeEd25519, Data: buf}, prepare.From, []byte(consensusMsg.Data))
+	err := sigs.Verify(&types.Signature{Type: types.SigTypeEd25519, Data: consensusMsg.Signature}, prepare.From, []byte(consensusMsg.Data))
 	if err != nil {
 		return false
 	}
