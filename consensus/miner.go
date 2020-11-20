@@ -106,13 +106,12 @@ func (m *Miner) MineTask(ctx context.Context, event *oracleEmitter.OracleEmitter
 	if err != nil {
 		return nil, xerrors.Errorf("Couldn't get solana request: %w", err)
 	}
-	response := res.Body()
 	var txRes solTypes.TxResponse
-	if err = json.Unmarshal(response, &txRes); err != nil {
+	if err = json.Unmarshal(res, &txRes); err != nil {
 		return nil, xerrors.Errorf("Couldn't unmarshal solana response: %w", err)
 	}
 	blockHash := txRes.Result.Transaction.Message.RecentBlockhash
-	signature, err := sign(ctx, m.address, response)
+	signature, err := sign(ctx, m.address, res)
 	if err != nil {
 		return nil, xerrors.Errorf("Couldn't sign solana response: %w", err)
 	}
@@ -122,7 +121,7 @@ func (m *Miner) MineTask(ctx context.Context, event *oracleEmitter.OracleEmitter
 		Ticket:        ticket,
 		ElectionProof: winner,
 		BeaconEntries: bvals,
-		Payload:       response,
+		Payload:       res,
 		BlockHash:     blockHash,
 		Signature:     signature,
 		DrandRound:    types.DrandRound(rbase.Round),

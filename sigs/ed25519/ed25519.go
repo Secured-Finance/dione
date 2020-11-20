@@ -38,7 +38,12 @@ func (ed25519Signer) Verify(sig []byte, a peer.ID, msg []byte) error {
 		return err
 	}
 
-	if valid, err := pubKey.Verify(msg, sig); err != nil || !valid {
+	pKeyRaw, err := pubKey.Raw()
+	if err != nil {
+		return err
+	}
+
+	if valid := ed25519.Verify(pKeyRaw, msg, sig); !valid {
 		return xerrors.Errorf("failed to verify signature")
 	}
 	return nil

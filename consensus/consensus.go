@@ -2,6 +2,9 @@ package consensus
 
 import (
 	"math/big"
+	"sync"
+
+	"github.com/Secured-Finance/dione/sigs"
 
 	"github.com/Secured-Finance/dione/consensus/types"
 
@@ -11,29 +14,29 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/Secured-Finance/dione/pubsub"
+	types2 "github.com/Secured-Finance/dione/types"
 )
 
 type PBFTConsensusManager struct {
-	psb *pubsub.PubSubRouter
-	//Consensuses map[string]*ConsensusData
-	//maxFaultNodes  int
-	minApprovals     int
-	privKey          []byte
-	prePreparePool   *PrePreparePool
-	preparePool      *PreparePool
-	commitPool       *CommitPool
-	consensusLeaders map[string]bool
-	ethereumClient   *ethclient.EthereumClient
+	psb            *pubsub.PubSubRouter
+	minApprovals   int
+	privKey        []byte
+	prePreparePool *PrePreparePool
+	preparePool    *PreparePool
+	commitPool     *CommitPool
+	consensusInfo  map[string]*ConsensusData
+	ethereumClient *ethclient.EthereumClient
 }
 
-//type ConsensusData struct {
-//	preparedCount             int
-//	commitCount               int
-//	mutex                     sync.Mutex
-//	result                    string
-//	test                      bool
-//	onConsensusFinishCallback func(finalData string)
-//}
+type ConsensusData struct {
+	//	preparedCount             int
+	//	commitCount               int
+	mutex            sync.Mutex
+	alreadySubmitted bool
+	//	result                    string
+	//	test                      bool
+	//	onConsensusFinishCallback func(finalData string)
+}
 
 func NewPBFTConsensusManager(psb *pubsub.PubSubRouter, minApprovals int, privKey []byte, ethereumClient *ethclient.EthereumClient) *PBFTConsensusManager {
 	pcm := &PBFTConsensusManager{}
@@ -44,7 +47,7 @@ func NewPBFTConsensusManager(psb *pubsub.PubSubRouter, minApprovals int, privKey
 	pcm.minApprovals = minApprovals
 	pcm.privKey = privKey
 	pcm.ethereumClient = ethereumClient
-	pcm.consensusLeaders = map[string]bool{}
+	pcm.consensusInfo = map[string]*ConsensusData{}
 	pcm.psb.Hook(types.MessageTypePrePrepare, pcm.handlePrePrepare)
 	pcm.psb.Hook(types.MessageTypePrepare, pcm.handlePrepare)
 	pcm.psb.Hook(types.MessageTypeCommit, pcm.handleCommit)
@@ -185,7 +188,7 @@ func NewPBFTConsensusManager(psb *pubsub.PubSubRouter, minApprovals int, privKey
 //}
 
 func (pcm *PBFTConsensusManager) Propose(consensusID, data string, requestID *big.Int, callbackAddress common.Address) error {
-	pcm.consensusLeaders[consensusID] = true
+	pcm.consensusInfo[consensusID] = &ConsensusData{}
 	reqIDRaw := requestID.String()
 	callbackAddressHex := callbackAddress.Hex()
 	prePrepareMsg, err := pcm.prePreparePool.CreatePrePrepare(consensusID, data, reqIDRaw, callbackAddressHex, pcm.privKey)
@@ -206,7 +209,19 @@ func (pcm *PBFTConsensusManager) handlePrePrepare(message *types.Message) {
 		return
 	}
 
-	pcm.psb.BroadcastToServiceTopic(message)
+	pcm.prePreparePool.AddPrePrepare(message)
+
+	err := pcm.resignMessage(message)
+	if err != nil {
+		logrus.Errorf(err.Error())
+		return
+	}
+	err = pcm.psb.BroadcastToServiceTopic(message)
+	if err != nil {
+		logrus.Errorf(err.Error())
+		return
+	}
+
 	prepareMsg, err := pcm.preparePool.CreatePrepare(message, pcm.privKey)
 	if err != nil {
 		logrus.Errorf("failed to create prepare message: %w", err)
@@ -225,7 +240,16 @@ func (pcm *PBFTConsensusManager) handlePrepare(message *types.Message) {
 	}
 
 	pcm.preparePool.AddPrepare(message)
-	pcm.psb.BroadcastToServiceTopic(message)
+	err := pcm.resignMessage(message)
+	if err != nil {
+		logrus.Errorf(err.Error())
+		return
+	}
+	err = pcm.psb.BroadcastToServiceTopic(message)
+	if err != nil {
+		logrus.Errorf(err.Error())
+		return
+	}
 
 	if pcm.preparePool.PrepareSize(message.Payload.ConsensusID) >= pcm.minApprovals {
 		commitMsg, err := pcm.commitPool.CreateCommit(message, pcm.privKey)
@@ -247,11 +271,25 @@ func (pcm *PBFTConsensusManager) handleCommit(message *types.Message) {
 	}
 
 	pcm.commitPool.AddCommit(message)
-	pcm.psb.BroadcastToServiceTopic(message)
+	err := pcm.resignMessage(message)
+	if err != nil {
+		logrus.Errorf(err.Error())
+		return
+	}
+	err = pcm.psb.BroadcastToServiceTopic(message)
+	if err != nil {
+		logrus.Errorf(err.Error())
+		return
+	}
 
 	consensusMsg := message.Payload
 	if pcm.commitPool.CommitSize(consensusMsg.ConsensusID) >= pcm.minApprovals {
-		if pcm.consensusLeaders[consensusMsg.ConsensusID] {
+		if info, ok := pcm.consensusInfo[consensusMsg.ConsensusID]; ok {
+			info.mutex.Lock()
+			defer info.mutex.Unlock()
+			if info.alreadySubmitted {
+				return
+			}
 			logrus.Infof("Submitting on-chain result for consensus ID: %s", consensusMsg.ConsensusID)
 			reqID, ok := new(big.Int).SetString(consensusMsg.RequestID, 10)
 			if !ok {
@@ -262,6 +300,16 @@ func (pcm *PBFTConsensusManager) handleCommit(message *types.Message) {
 			if err != nil {
 				logrus.Errorf("Failed to submit on-chain result: %w", err)
 			}
+			info.alreadySubmitted = true
 		}
 	}
+}
+
+func (pcm *PBFTConsensusManager) resignMessage(msg *types.Message) error {
+	sig, err := sigs.Sign(types2.SigTypeEd25519, pcm.privKey, []byte(msg.Payload.Data))
+	if err != nil {
+		return err
+	}
+	msg.Payload.Signature = sig.Data
+	return nil
 }
