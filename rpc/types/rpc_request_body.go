@@ -8,7 +8,7 @@ type RPCRequestBody struct {
 }
 
 func NewRPCRequestBody(method string) *RPCRequestBody {
-	var i []interface{}
+	i := make([]interface{}, 0)
 	return &RPCRequestBody{
 		Jsonrpc: "2.0",
 		Method:  method,

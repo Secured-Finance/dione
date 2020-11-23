@@ -27,7 +27,7 @@ var (
 )
 
 // OracleEmitterABI is the input ABI used to generate the binding from.
-const OracleEmitterABI = "[{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"internalType\":\"string\",\"name\":\"originChain\",\"type\":\"string\"},{\"indexed\":false,\"internalType\":\"string\",\"name\":\"requestType\",\"type\":\"string\"},{\"indexed\":false,\"internalType\":\"string\",\"name\":\"requestParams\",\"type\":\"string\"},{\"indexed\":false,\"internalType\":\"address\",\"name\":\"callbackAddress\",\"type\":\"address\"},{\"indexed\":false,\"internalType\":\"bytes4\",\"name\":\"callbackMethodID\",\"type\":\"bytes4\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"requestID\",\"type\":\"uint256\"}],\"name\":\"NewOracleRequest\",\"type\":\"event\"},{\"inputs\":[{\"internalType\":\"string\",\"name\":\"originChain\",\"type\":\"string\"},{\"internalType\":\"string\",\"name\":\"requestType\",\"type\":\"string\"},{\"internalType\":\"string\",\"name\":\"requestParams\",\"type\":\"string\"},{\"internalType\":\"address\",\"name\":\"callbackAddress\",\"type\":\"address\"},{\"internalType\":\"bytes4\",\"name\":\"callbackMethodID\",\"type\":\"bytes4\"}],\"name\":\"requestOracles\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"nonpayable\",\"type\":\"function\"}]"
+const OracleEmitterABI = "[{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"internalType\":\"uint8\",\"name\":\"originChain\",\"type\":\"uint8\"},{\"indexed\":false,\"internalType\":\"uint8\",\"name\":\"requestType\",\"type\":\"uint8\"},{\"indexed\":false,\"internalType\":\"string\",\"name\":\"requestParams\",\"type\":\"string\"},{\"indexed\":false,\"internalType\":\"address\",\"name\":\"callbackAddress\",\"type\":\"address\"},{\"indexed\":false,\"internalType\":\"bytes4\",\"name\":\"callbackMethodID\",\"type\":\"bytes4\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"requestID\",\"type\":\"uint256\"}],\"name\":\"NewOracleRequest\",\"type\":\"event\"},{\"inputs\":[{\"internalType\":\"uint8\",\"name\":\"originChain\",\"type\":\"uint8\"},{\"internalType\":\"uint8\",\"name\":\"requestType\",\"type\":\"uint8\"},{\"internalType\":\"string\",\"name\":\"requestParams\",\"type\":\"string\"},{\"internalType\":\"address\",\"name\":\"callbackAddress\",\"type\":\"address\"},{\"internalType\":\"bytes4\",\"name\":\"callbackMethodID\",\"type\":\"bytes4\"}],\"name\":\"requestOracles\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"nonpayable\",\"type\":\"function\"}]"
 
 // OracleEmitter is an auto generated Go binding around an Ethereum contract.
 type OracleEmitter struct {
@@ -171,24 +171,24 @@ func (_OracleEmitter *OracleEmitterTransactorRaw) Transact(opts *bind.TransactOp
 	return _OracleEmitter.Contract.contract.Transact(opts, method, params...)
 }
 
-// RequestOracles is a paid mutator transaction binding the contract method 0x8fe3d79f.
+// RequestOracles is a paid mutator transaction binding the contract method 0xa5bc5dfe.
 //
-// Solidity: function requestOracles(string originChain, string requestType, string requestParams, address callbackAddress, bytes4 callbackMethodID) returns(uint256)
-func (_OracleEmitter *OracleEmitterTransactor) RequestOracles(opts *bind.TransactOpts, originChain string, requestType string, requestParams string, callbackAddress common.Address, callbackMethodID [4]byte) (*types.Transaction, error) {
+// Solidity: function requestOracles(uint8 originChain, uint8 requestType, string requestParams, address callbackAddress, bytes4 callbackMethodID) returns(uint256)
+func (_OracleEmitter *OracleEmitterTransactor) RequestOracles(opts *bind.TransactOpts, originChain uint8, requestType uint8, requestParams string, callbackAddress common.Address, callbackMethodID [4]byte) (*types.Transaction, error) {
 	return _OracleEmitter.contract.Transact(opts, "requestOracles", originChain, requestType, requestParams, callbackAddress, callbackMethodID)
 }
 
-// RequestOracles is a paid mutator transaction binding the contract method 0x8fe3d79f.
+// RequestOracles is a paid mutator transaction binding the contract method 0xa5bc5dfe.
 //
-// Solidity: function requestOracles(string originChain, string requestType, string requestParams, address callbackAddress, bytes4 callbackMethodID) returns(uint256)
-func (_OracleEmitter *OracleEmitterSession) RequestOracles(originChain string, requestType string, requestParams string, callbackAddress common.Address, callbackMethodID [4]byte) (*types.Transaction, error) {
+// Solidity: function requestOracles(uint8 originChain, uint8 requestType, string requestParams, address callbackAddress, bytes4 callbackMethodID) returns(uint256)
+func (_OracleEmitter *OracleEmitterSession) RequestOracles(originChain uint8, requestType uint8, requestParams string, callbackAddress common.Address, callbackMethodID [4]byte) (*types.Transaction, error) {
 	return _OracleEmitter.Contract.RequestOracles(&_OracleEmitter.TransactOpts, originChain, requestType, requestParams, callbackAddress, callbackMethodID)
 }
 
-// RequestOracles is a paid mutator transaction binding the contract method 0x8fe3d79f.
+// RequestOracles is a paid mutator transaction binding the contract method 0xa5bc5dfe.
 //
-// Solidity: function requestOracles(string originChain, string requestType, string requestParams, address callbackAddress, bytes4 callbackMethodID) returns(uint256)
-func (_OracleEmitter *OracleEmitterTransactorSession) RequestOracles(originChain string, requestType string, requestParams string, callbackAddress common.Address, callbackMethodID [4]byte) (*types.Transaction, error) {
+// Solidity: function requestOracles(uint8 originChain, uint8 requestType, string requestParams, address callbackAddress, bytes4 callbackMethodID) returns(uint256)
+func (_OracleEmitter *OracleEmitterTransactorSession) RequestOracles(originChain uint8, requestType uint8, requestParams string, callbackAddress common.Address, callbackMethodID [4]byte) (*types.Transaction, error) {
 	return _OracleEmitter.Contract.RequestOracles(&_OracleEmitter.TransactOpts, originChain, requestType, requestParams, callbackAddress, callbackMethodID)
 }
 
@@ -261,8 +261,8 @@ func (it *OracleEmitterNewOracleRequestIterator) Close() error {
 
 // OracleEmitterNewOracleRequest represents a NewOracleRequest event raised by the OracleEmitter contract.
 type OracleEmitterNewOracleRequest struct {
-	OriginChain      string
-	RequestType      string
+	OriginChain      uint8
+	RequestType      uint8
 	RequestParams    string
 	CallbackAddress  common.Address
 	CallbackMethodID [4]byte
@@ -270,9 +270,9 @@ type OracleEmitterNewOracleRequest struct {
 	Raw              types.Log // Blockchain specific contextual infos
 }
 
-// FilterNewOracleRequest is a free log retrieval operation binding the contract event 0x4840d7d041230e7d05eaf9e64f0924379c740cd38ebe8ced4ca8b22afb8d3c94.
+// FilterNewOracleRequest is a free log retrieval operation binding the contract event 0xaa3cd18b7cba9d24d288b9b45616e263b5f40a939fe7f4341f789b955649ea4a.
 //
-// Solidity: event NewOracleRequest(string originChain, string requestType, string requestParams, address callbackAddress, bytes4 callbackMethodID, uint256 requestID)
+// Solidity: event NewOracleRequest(uint8 originChain, uint8 requestType, string requestParams, address callbackAddress, bytes4 callbackMethodID, uint256 requestID)
 func (_OracleEmitter *OracleEmitterFilterer) FilterNewOracleRequest(opts *bind.FilterOpts) (*OracleEmitterNewOracleRequestIterator, error) {
 
 	logs, sub, err := _OracleEmitter.contract.FilterLogs(opts, "NewOracleRequest")
@@ -282,9 +282,9 @@ func (_OracleEmitter *OracleEmitterFilterer) FilterNewOracleRequest(opts *bind.F
 	return &OracleEmitterNewOracleRequestIterator{contract: _OracleEmitter.contract, event: "NewOracleRequest", logs: logs, sub: sub}, nil
 }
 
-// WatchNewOracleRequest is a free log subscription operation binding the contract event 0x4840d7d041230e7d05eaf9e64f0924379c740cd38ebe8ced4ca8b22afb8d3c94.
+// WatchNewOracleRequest is a free log subscription operation binding the contract event 0xaa3cd18b7cba9d24d288b9b45616e263b5f40a939fe7f4341f789b955649ea4a.
 //
-// Solidity: event NewOracleRequest(string originChain, string requestType, string requestParams, address callbackAddress, bytes4 callbackMethodID, uint256 requestID)
+// Solidity: event NewOracleRequest(uint8 originChain, uint8 requestType, string requestParams, address callbackAddress, bytes4 callbackMethodID, uint256 requestID)
 func (_OracleEmitter *OracleEmitterFilterer) WatchNewOracleRequest(opts *bind.WatchOpts, sink chan<- *OracleEmitterNewOracleRequest) (event.Subscription, error) {
 
 	logs, sub, err := _OracleEmitter.contract.WatchLogs(opts, "NewOracleRequest")
@@ -319,9 +319,9 @@ func (_OracleEmitter *OracleEmitterFilterer) WatchNewOracleRequest(opts *bind.Wa
 	}), nil
 }
 
-// ParseNewOracleRequest is a log parse operation binding the contract event 0x4840d7d041230e7d05eaf9e64f0924379c740cd38ebe8ced4ca8b22afb8d3c94.
+// ParseNewOracleRequest is a log parse operation binding the contract event 0xaa3cd18b7cba9d24d288b9b45616e263b5f40a939fe7f4341f789b955649ea4a.
 //
-// Solidity: event NewOracleRequest(string originChain, string requestType, string requestParams, address callbackAddress, bytes4 callbackMethodID, uint256 requestID)
+// Solidity: event NewOracleRequest(uint8 originChain, uint8 requestType, string requestParams, address callbackAddress, bytes4 callbackMethodID, uint256 requestID)
 func (_OracleEmitter *OracleEmitterFilterer) ParseNewOracleRequest(log types.Log) (*OracleEmitterNewOracleRequest, error) {
 	event := new(OracleEmitterNewOracleRequest)
 	if err := _OracleEmitter.contract.UnpackLog(event, "NewOracleRequest", log); err != nil {

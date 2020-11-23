@@ -3,8 +3,10 @@ package consensus
 import (
 	"context"
 	"encoding/json"
+	"strconv"
 	"sync"
 
+	fil "github.com/Secured-Finance/dione/rpc/filecoin"
 	solana2 "github.com/Secured-Finance/dione/rpc/solana"
 
 	"github.com/Secured-Finance/dione/beacon"
@@ -21,15 +23,16 @@ import (
 )
 
 type Miner struct {
-	address      peer.ID
-	ethAddress   common.Address
-	api          WalletAPI
-	mutex        sync.Mutex
-	beacon       beacon.BeaconNetworks
-	ethClient    *ethclient.EthereumClient
-	solanaClient *solana2.SolanaClient
-	minerStake   types.BigInt
-	networkStake types.BigInt
+	address        peer.ID
+	ethAddress     common.Address
+	api            WalletAPI
+	mutex          sync.Mutex
+	beacon         beacon.BeaconNetworks
+	ethClient      *ethclient.EthereumClient
+	filecoinClient *fil.LotusClient
+	solanaClient   *solana2.SolanaClient
+	minerStake     types.BigInt
+	networkStake   types.BigInt
 }
 
 func NewMiner(
@@ -38,15 +41,17 @@ func NewMiner(
 	api WalletAPI,
 	beacon beacon.BeaconNetworks,
 	ethClient *ethclient.EthereumClient,
+	filecoinClient *fil.LotusClient,
 	solanaClient *solana2.SolanaClient,
 ) *Miner {
 	return &Miner{
-		address:      address,
-		ethAddress:   ethAddress,
-		api:          api,
-		beacon:       beacon,
-		ethClient:    ethClient,
-		solanaClient: solanaClient,
+		address:        address,
+		ethAddress:     ethAddress,
+		api:            api,
+		beacon:         beacon,
+		ethClient:      ethClient,
+		filecoinClient: filecoinClient,
+		solanaClient:   solanaClient,
 	}
 }
 
@@ -102,7 +107,8 @@ func (m *Miner) MineTask(ctx context.Context, event *oracleEmitter.OracleEmitter
 		return nil, nil
 	}
 
-	res, err := m.solanaClient.GetTransaction(event.RequestParams)
+	// res, err := m.solanaClient.GetTransaction(event.RequestParams)
+	res, err := m.EventRequestType(event.RequestType, event.RequestParams)
 	if err != nil {
 		return nil, xerrors.Errorf("Couldn't get solana request: %w", err)
 	}
@@ -149,4 +155,25 @@ func (m *Miner) computeTicket(ctx context.Context, brand *types.BeaconEntry) (*t
 	return &types.Ticket{
 		VRFProof: vrfOut,
 	}, nil
+}
+
+func (m *Miner) EventRequestType(rType uint8, params string) ([]byte, error) {
+	switch rType {
+	case 1:
+		return m.filecoinClient.GetTransaction(params)
+	case 2:
+		return m.filecoinClient.GetBlock(params)
+	case 3:
+		i, err := strconv.ParseInt(params, 10, 64)
+		if err != nil {
+			return nil, xerrors.Errorf("Couldn't parse int from string request params: %w", err)
+		}
+		return m.filecoinClient.GetTipSetByHeight(i)
+	case 4:
+		return m.filecoinClient.GetChainHead()
+	case 5:
+		return m.filecoinClient.GetNodeVersion()
+	default:
+		return m.filecoinClient.GetTransaction(params)
+	}
 }

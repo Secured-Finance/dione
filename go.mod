@@ -20,6 +20,7 @@ require (
 	github.com/fjl/memsize v0.0.0-20190710130421-bcb5799ab5e5 // indirect
 	github.com/fxamacker/cbor/v2 v2.2.0
 	github.com/gballet/go-libpcsclite v0.0.0-20191108122812-4678299bea08 // indirect
+	github.com/go-kit/kit v0.10.0
 	github.com/go-ozzo/ozzo-validation v3.6.0+incompatible
 	github.com/gobwas/ws v1.0.4 // indirect
 	github.com/golang/groupcache v0.0.0-20200121045136-8c9f03a8e57e // indirect
@@ -30,6 +31,7 @@ require (
 	github.com/ipfs/go-ds-badger2 v0.1.1-0.20200708190120-187fc06f714e // indirect
 	github.com/ipfs/go-ipld-cbor v0.0.5-0.20200428170625-a0bd04d3cbdf // indirect
 	github.com/ipfs/go-ipld-format v0.2.0 // indirect
+	github.com/ipfs/go-log v1.0.4
 	github.com/ipfs/go-log/v2 v2.1.2-0.20200626104915-0016c0b4b3e4 // indirect
 	github.com/jmoiron/sqlx v1.2.0
 	github.com/karalabe/usb v0.0.0-20191104083709-911d15fe12a9 // indirect
@@ -64,6 +66,7 @@ require (
 	github.com/whyrusleeping/cbor-gen v0.0.0-20200826160007-0b9f6c5fb163
 	github.com/wsddn/go-ecdh v0.0.0-20161211032359-48726bab9208 // indirect
 	github.com/xorcare/golden v0.6.1-0.20191112154924-b87f686d7542
+	go.uber.org/zap v1.15.0
 	golang.org/x/lint v0.0.0-20200302205851-738671d3881b // indirect
 	golang.org/x/tools v0.0.0-20200827010519-17fd2f27a9e3 // indirect
 	golang.org/x/xerrors v0.0.0-20200804184101-5ec99f83aff1

@@ -4,39 +4,66 @@ import (
 	"encoding/json"
 	"fmt"
 
+	ftypes "github.com/Secured-Finance/dione/rpc/filecoin/types"
 	"github.com/Secured-Finance/dione/rpc/types"
 
-	"github.com/Secured-Finance/dione/lib"
 	"github.com/sirupsen/logrus"
 	"github.com/valyala/fasthttp"
 )
 
-var filecoinURL = "https://filecoin.infura.io/"
+var filecoinURL = "https://api.node.glif.io/"
 
+// client implements the `Client` interface.
 type LotusClient struct {
-	host          string
-	projectID     string
-	projectSecret string
-	httpClient    *fasthttp.Client
+	host       string
+	httpClient *fasthttp.Client
 }
 
-func NewLotusClient(pID, secret string) *LotusClient {
+// NewClient returns a new client.
+func NewLotusClient() *LotusClient {
 	return &LotusClient{
-		host:          filecoinURL,
-		projectID:     pID,
-		projectSecret: secret,
-		httpClient:    &fasthttp.Client{},
+		host:       filecoinURL,
+		httpClient: &fasthttp.Client{},
 	}
 }
 
-func (c *LotusClient) GetTransaction(txHash string) ([]byte, error) {
+func (c *LotusClient) GetBlock(cid string) ([]byte, error) {
+	i := ftypes.NewCidParam(cid)
+	return c.HandleRequest("Filecoin.ChainGetBlock", i)
+}
+
+func (c *LotusClient) GetTipSetByHeight(chainEpoch int64) ([]byte, error) {
+	i := make([]interface{}, 0)
+	i = append(i, chainEpoch, nil)
+	return c.HandleRequest("Filecoin.ChainGetTipSetByHeight", i)
+}
+
+func (c *LotusClient) GetTransaction(cid string) ([]byte, error) {
+	i := ftypes.NewCidParam(cid)
+	return c.HandleRequest("Filecoin.ChainGetMessage", i)
+}
+
+func (c *LotusClient) GetNodeVersion() ([]byte, error) {
+	return c.HandleRequest("Filecoin.Version", nil)
+}
+
+func (c *LotusClient) GetChainHead() ([]byte, error) {
+	return c.HandleRequest("Filecoin.ChainHead", nil)
+}
+
+func (c *LotusClient) VerifyCid(cid string) ([]byte, error) {
+	i := ftypes.NewCidParam(cid)
+	return c.HandleRequest("Filecoin.ChainHasObj", i)
+}
+
+// HandleRequest implements the `Client` interface.
+func (c *LotusClient) HandleRequest(method string, params []interface{}) ([]byte, error) {
 	req := fasthttp.AcquireRequest()
 	req.SetRequestURI(c.host)
 	req.Header.SetMethod("POST")
 	req.Header.SetContentType("application/json")
-	req.Header.Set("Authorization", "Basic "+lib.BasicAuth(c.projectID, c.projectSecret))
-	requestBody := types.NewRPCRequestBody("Filecoin.ChainGetMessage")
-	requestBody.Params = append(requestBody.Params, txHash)
+	requestBody := types.NewRPCRequestBody(method)
+	requestBody.Params = append(requestBody.Params, params...)
 	body, err := json.Marshal(requestBody)
 	if err != nil {
 		return nil, fmt.Errorf("Failed to marshal request body %v", err)
@@ -48,6 +75,6 @@ func (c *LotusClient) GetTransaction(txHash string) ([]byte, error) {
 		return nil, err
 	}
 	bodyBytes := resp.Body()
-	logrus.Debug(string(bodyBytes))
+	logrus.Info(string(bodyBytes))
 	return bodyBytes, nil
 }

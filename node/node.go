@@ -96,7 +96,7 @@ func (n *Node) setupNode(ctx context.Context, prvKey crypto.PrivKey, pexDiscover
 }
 
 func (n *Node) setupMiner() error {
-	n.Miner = consensus.NewMiner(n.Host.ID(), *n.Ethereum.GetEthAddress(), n.Wallet, n.Beacon, n.Ethereum, n.Solana)
+	n.Miner = consensus.NewMiner(n.Host.ID(), *n.Ethereum.GetEthAddress(), n.Wallet, n.Beacon, n.Ethereum, n.Lotus, n.Solana)
 	return nil
 }
 
@@ -143,7 +143,7 @@ func (n *Node) setupEthereumClient() error {
 }
 
 func (n *Node) setupFilecoinClient() {
-	lotus := filecoin.NewLotusClient(n.Config.Filecoin.LotusHost, n.Config.Filecoin.LotusToken)
+	lotus := filecoin.NewLotusClient()
 	n.Lotus = lotus
 }
 

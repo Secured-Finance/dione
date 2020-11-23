@@ -13,14 +13,20 @@ import (
 	httpClient "github.com/drand/drand/client/http"
 	libp2pClient "github.com/drand/drand/lp2p/client"
 	"github.com/drand/kyber"
+	logging "github.com/ipfs/go-log"
 	"github.com/sirupsen/logrus"
+	"go.uber.org/zap/zapcore"
 
+	dlog "github.com/drand/drand/log"
+	kzap "github.com/go-kit/kit/log/zap"
 	pubsub "github.com/libp2p/go-libp2p-pubsub"
 
 	"github.com/Secured-Finance/dione/config"
 	"github.com/Secured-Finance/dione/lib"
 	types "github.com/Secured-Finance/dione/types"
 )
+
+var log = logging.Logger("drand")
 
 //	DrandRes structure representing response from drand network
 type DrandRes struct {
@@ -54,6 +60,9 @@ func NewDrandBeacon(genesisTs, interval uint64, ps *pubsub.PubSub) (*DrandBeacon
 		return nil, fmt.Errorf("unable to unmarshal drand chain info: %w", err)
 	}
 
+	dlogger := dlog.NewKitLoggerFrom(kzap.NewZapSugarLogger(
+		log.SugaredLogger.Desugar(), zapcore.InfoLevel))
+
 	var clients []client.Client
 	for _, url := range cfg.Servers {
 		client, err := httpClient.NewWithInfo(url, drandChain, nil)
@@ -67,6 +76,7 @@ func NewDrandBeacon(genesisTs, interval uint64, ps *pubsub.PubSub) (*DrandBeacon
 		client.WithChainInfo(drandChain),
 		client.WithCacheSize(1024),
 		client.WithAutoWatch(),
+		client.WithLogger(dlogger),
 	}
 
 	if ps != nil {
