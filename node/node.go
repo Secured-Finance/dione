@@ -9,6 +9,9 @@ import (
 	"os"
 	"time"
 
+	"github.com/Secured-Finance/dione/rpc"
+	rtypes "github.com/Secured-Finance/dione/rpc/types"
+
 	solana2 "github.com/Secured-Finance/dione/rpc/solana"
 
 	"github.com/Secured-Finance/dione/rpc/filecoin"
@@ -45,9 +48,7 @@ type Node struct {
 	GlobalCtxCancel  context.CancelFunc
 	OracleTopic      string
 	Config           *config.Config
-	Lotus            *filecoin.LotusClient
 	Ethereum         *ethclient.EthereumClient
-	Solana           *solana2.SolanaClient
 	ConsensusManager *consensus.PBFTConsensusManager
 	Miner            *consensus.Miner
 	Beacon           beacon.BeaconNetworks
@@ -69,12 +70,16 @@ func NewNode(configPath string) (*Node, error) {
 
 func (n *Node) setupNode(ctx context.Context, prvKey crypto.PrivKey, pexDiscoveryUpdateTime time.Duration) {
 	n.setupLibp2pHost(context.TODO(), prvKey, pexDiscoveryUpdateTime)
-	//n.setupFilecoinClient()
 	err := n.setupEthereumClient()
 	if err != nil {
 		logrus.Fatal(err)
 	}
-	n.setupSolanaClient()
+
+	err = n.setupRPCClients()
+	if err != nil {
+		logrus.Fatal(err)
+	}
+
 	n.setupPubsub()
 	err = n.setupConsensusManager(prvKey, n.Config.ConsensusMinApprovals)
 	if err != nil {
@@ -96,7 +101,7 @@ func (n *Node) setupNode(ctx context.Context, prvKey crypto.PrivKey, pexDiscover
 }
 
 func (n *Node) setupMiner() error {
-	n.Miner = consensus.NewMiner(n.Host.ID(), *n.Ethereum.GetEthAddress(), n.Wallet, n.Beacon, n.Ethereum, n.Lotus, n.Solana)
+	n.Miner = consensus.NewMiner(n.Host.ID(), *n.Ethereum.GetEthAddress(), n.Wallet, n.Beacon, n.Ethereum)
 	return nil
 }
 
@@ -142,14 +147,18 @@ func (n *Node) setupEthereumClient() error {
 	)
 }
 
-func (n *Node) setupFilecoinClient() {
-	lotus := filecoin.NewLotusClient()
-	n.Lotus = lotus
-}
+func (n *Node) setupRPCClients() error {
+	fc := filecoin.NewLotusClient()
+	rpc.RegisterRPC(rtypes.RPCTypeFilecoin, map[string]func(string) (string, error){
+		"getTransaction": fc.GetTransaction,
+	})
 
-func (n *Node) setupSolanaClient() {
-	solana := solana2.NewSolanaClient()
-	n.Solana = solana
+	sl := solana2.NewSolanaClient()
+	rpc.RegisterRPC(rtypes.RPCTypeSolana, map[string]func(string) (string, error){
+		"getTransaction": sl.GetTransaction,
+	})
+
+	return nil
 }
 
 func (n *Node) setupPubsub() {
@@ -300,5 +309,3 @@ func generatePrivateKey() (crypto.PrivKey, error) {
 	}
 	return prvKey, nil
 }
-
-// TODO generate Miner for the node

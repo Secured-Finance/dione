@@ -39,7 +39,7 @@ func NewSolanaClient() *SolanaClient {
 	}
 }
 
-func (c *SolanaClient) GetTransaction(txHash string) ([]byte, error) {
+func (c *SolanaClient) GetTransaction(txHash string) (string, error) {
 	req := fasthttp.AcquireRequest()
 	req.SetRequestURI(c.url)
 	req.Header.SetMethod("POST")
@@ -48,18 +48,18 @@ func (c *SolanaClient) GetTransaction(txHash string) ([]byte, error) {
 	requestBody.Params = append(requestBody.Params, txHash, "json")
 	body, err := json.Marshal(requestBody)
 	if err != nil {
-		return nil, fmt.Errorf("Failed to marshal request body %v", err)
+		return "", fmt.Errorf("Failed to marshal request body %v", err)
 	}
 	req.AppendBody(body)
 	resp := fasthttp.AcquireResponse()
 	client := &fasthttp.Client{}
 	if err = client.Do(req, resp); err != nil {
 		logrus.Warn("Failed to construct solana node rpc request", err)
-		return nil, err
+		return "", err
 	}
 	bodyBytes := resp.Body()
 	logrus.Info(string(bodyBytes))
-	return bodyBytes, nil
+	return string(bodyBytes), nil
 }
 
 func (c *SolanaClient) subscribeOnProgram(programID string) {

@@ -38,9 +38,10 @@ func (c *LotusClient) GetTipSetByHeight(chainEpoch int64) ([]byte, error) {
 	return c.HandleRequest("Filecoin.ChainGetTipSetByHeight", i)
 }
 
-func (c *LotusClient) GetTransaction(cid string) ([]byte, error) {
+func (c *LotusClient) GetTransaction(cid string) (string, error) {
 	i := ftypes.NewCidParam(cid)
-	return c.HandleRequest("Filecoin.ChainGetMessage", i)
+	resp, err := c.HandleRequest("Filecoin.ChainGetMessage", i)
+	return string(resp), err
 }
 
 func (c *LotusClient) GetNodeVersion() ([]byte, error) {

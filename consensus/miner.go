@@ -2,16 +2,12 @@ package consensus
 
 import (
 	"context"
-	"encoding/json"
-	"strconv"
 	"sync"
 
-	fil "github.com/Secured-Finance/dione/rpc/filecoin"
-	solana2 "github.com/Secured-Finance/dione/rpc/solana"
+	"github.com/Secured-Finance/dione/rpc"
 
 	"github.com/Secured-Finance/dione/beacon"
 	oracleEmitter "github.com/Secured-Finance/dione/contracts/oracleemitter"
-	solTypes "github.com/Secured-Finance/dione/rpc/solana/types"
 	"github.com/libp2p/go-libp2p-core/peer"
 
 	"github.com/Secured-Finance/dione/ethclient"
@@ -23,16 +19,14 @@ import (
 )
 
 type Miner struct {
-	address        peer.ID
-	ethAddress     common.Address
-	api            WalletAPI
-	mutex          sync.Mutex
-	beacon         beacon.BeaconNetworks
-	ethClient      *ethclient.EthereumClient
-	filecoinClient *fil.LotusClient
-	solanaClient   *solana2.SolanaClient
-	minerStake     types.BigInt
-	networkStake   types.BigInt
+	address      peer.ID
+	ethAddress   common.Address
+	api          WalletAPI
+	mutex        sync.Mutex
+	beacon       beacon.BeaconNetworks
+	ethClient    *ethclient.EthereumClient
+	minerStake   types.BigInt
+	networkStake types.BigInt
 }
 
 func NewMiner(
@@ -41,17 +35,13 @@ func NewMiner(
 	api WalletAPI,
 	beacon beacon.BeaconNetworks,
 	ethClient *ethclient.EthereumClient,
-	filecoinClient *fil.LotusClient,
-	solanaClient *solana2.SolanaClient,
 ) *Miner {
 	return &Miner{
-		address:        address,
-		ethAddress:     ethAddress,
-		api:            api,
-		beacon:         beacon,
-		ethClient:      ethClient,
-		filecoinClient: filecoinClient,
-		solanaClient:   solanaClient,
+		address:    address,
+		ethAddress: ethAddress,
+		api:        api,
+		beacon:     beacon,
+		ethClient:  ethClient,
 	}
 }
 
@@ -107,28 +97,25 @@ func (m *Miner) MineTask(ctx context.Context, event *oracleEmitter.OracleEmitter
 		return nil, nil
 	}
 
-	// res, err := m.solanaClient.GetTransaction(event.RequestParams)
-	res, err := m.EventRequestType(event.RequestType, event.RequestParams)
+	rpcMethod := rpc.GetRPCMethod(event.OriginChain, event.RequestType)
+	if rpcMethod == nil {
+		return nil, xerrors.Errorf("invalid rpc method name/type")
+	}
+	res, err := rpcMethod(event.RequestParams)
 	if err != nil {
-		return nil, xerrors.Errorf("Couldn't get solana request: %w", err)
+		return nil, xerrors.Errorf("couldn't do rpc request: %w", err)
 	}
-	var txRes solTypes.TxResponse
-	if err = json.Unmarshal(res, &txRes); err != nil {
-		return nil, xerrors.Errorf("Couldn't unmarshal solana response: %w", err)
-	}
-	blockHash := txRes.Result.Transaction.Message.RecentBlockhash
-	signature, err := sign(ctx, m.address, res)
+	bres := []byte(res)
+	signature, err := sign(ctx, m.address, bres)
 	if err != nil {
 		return nil, xerrors.Errorf("Couldn't sign solana response: %w", err)
 	}
 
 	return &types.DioneTask{
-		Miner:         m.address,
 		Ticket:        ticket,
 		ElectionProof: winner,
 		BeaconEntries: bvals,
-		Payload:       res,
-		BlockHash:     blockHash,
+		Payload:       bres,
 		Signature:     signature,
 		DrandRound:    types.DrandRound(rbase.Round),
 	}, nil
@@ -155,25 +142,4 @@ func (m *Miner) computeTicket(ctx context.Context, brand *types.BeaconEntry) (*t
 	return &types.Ticket{
 		VRFProof: vrfOut,
 	}, nil
-}
-
-func (m *Miner) EventRequestType(rType uint8, params string) ([]byte, error) {
-	switch rType {
-	case 1:
-		return m.filecoinClient.GetTransaction(params)
-	case 2:
-		return m.filecoinClient.GetBlock(params)
-	case 3:
-		i, err := strconv.ParseInt(params, 10, 64)
-		if err != nil {
-			return nil, xerrors.Errorf("Couldn't parse int from string request params: %w", err)
-		}
-		return m.filecoinClient.GetTipSetByHeight(i)
-	case 4:
-		return m.filecoinClient.GetChainHead()
-	case 5:
-		return m.filecoinClient.GetNodeVersion()
-	default:
-		return m.filecoinClient.GetTransaction(params)
-	}
 }

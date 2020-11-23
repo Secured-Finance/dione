@@ -18,7 +18,7 @@ contract Mediator is Ownable {
     aggregator = _aggregator;
   }
 
-  function request(uint8 originChain, uint8 requestType, string memory requestParams) public returns (uint256) {
+  function request(uint8 originChain, string memory requestType, string memory requestParams) public returns (uint256) {
     return oracleEmitter.requestOracles(originChain, requestType, requestParams, address(this), bytes4(keccak256("_receiveDataCallback(uint256, string)")));
   }
 

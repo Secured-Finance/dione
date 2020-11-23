@@ -29,14 +29,12 @@ func (e DrandRound) String() string {
 //	Miner is an address of miner node
 type DioneTask struct {
 	Type          TaskType
-	Miner         peer.ID
 	Ticket        *Ticket
 	ElectionProof *ElectionProof
 	BeaconEntries []BeaconEntry
 	Signature     *Signature
 	DrandRound    DrandRound
 	Payload       []byte
-	BlockHash     string
 }
 
 func NewDioneTask(
@@ -48,18 +46,15 @@ func NewDioneTask(
 	sig *Signature,
 	drand DrandRound,
 	payload []byte,
-	blockHash string,
 ) *DioneTask {
 	return &DioneTask{
 		Type:          t,
-		Miner:         miner,
 		Ticket:        ticket,
 		ElectionProof: electionProof,
 		BeaconEntries: beacon,
 		Signature:     sig,
 		DrandRound:    drand,
 		Payload:       payload,
-		BlockHash:     blockHash,
 	}
 }
 
