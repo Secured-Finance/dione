@@ -28,6 +28,7 @@ func (e DrandRound) String() string {
 //	DioneTask represents the values of task computation
 //	Miner is an address of miner node
 type DioneTask struct {
+	Miner         peer.ID
 	Type          TaskType
 	Ticket        *Ticket
 	ElectionProof *ElectionProof
@@ -49,6 +50,7 @@ func NewDioneTask(
 ) *DioneTask {
 	return &DioneTask{
 		Type:          t,
+		Miner:         miner,
 		Ticket:        ticket,
 		ElectionProof: electionProof,
 		BeaconEntries: beacon,

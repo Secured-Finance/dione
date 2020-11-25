@@ -25,10 +25,9 @@ func (n *Node) subscribeOnEthContracts(ctx context.Context) {
 					if task == nil {
 						continue
 					}
-					logrus.Info("BlockHash for Solana transaction: ", task.BlockHash)
-					logrus.Info("Started new consensus round with ID: ", task.BlockHash)
+					logrus.Info("Started new consensus round with ID: ", task.Signature)
 
-					err = n.ConsensusManager.Propose(event.RequestID.String(), task.BlockHash, event.RequestID, event.CallbackAddress)
+					err = n.ConsensusManager.Propose(event.RequestID.String(), string(task.Payload), event.RequestID, event.CallbackAddress)
 					if err != nil {
 						logrus.Errorf("Failed to propose task: %w", err)
 					}

@@ -27,7 +27,7 @@ var (
 )
 
 // AggregatorABI is the input ABI used to generate the binding from.
-const AggregatorABI = "[{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"address\",\"name\":\"previousOwner\",\"type\":\"address\"},{\"indexed\":true,\"internalType\":\"address\",\"name\":\"newOwner\",\"type\":\"address\"}],\"name\":\"OwnershipTransferred\",\"type\":\"event\"},{\"inputs\":[],\"name\":\"dioneStaking\",\"outputs\":[{\"internalType\":\"contractIDioneStaking\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"owner\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"renounceOwnership\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"newOwner\",\"type\":\"address\"}],\"name\":\"transferOwnership\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"contractIDioneStaking\",\"name\":\"_dioneStaking\",\"type\":\"address\"}],\"name\":\"setDioneStaking\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"reqID\",\"type\":\"uint256\"},{\"internalType\":\"string\",\"name\":\"data\",\"type\":\"string\"},{\"internalType\":\"contractIMediator\",\"name\":\"callbackAddress\",\"type\":\"address\"}],\"name\":\"collectData\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"}]"
+const AggregatorABI = "[{\"inputs\":[{\"internalType\":\"contractDioneStaking\",\"name\":\"_dioneStaking\",\"type\":\"address\"}],\"stateMutability\":\"nonpayable\",\"type\":\"constructor\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"address\",\"name\":\"previousOwner\",\"type\":\"address\"},{\"indexed\":true,\"internalType\":\"address\",\"name\":\"newOwner\",\"type\":\"address\"}],\"name\":\"OwnershipTransferred\",\"type\":\"event\"},{\"inputs\":[],\"name\":\"dioneStaking\",\"outputs\":[{\"internalType\":\"contractDioneStaking\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"owner\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"renounceOwnership\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"newOwner\",\"type\":\"address\"}],\"name\":\"transferOwnership\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"reqID\",\"type\":\"uint256\"},{\"internalType\":\"string\",\"name\":\"data\",\"type\":\"string\"},{\"internalType\":\"contractIMediator\",\"name\":\"callbackAddress\",\"type\":\"address\"}],\"name\":\"collectData\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"}]"
 
 // Aggregator is an auto generated Go binding around an Ethereum contract.
 type Aggregator struct {
@@ -263,27 +263,6 @@ func (_Aggregator *AggregatorSession) RenounceOwnership() (*types.Transaction, e
 // Solidity: function renounceOwnership() returns()
 func (_Aggregator *AggregatorTransactorSession) RenounceOwnership() (*types.Transaction, error) {
 	return _Aggregator.Contract.RenounceOwnership(&_Aggregator.TransactOpts)
-}
-
-// SetDioneStaking is a paid mutator transaction binding the contract method 0xc2cf98a4.
-//
-// Solidity: function setDioneStaking(address _dioneStaking) returns()
-func (_Aggregator *AggregatorTransactor) SetDioneStaking(opts *bind.TransactOpts, _dioneStaking common.Address) (*types.Transaction, error) {
-	return _Aggregator.contract.Transact(opts, "setDioneStaking", _dioneStaking)
-}
-
-// SetDioneStaking is a paid mutator transaction binding the contract method 0xc2cf98a4.
-//
-// Solidity: function setDioneStaking(address _dioneStaking) returns()
-func (_Aggregator *AggregatorSession) SetDioneStaking(_dioneStaking common.Address) (*types.Transaction, error) {
-	return _Aggregator.Contract.SetDioneStaking(&_Aggregator.TransactOpts, _dioneStaking)
-}
-
-// SetDioneStaking is a paid mutator transaction binding the contract method 0xc2cf98a4.
-//
-// Solidity: function setDioneStaking(address _dioneStaking) returns()
-func (_Aggregator *AggregatorTransactorSession) SetDioneStaking(_dioneStaking common.Address) (*types.Transaction, error) {
-	return _Aggregator.Contract.SetDioneStaking(&_Aggregator.TransactOpts, _dioneStaking)
 }
 
 // TransferOwnership is a paid mutator transaction binding the contract method 0xf2fde38b.

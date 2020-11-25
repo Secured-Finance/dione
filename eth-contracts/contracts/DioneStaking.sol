@@ -40,15 +40,18 @@ contract DioneStaking is Ownable, ReentrancyGuard {
     event Withdraw(address indexed miner, uint256 amount);
     event Mine(address indexed miner, uint256 blockNumber);
 
+    modifier onlyMiner(address _minerAddr) {
+        require(isMiner(_minerAddr), "Exception: caller is not the miner");
+        _;
+    }
+
     constructor(
         DioneToken _dione,
-        address _aggregatorAddr,
         uint256 _minerReward,
         uint256 _startBlock,
         uint256 _minimumStake
     ) public {
         dione = _dione;
-        aggregatorAddr = _aggregatorAddr;
         minerReward = _minerReward;
         startBlock = _startBlock;
         minimumStake = _minimumStake;
@@ -107,8 +110,7 @@ contract DioneStaking is Ownable, ReentrancyGuard {
     }
 
     function minerStake(address _minerAddr) external view returns (uint256) {
-       MinerInfo storage miner = minerInfo[_minerAddr];
-       return miner.amount;
+       return minerInfo[_minerAddr].amount;
     }
 
     // Update miner reward in DIONE tokens, only can be executed by owner of the contract
@@ -117,12 +119,8 @@ contract DioneStaking is Ownable, ReentrancyGuard {
         minerReward = _minerReward;
     }
 
-    function isLegitMiner(address _minerAddr) external returns (bool) {
-        MinerInfo storage miner = minerInfo[_minerAddr];
-        if (miner.amount >= minimumStake) {
-            return true;
-        }
-        return false;
+    function isMiner(address _minerAddr) public view returns (bool) {
+        return minerInfo[_minerAddr].amount >= minimumStake;
     }
 
     // Update minimum stake in DIONE tokens for miners, only can be executed by owner of the contract
@@ -131,4 +129,7 @@ contract DioneStaking is Ownable, ReentrancyGuard {
         minimumStake = _minimumStake;
     }
 
+    function setAggregator(address _aggregatorAddr) public onlyOwner {
+        aggregatorAddr = _aggregatorAddr;
+    }
 }

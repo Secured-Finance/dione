@@ -27,7 +27,7 @@ var (
 )
 
 // DioneStakingABI is the input ABI used to generate the binding from.
-const DioneStakingABI = "[{\"inputs\":[{\"internalType\":\"contractDioneToken\",\"name\":\"_dione\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"_aggregatorAddr\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"_minerReward\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"_startBlock\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"_minimumStake\",\"type\":\"uint256\"}],\"stateMutability\":\"nonpayable\",\"type\":\"constructor\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"address\",\"name\":\"miner\",\"type\":\"address\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"blockNumber\",\"type\":\"uint256\"}],\"name\":\"Mine\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"address\",\"name\":\"previousOwner\",\"type\":\"address\"},{\"indexed\":true,\"internalType\":\"address\",\"name\":\"newOwner\",\"type\":\"address\"}],\"name\":\"OwnershipTransferred\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"address\",\"name\":\"miner\",\"type\":\"address\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"amount\",\"type\":\"uint256\"}],\"name\":\"Stake\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"address\",\"name\":\"miner\",\"type\":\"address\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"amount\",\"type\":\"uint256\"}],\"name\":\"Withdraw\",\"type\":\"event\"},{\"inputs\":[],\"name\":\"aggregatorAddr\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"dione\",\"outputs\":[{\"internalType\":\"contractDioneToken\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"name\":\"minerInfo\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"amount\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"firstStakeBlock\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"lastRewardBlock\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"minerReward\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"minimumStake\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"owner\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"renounceOwnership\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"startBlock\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"newOwner\",\"type\":\"address\"}],\"name\":\"transferOwnership\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"_minerAddr\",\"type\":\"address\"}],\"name\":\"mine\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"_minerAddr\",\"type\":\"address\"}],\"name\":\"mineAndStake\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"_amount\",\"type\":\"uint256\"}],\"name\":\"stake\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"_amount\",\"type\":\"uint256\"}],\"name\":\"withdraw\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"totalStake\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"_minerAddr\",\"type\":\"address\"}],\"name\":\"minerStake\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"_minerReward\",\"type\":\"uint256\"}],\"name\":\"setMinerReward\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"_minerAddr\",\"type\":\"address\"}],\"name\":\"isLegitMiner\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\"}],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"_minimumStake\",\"type\":\"uint256\"}],\"name\":\"setMinimumStake\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"}]"
+const DioneStakingABI = "[{\"inputs\":[{\"internalType\":\"contractDioneToken\",\"name\":\"_dione\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"_minerReward\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"_startBlock\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"_minimumStake\",\"type\":\"uint256\"}],\"stateMutability\":\"nonpayable\",\"type\":\"constructor\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"address\",\"name\":\"miner\",\"type\":\"address\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"blockNumber\",\"type\":\"uint256\"}],\"name\":\"Mine\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"address\",\"name\":\"previousOwner\",\"type\":\"address\"},{\"indexed\":true,\"internalType\":\"address\",\"name\":\"newOwner\",\"type\":\"address\"}],\"name\":\"OwnershipTransferred\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"address\",\"name\":\"miner\",\"type\":\"address\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"amount\",\"type\":\"uint256\"}],\"name\":\"Stake\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"address\",\"name\":\"miner\",\"type\":\"address\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"amount\",\"type\":\"uint256\"}],\"name\":\"Withdraw\",\"type\":\"event\"},{\"inputs\":[],\"name\":\"aggregatorAddr\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"dione\",\"outputs\":[{\"internalType\":\"contractDioneToken\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"name\":\"minerInfo\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"amount\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"firstStakeBlock\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"lastRewardBlock\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"minerReward\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"minimumStake\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"owner\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"renounceOwnership\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"startBlock\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"newOwner\",\"type\":\"address\"}],\"name\":\"transferOwnership\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"_minerAddr\",\"type\":\"address\"}],\"name\":\"mine\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"_minerAddr\",\"type\":\"address\"}],\"name\":\"mineAndStake\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"_amount\",\"type\":\"uint256\"}],\"name\":\"stake\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"_amount\",\"type\":\"uint256\"}],\"name\":\"withdraw\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"totalStake\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"_minerAddr\",\"type\":\"address\"}],\"name\":\"minerStake\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"_minerReward\",\"type\":\"uint256\"}],\"name\":\"setMinerReward\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"_minerAddr\",\"type\":\"address\"}],\"name\":\"isMiner\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"_minimumStake\",\"type\":\"uint256\"}],\"name\":\"setMinimumStake\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"_aggregatorAddr\",\"type\":\"address\"}],\"name\":\"setAggregator\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"}]"
 
 // DioneStaking is an auto generated Go binding around an Ethereum contract.
 type DioneStaking struct {
@@ -221,6 +221,32 @@ func (_DioneStaking *DioneStakingSession) Dione() (common.Address, error) {
 // Solidity: function dione() view returns(address)
 func (_DioneStaking *DioneStakingCallerSession) Dione() (common.Address, error) {
 	return _DioneStaking.Contract.Dione(&_DioneStaking.CallOpts)
+}
+
+// IsMiner is a free data retrieval call binding the contract method 0x701b70ac.
+//
+// Solidity: function isMiner(address _minerAddr) view returns(bool)
+func (_DioneStaking *DioneStakingCaller) IsMiner(opts *bind.CallOpts, _minerAddr common.Address) (bool, error) {
+	var (
+		ret0 = new(bool)
+	)
+	out := ret0
+	err := _DioneStaking.contract.Call(opts, out, "isMiner", _minerAddr)
+	return *ret0, err
+}
+
+// IsMiner is a free data retrieval call binding the contract method 0x701b70ac.
+//
+// Solidity: function isMiner(address _minerAddr) view returns(bool)
+func (_DioneStaking *DioneStakingSession) IsMiner(_minerAddr common.Address) (bool, error) {
+	return _DioneStaking.Contract.IsMiner(&_DioneStaking.CallOpts, _minerAddr)
+}
+
+// IsMiner is a free data retrieval call binding the contract method 0x701b70ac.
+//
+// Solidity: function isMiner(address _minerAddr) view returns(bool)
+func (_DioneStaking *DioneStakingCallerSession) IsMiner(_minerAddr common.Address) (bool, error) {
+	return _DioneStaking.Contract.IsMiner(&_DioneStaking.CallOpts, _minerAddr)
 }
 
 // MinerInfo is a free data retrieval call binding the contract method 0x03337fd8.
@@ -419,27 +445,6 @@ func (_DioneStaking *DioneStakingCallerSession) TotalStake() (*big.Int, error) {
 	return _DioneStaking.Contract.TotalStake(&_DioneStaking.CallOpts)
 }
 
-// IsLegitMiner is a paid mutator transaction binding the contract method 0x3b1175eb.
-//
-// Solidity: function isLegitMiner(address _minerAddr) returns(bool)
-func (_DioneStaking *DioneStakingTransactor) IsLegitMiner(opts *bind.TransactOpts, _minerAddr common.Address) (*types.Transaction, error) {
-	return _DioneStaking.contract.Transact(opts, "isLegitMiner", _minerAddr)
-}
-
-// IsLegitMiner is a paid mutator transaction binding the contract method 0x3b1175eb.
-//
-// Solidity: function isLegitMiner(address _minerAddr) returns(bool)
-func (_DioneStaking *DioneStakingSession) IsLegitMiner(_minerAddr common.Address) (*types.Transaction, error) {
-	return _DioneStaking.Contract.IsLegitMiner(&_DioneStaking.TransactOpts, _minerAddr)
-}
-
-// IsLegitMiner is a paid mutator transaction binding the contract method 0x3b1175eb.
-//
-// Solidity: function isLegitMiner(address _minerAddr) returns(bool)
-func (_DioneStaking *DioneStakingTransactorSession) IsLegitMiner(_minerAddr common.Address) (*types.Transaction, error) {
-	return _DioneStaking.Contract.IsLegitMiner(&_DioneStaking.TransactOpts, _minerAddr)
-}
-
 // Mine is a paid mutator transaction binding the contract method 0x81923240.
 //
 // Solidity: function mine(address _minerAddr) returns()
@@ -501,6 +506,27 @@ func (_DioneStaking *DioneStakingSession) RenounceOwnership() (*types.Transactio
 // Solidity: function renounceOwnership() returns()
 func (_DioneStaking *DioneStakingTransactorSession) RenounceOwnership() (*types.Transaction, error) {
 	return _DioneStaking.Contract.RenounceOwnership(&_DioneStaking.TransactOpts)
+}
+
+// SetAggregator is a paid mutator transaction binding the contract method 0xf9120af6.
+//
+// Solidity: function setAggregator(address _aggregatorAddr) returns()
+func (_DioneStaking *DioneStakingTransactor) SetAggregator(opts *bind.TransactOpts, _aggregatorAddr common.Address) (*types.Transaction, error) {
+	return _DioneStaking.contract.Transact(opts, "setAggregator", _aggregatorAddr)
+}
+
+// SetAggregator is a paid mutator transaction binding the contract method 0xf9120af6.
+//
+// Solidity: function setAggregator(address _aggregatorAddr) returns()
+func (_DioneStaking *DioneStakingSession) SetAggregator(_aggregatorAddr common.Address) (*types.Transaction, error) {
+	return _DioneStaking.Contract.SetAggregator(&_DioneStaking.TransactOpts, _aggregatorAddr)
+}
+
+// SetAggregator is a paid mutator transaction binding the contract method 0xf9120af6.
+//
+// Solidity: function setAggregator(address _aggregatorAddr) returns()
+func (_DioneStaking *DioneStakingTransactorSession) SetAggregator(_aggregatorAddr common.Address) (*types.Transaction, error) {
+	return _DioneStaking.Contract.SetAggregator(&_DioneStaking.TransactOpts, _aggregatorAddr)
 }
 
 // SetMinerReward is a paid mutator transaction binding the contract method 0x816caed5.
