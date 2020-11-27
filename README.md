@@ -57,6 +57,10 @@ Initial supply of DIONE tokens is 2,000,000. By that the maximum amount of nodes
 
 Governance mechanism would take place on [snapshot.page](https://snapshot.page/#/). The main application of governance descision is around required amount of DIONE tokens to stake in order to run Dione node. Additional governance descision could be proposed by DIONE token holders among the way.
 
+# Operations diagram
+<h1 align="center">
+  <img  src="assets/img/diagram.png" alt="dione" />
+</h1>
 
 # Contribute <a name="contribute"> </a> 
 
