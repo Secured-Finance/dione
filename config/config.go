@@ -33,7 +33,8 @@ type FilecoinConfig struct {
 }
 
 type PubSubConfig struct {
-	ProtocolID string `mapstructure:"protocolID"`
+	ProtocolID       string `mapstructure:"protocolID"`
+	ServiceTopicName string `mapstructure:"serviceTopicName"`
 }
 
 type StoreConfig struct {
