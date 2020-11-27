@@ -9,7 +9,7 @@ import (
 func (n *Node) subscribeOnEthContracts(ctx context.Context) {
 	eventChan, subscription, err := n.Ethereum.SubscribeOnOracleEvents(ctx)
 	if err != nil {
-		logrus.Fatal("Can't subscribe on ethereum contracts, exiting... ", err)
+		logrus.Fatal("Couldn't subscribe on ethereum contracts, exiting... ", err)
 	}
 
 	go func() {
@@ -18,16 +18,15 @@ func (n *Node) subscribeOnEthContracts(ctx context.Context) {
 			select {
 			case event := <-eventChan:
 				{
-					task, err := n.Miner.MineTask(ctx, event, n.Wallet.WalletSign)
+					task, err := n.Miner.MineTask(ctx, event)
 					if err != nil {
-						logrus.Fatal("Error with mining algorithm, exiting... ", err)
+						logrus.Fatal("Failed to mine task, exiting... ", err)
 					}
 					if task == nil {
 						continue
 					}
-					logrus.Info("Started new consensus round with ID: ", task.Signature)
-
-					err = n.ConsensusManager.Propose(event.RequestID.String(), string(task.Payload), event.RequestID, event.CallbackAddress)
+					logrus.Infof("Started new consensus round with ID: %s", event.RequestID.String())
+					err = n.ConsensusManager.Propose(event.RequestID.String(), *task, event.RequestID, event.CallbackAddress)
 					if err != nil {
 						logrus.Errorf("Failed to propose task: %w", err)
 					}

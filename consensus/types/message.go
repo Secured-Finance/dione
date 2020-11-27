@@ -1,6 +1,7 @@
 package types
 
 import (
+	"github.com/Secured-Finance/dione/types"
 	"github.com/libp2p/go-libp2p-core/peer"
 )
 
@@ -15,12 +16,12 @@ const (
 )
 
 type ConsensusMessage struct {
-	_               struct{} `cbor:",toarray"`
+	_               struct{} `cbor:",toarray" hash:"-"`
 	ConsensusID     string
-	Signature       []byte
+	Signature       []byte `hash:"-"`
 	RequestID       string
 	CallbackAddress string
-	Data            string
+	Task            types.DioneTask
 }
 
 type Message struct {

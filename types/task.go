@@ -8,15 +8,7 @@ import (
 	"github.com/Secured-Finance/dione/config"
 )
 
-type TaskType byte
-
-const (
-	EthereumTaskType = TaskType(iota)
-	FilecoinTaskType
-	SolanaTaskType
-)
-
-//	DrandRound represents the round number in DRAND
+// DrandRound represents the round number in DRAND
 type DrandRound int64
 
 const TicketRandomnessLookback = DrandRound(1)
@@ -25,36 +17,40 @@ func (e DrandRound) String() string {
 	return strconv.FormatInt(int64(e), 10)
 }
 
-//	DioneTask represents the values of task computation
-//	Miner is an address of miner node
+// DioneTask represents the values of task computation
 type DioneTask struct {
+	_             struct{} `cbor:",toarray" hash:"-"`
+	OriginChain   uint8
+	RequestType   string
+	RequestParams string
 	Miner         peer.ID
-	Type          TaskType
+	MinerEth      string
 	Ticket        *Ticket
 	ElectionProof *ElectionProof
 	BeaconEntries []BeaconEntry
-	Signature     *Signature
 	DrandRound    DrandRound
 	Payload       []byte
 }
 
 func NewDioneTask(
-	t TaskType,
+	originChain uint8,
+	requestType string,
+	requestParams string,
 	miner peer.ID,
 	ticket *Ticket,
 	electionProof *ElectionProof,
 	beacon []BeaconEntry,
-	sig *Signature,
 	drand DrandRound,
 	payload []byte,
 ) *DioneTask {
 	return &DioneTask{
-		Type:          t,
+		OriginChain:   originChain,
+		RequestType:   requestType,
+		RequestParams: requestParams,
 		Miner:         miner,
 		Ticket:        ticket,
 		ElectionProof: electionProof,
 		BeaconEntries: beacon,
-		Signature:     sig,
 		DrandRound:    drand,
 		Payload:       payload,
 	}

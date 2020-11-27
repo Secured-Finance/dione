@@ -81,27 +81,31 @@ func (n *Node) setupNode(ctx context.Context, prvKey crypto.PrivKey, pexDiscover
 	}
 
 	n.setupPubsub()
-	err = n.setupConsensusManager(prvKey, n.Config.ConsensusMinApprovals)
+	rawPrivKey, err := prvKey.Raw()
 	if err != nil {
-		logrus.Fatalf("Failed to setup consensus manager: %w", err)
+		logrus.Fatal(err)
 	}
 	err = n.setupBeacon()
 	if err != nil {
 		logrus.Fatal(err)
 	}
-	err = n.setupWallet(prvKey)
+	err = n.setupMiner(rawPrivKey)
 	if err != nil {
 		logrus.Fatal(err)
 	}
-	err = n.setupMiner()
+	err = n.setupConsensusManager(rawPrivKey, n.Config.ConsensusMinApprovals)
+	if err != nil {
+		logrus.Fatalf("Failed to setup consensus manager: %w", err)
+	}
+	err = n.setupWallet(rawPrivKey)
 	if err != nil {
 		logrus.Fatal(err)
 	}
 	n.subscribeOnEthContracts(ctx)
 }
 
-func (n *Node) setupMiner() error {
-	n.Miner = consensus.NewMiner(n.Host.ID(), *n.Ethereum.GetEthAddress(), n.Wallet, n.Beacon, n.Ethereum)
+func (n *Node) setupMiner(privKey []byte) error {
+	n.Miner = consensus.NewMiner(n.Host.ID(), *n.Ethereum.GetEthAddress(), n.Beacon, n.Ethereum, privKey)
 	return nil
 }
 
@@ -114,16 +118,12 @@ func (n *Node) setupBeacon() error {
 	return nil
 }
 
-func (n *Node) setupWallet(privKey crypto.PrivKey) error {
+func (n *Node) setupWallet(privKey []byte) error {
 	// TODO make persistent keystore
 	kstore := wallet.NewMemKeyStore()
-	pKeyBytes, err := privKey.Raw()
-	if err != nil {
-		return xerrors.Errorf("failed to get raw private key: %w", err)
-	}
 	keyInfo := types.KeyInfo{
 		Type:       types.KTEd25519,
-		PrivateKey: pKeyBytes,
+		PrivateKey: privKey,
 	}
 
 	kstore.Put(wallet.KNamePrefix+n.Host.ID().String(), keyInfo)
@@ -167,12 +167,8 @@ func (n *Node) setupPubsub() {
 	//time.Sleep(3 * time.Second)
 }
 
-func (n *Node) setupConsensusManager(privateKey crypto.PrivKey, minApprovals int) error {
-	pkeyRaw, err := privateKey.Raw()
-	if err != nil {
-		return err
-	}
-	n.ConsensusManager = consensus.NewPBFTConsensusManager(n.PubSubRouter, minApprovals, pkeyRaw, n.Ethereum)
+func (n *Node) setupConsensusManager(privateKey []byte, minApprovals int) error {
+	n.ConsensusManager = consensus.NewPBFTConsensusManager(n.PubSubRouter, minApprovals, privateKey, n.Ethereum, n.Miner)
 	return nil
 }
 

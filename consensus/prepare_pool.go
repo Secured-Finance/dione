@@ -2,8 +2,6 @@ package consensus
 
 import (
 	types2 "github.com/Secured-Finance/dione/consensus/types"
-	"github.com/Secured-Finance/dione/sigs"
-	"github.com/Secured-Finance/dione/types"
 )
 
 type PreparePool struct {
@@ -20,18 +18,8 @@ func NewPreparePool() *PreparePool {
 func (pp *PreparePool) CreatePrepare(prePrepareMsg *types2.Message, privateKey []byte) (*types2.Message, error) {
 	var message types2.Message
 	message.Type = types2.MessageTypePrepare
-	var consensusMsg types2.ConsensusMessage
-	prepareCMessage := prePrepareMsg.Payload
-	consensusMsg.ConsensusID = prepareCMessage.ConsensusID
-	consensusMsg.RequestID = prePrepareMsg.Payload.RequestID
-	consensusMsg.CallbackAddress = prePrepareMsg.Payload.CallbackAddress
-	consensusMsg.Data = prepareCMessage.Data
-	signature, err := sigs.Sign(types.SigTypeEd25519, privateKey, []byte(prepareCMessage.Data))
-	if err != nil {
-		return nil, err
-	}
-	consensusMsg.Signature = signature.Data
-	message.Payload = consensusMsg
+	newCMsg := prePrepareMsg.Payload
+	message.Payload = newCMsg
 	return &message, nil
 }
 
@@ -48,7 +36,7 @@ func (pp *PreparePool) IsExistingPrepare(prepareMsg *types2.Message) bool {
 
 func (pp *PreparePool) IsValidPrepare(prepare *types2.Message) bool {
 	consensusMsg := prepare.Payload
-	err := sigs.Verify(&types.Signature{Type: types.SigTypeEd25519, Data: consensusMsg.Signature}, prepare.From, []byte(consensusMsg.Data))
+	err := verifyTaskSignature(consensusMsg)
 	if err != nil {
 		return false
 	}

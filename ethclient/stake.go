@@ -5,6 +5,10 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 )
 
+const (
+	MinMinerStake = 1000
+)
+
 // Getting total stake in DioneStaking contract, this function could
 // be used for storing the total stake and veryfing the stake tokens
 // on new tasks

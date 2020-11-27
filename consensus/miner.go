@@ -4,6 +4,10 @@ import (
 	"context"
 	"sync"
 
+	big2 "github.com/filecoin-project/go-state-types/big"
+
+	"github.com/Secured-Finance/dione/sigs"
+
 	"github.com/Secured-Finance/dione/rpc"
 
 	"github.com/Secured-Finance/dione/beacon"
@@ -21,32 +25,28 @@ import (
 type Miner struct {
 	address      peer.ID
 	ethAddress   common.Address
-	api          WalletAPI
 	mutex        sync.Mutex
 	beacon       beacon.BeaconNetworks
 	ethClient    *ethclient.EthereumClient
 	minerStake   types.BigInt
 	networkStake types.BigInt
+	privateKey   []byte
 }
 
 func NewMiner(
 	address peer.ID,
 	ethAddress common.Address,
-	api WalletAPI,
 	beacon beacon.BeaconNetworks,
 	ethClient *ethclient.EthereumClient,
+	privateKey []byte,
 ) *Miner {
 	return &Miner{
 		address:    address,
 		ethAddress: ethAddress,
-		api:        api,
 		beacon:     beacon,
 		ethClient:  ethClient,
+		privateKey: privateKey,
 	}
-}
-
-type WalletAPI interface {
-	WalletSign(context.Context, peer.ID, []byte) (*types.Signature, error)
 }
 
 func (m *Miner) UpdateCurrentStakeInfo() error {
@@ -70,25 +70,52 @@ func (m *Miner) UpdateCurrentStakeInfo() error {
 	return nil
 }
 
-func (m *Miner) MineTask(ctx context.Context, event *oracleEmitter.OracleEmitterNewOracleRequest, sign SignFunc) (*types.DioneTask, error) {
-	bvals, err := beacon.BeaconEntriesForTask(ctx, m.beacon)
+func (m *Miner) GetStakeInfo(miner common.Address) (*types.BigInt, *types.BigInt, error) {
+	mStake, err := m.ethClient.GetMinerStake(miner)
+
+	if err != nil {
+		logrus.Warn("Can't get miner stake", err)
+		return nil, nil, err
+	}
+
+	nStake, err := m.ethClient.GetTotalStake()
+
+	if err != nil {
+		logrus.Warn("Can't get miner stake", err)
+		return nil, nil, err
+	}
+
+	return mStake, nStake, nil
+}
+
+func (m *Miner) MineTask(ctx context.Context, event *oracleEmitter.OracleEmitterNewOracleRequest) (*types.DioneTask, error) {
+	beaconValues, err := beacon.BeaconEntriesForTask(ctx, m.beacon)
 	if err != nil {
 		return nil, xerrors.Errorf("failed to get beacon entries: %w", err)
 	}
-	logrus.Debug("attempting to mine the task at epoch: ", bvals[1].Round)
+	logrus.Debug("attempting to mine the task at epoch: ", beaconValues[1].Round)
 
-	rbase := bvals[1]
+	randomBase := beaconValues[1]
 
 	if err := m.UpdateCurrentStakeInfo(); err != nil {
 		return nil, xerrors.Errorf("failed to update miner stake: %w", err)
 	}
 
-	ticket, err := m.computeTicket(ctx, &rbase)
+	ticket, err := m.computeTicket(&randomBase)
 	if err != nil {
 		return nil, xerrors.Errorf("scratching ticket failed: %w", err)
 	}
 
-	winner, err := IsRoundWinner(ctx, types.DrandRound(rbase.Round), m.address, rbase, m.minerStake, m.networkStake, m.api)
+	winner, err := IsRoundWinner(
+		types.DrandRound(randomBase.Round),
+		m.address,
+		randomBase,
+		m.minerStake,
+		m.networkStake,
+		func(id peer.ID, bytes []byte) (*types.Signature, error) {
+			return sigs.Sign(types.SigTypeEd25519, m.privateKey, bytes)
+		},
+	)
 	if err != nil {
 		return nil, xerrors.Errorf("failed to check if we win next round: %w", err)
 	}
@@ -106,22 +133,22 @@ func (m *Miner) MineTask(ctx context.Context, event *oracleEmitter.OracleEmitter
 		return nil, xerrors.Errorf("couldn't do rpc request: %w", err)
 	}
 	bres := []byte(res)
-	signature, err := sign(ctx, m.address, bres)
-	if err != nil {
-		return nil, xerrors.Errorf("Couldn't sign solana response: %w", err)
-	}
 
 	return &types.DioneTask{
+		OriginChain:   event.OriginChain,
+		RequestType:   event.RequestType,
+		RequestParams: event.RequestParams,
+		Miner:         m.address,
+		MinerEth:      m.ethAddress.Hex(),
 		Ticket:        ticket,
 		ElectionProof: winner,
-		BeaconEntries: bvals,
+		BeaconEntries: beaconValues,
 		Payload:       bres,
-		Signature:     signature,
-		DrandRound:    types.DrandRound(rbase.Round),
+		DrandRound:    types.DrandRound(randomBase.Round),
 	}, nil
 }
 
-func (m *Miner) computeTicket(ctx context.Context, brand *types.BeaconEntry) (*types.Ticket, error) {
+func (m *Miner) computeTicket(brand *types.BeaconEntry) (*types.Ticket, error) {
 	buf, err := m.address.MarshalBinary()
 	if err != nil {
 		return nil, xerrors.Errorf("failed to marshal address: %w", err)
@@ -134,7 +161,9 @@ func (m *Miner) computeTicket(ctx context.Context, brand *types.BeaconEntry) (*t
 		return nil, err
 	}
 
-	vrfOut, err := ComputeVRF(ctx, m.api.WalletSign, m.address, input)
+	vrfOut, err := ComputeVRF(func(id peer.ID, bytes []byte) (*types.Signature, error) {
+		return sigs.Sign(types.SigTypeEd25519, m.privateKey, bytes)
+	}, m.address, input)
 	if err != nil {
 		return nil, err
 	}
@@ -142,4 +171,16 @@ func (m *Miner) computeTicket(ctx context.Context, brand *types.BeaconEntry) (*t
 	return &types.Ticket{
 		VRFProof: vrfOut,
 	}, nil
+}
+
+func (m *Miner) IsMinerEligibleToProposeTask(ethAddress common.Address) error {
+	mStake, err := m.ethClient.GetMinerStake(ethAddress)
+	if err != nil {
+		return err
+	}
+	ok := mStake.GreaterThanEqual(big2.NewInt(ethclient.MinMinerStake))
+	if !ok {
+		return xerrors.Errorf("miner doesn't have enough staked tokens")
+	}
+	return nil
 }

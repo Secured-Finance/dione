@@ -1,8 +1,9 @@
 package consensus
 
 import (
-	"context"
 	"fmt"
+
+	"github.com/Secured-Finance/dione/sigs"
 
 	"github.com/libp2p/go-libp2p-core/peer"
 
@@ -11,10 +12,10 @@ import (
 	"golang.org/x/xerrors"
 )
 
-type SignFunc func(context.Context, peer.ID, []byte) (*types.Signature, error)
+type SignFunc func(peer.ID, []byte) (*types.Signature, error)
 
-func ComputeVRF(ctx context.Context, sign SignFunc, worker peer.ID, sigInput []byte) ([]byte, error) {
-	sig, err := sign(ctx, worker, sigInput)
+func ComputeVRF(sign SignFunc, worker peer.ID, sigInput []byte) ([]byte, error) {
+	sig, err := sign(worker, sigInput)
 	if err != nil {
 		return nil, err
 	}
@@ -26,22 +27,17 @@ func ComputeVRF(ctx context.Context, sign SignFunc, worker peer.ID, sigInput []b
 	return sig.Data, nil
 }
 
-func VerifyVRF(ctx context.Context, worker peer.ID, vrfBase, vrfproof []byte) error {
-	pKey, err := worker.ExtractPublicKey()
+func VerifyVRF(worker peer.ID, vrfBase, vrfproof []byte) error {
+	err := sigs.Verify(&types.Signature{Type: types.SigTypeEd25519, Data: vrfproof}, worker, vrfBase)
 	if err != nil {
-		return xerrors.Errorf("failed to extract public key from worker address: %w", err)
-	}
-
-	valid, err := pKey.Verify(vrfBase, vrfproof)
-	if err != nil || !valid {
 		return xerrors.Errorf("vrf was invalid: %w", err)
 	}
 
 	return nil
 }
 
-func IsRoundWinner(ctx context.Context, round types.DrandRound,
-	worker peer.ID, brand types.BeaconEntry, minerStake, networkStake types.BigInt, a WalletAPI) (*types.ElectionProof, error) {
+func IsRoundWinner(round types.DrandRound,
+	worker peer.ID, brand types.BeaconEntry, minerStake, networkStake types.BigInt, sign SignFunc) (*types.ElectionProof, error) {
 
 	buf, err := worker.MarshalBinary()
 	if err != nil {
@@ -53,7 +49,7 @@ func IsRoundWinner(ctx context.Context, round types.DrandRound,
 		return nil, xerrors.Errorf("failed to draw randomness: %w", err)
 	}
 
-	vrfout, err := ComputeVRF(ctx, a.WalletSign, worker, electionRand)
+	vrfout, err := ComputeVRF(sign, worker, electionRand)
 	if err != nil {
 		return nil, xerrors.Errorf("failed to compute VRF: %w", err)
 	}
