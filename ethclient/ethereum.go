@@ -23,6 +23,7 @@ type EthereumClient struct {
 	oracleEmitter  *oracleEmitter.OracleEmitterSession
 	aggregator     *aggregator.AggregatorSession
 	dioneStaking   *stakingContract.DioneStakingSession
+	// dioneOracle    *dioneOracle.DioneOracleSession
 }
 
 type OracleEvent struct {
@@ -71,6 +72,10 @@ func (c *EthereumClient) Initialize(ctx context.Context, url, privateKey, oracle
 	if err != nil {
 		return err
 	}
+	// oracleContract, err := dioneOracle.NewDioneOracle(common.HexToAddress(dioneOracleContract), client)
+	// if err != nil {
+	// 	return err
+	// }
 	c.oracleEmitter = &oracleEmitter.OracleEmitterSession{
 		Contract: emitter,
 		CallOpts: bind.CallOpts{
@@ -116,6 +121,21 @@ func (c *EthereumClient) Initialize(ctx context.Context, url, privateKey, oracle
 			Context:  context.Background(),
 		},
 	}
+	// c.dioneOracle = &dioneOracle.DioneOracleSession{
+	// 	Contract: oracleContract,
+	// 	CallOpts: bind.CallOpts{
+	// 		Pending: true,
+	// 		From:    authTransactor.From,
+	// 		Context: context.Background(),
+	// 	},
+	// 	TransactOpts: bind.TransactOpts{
+	// 		From:     authTransactor.From,
+	// 		Signer:   authTransactor.Signer,
+	// 		GasLimit: 200000,                 // 0 automatically estimates gas limit
+	// 		GasPrice: big.NewInt(1860127603), // nil automatically suggests gas price
+	// 		Context:  context.Background(),
+	// 	},
+	// }
 	return nil
 }
 
@@ -136,32 +156,20 @@ func (c *EthereumClient) SubscribeOnOracleEvents(ctx context.Context) (chan *ora
 	return resChan, subscription, err
 }
 
+// func (c *EthereumClient) SubscribeOnSumbittedRequests(ctx context.Context) (chan *dioneOracle.DioneOracleSubmittedOracleRequest, event.Subscription, error) {
+// 	resChan := make(chan *dioneOracle.DioneOracleSubmittedOracleRequest)
+// 	requestsFilter := c.dioneOracle.Contract.DioneOracleFilterer
+// 	subscription, err := requestsFilter.WatchSubmittedOracleRequest(&bind.WatchOpts{
+// 		Start:   nil, //last block
+// 		Context: ctx,
+// 	}, resChan)
+// 	if err != nil {
+// 		return nil, nil, err
+// 	}
+// 	return resChan, subscription, err
+// }
+
 func (c *EthereumClient) SubmitRequestAnswer(reqID *big.Int, data string, callbackAddress common.Address) error {
-	// privateKey, err := crypto.HexToECDSA(private_key)
-	// if err != nil {
-	// 	c.Logger.Fatal("Failed to generate private key", err)
-	// }
-
-	// publicKey := privateKey.Public()
-	// publicKeyECDSA, ok := publicKey.(*ecdsa.PublicKey)
-	// if !ok {
-	// 	c.Logger.Fatal("cannot assert type: publicKey is not of type *ecdsa.PublicKey")
-	// }
-
-	// publicKeyBytes := crypto.FromECDSAPub(publicKeyECDSA)
-	// c.Logger.Info(hexutil.Encode(publicKeyBytes)[4:])
-
-	// fromAddress := crypto.PubkeyToAddress(*publicKeyECDSA)
-	// nonce, err := c.HttpClient.PendingNonceAt(ctx, fromAddress)
-	// if err != nil {
-	// 	c.Logger.Fatal(err)
-	// }
-
-	// gasPrice, err := c.HttpClient.SuggestGasPrice(ctx)
-	// if err != nil {
-	// 	c.Logger.Fatal(err)
-	// }
-
 	_, err := c.aggregator.CollectData(reqID, data, callbackAddress)
 	if err != nil {
 		return err
