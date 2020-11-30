@@ -62,6 +62,7 @@ type Node struct {
 	Miner            *consensus.Miner
 	Beacon           beacon.BeaconNetworks
 	Wallet           *wallet.LocalWallet
+	EventLogCache    *EventLogCache
 }
 
 func NewNode(config *config.Config, prvKey crypto.PrivKey, pexDiscoveryUpdateTime time.Duration) (*Node, error) {
@@ -112,6 +113,9 @@ func NewNode(config *config.Config, prvKey crypto.PrivKey, pexDiscoveryUpdateTim
 		logrus.Fatal(err)
 	}
 	n.Wallet = wallet
+
+	eventLogCache := provideEventLogCache()
+	n.EventLogCache = eventLogCache
 
 	return n, nil
 }
@@ -185,6 +189,11 @@ func (n *Node) subscribeOnEthContractsAsync(ctx context.Context) {
 			select {
 			case event := <-eventChan:
 				{
+					err := n.EventLogCache.Store("request_"+event.RequestID.String(), event)
+					if err != nil {
+						logrus.Errorf("Failed to store new request event to event log cache: %v", err)
+					}
+
 					task, err := n.Miner.MineTask(ctx, event)
 					if err != nil {
 						logrus.Fatal("Failed to mine task, exiting... ", err)
@@ -205,6 +214,10 @@ func (n *Node) subscribeOnEthContractsAsync(ctx context.Context) {
 			}
 		}
 	}()
+}
+
+func provideEventLogCache() *EventLogCache {
+	return NewEventLogCache()
 }
 
 func provideMiner(peerID peer.ID, ethAddress common.Address, beacon beacon.BeaconNetworks, ethClient *ethclient.EthereumClient, privateKey []byte) *consensus.Miner {

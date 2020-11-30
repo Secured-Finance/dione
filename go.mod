@@ -4,6 +4,7 @@ go 1.14
 
 require (
 	github.com/Secured-Finance/go-libp2p-pex v1.0.1
+	github.com/VictoriaMetrics/fastcache v1.5.7
 	github.com/allegro/bigcache v1.2.1 // indirect
 	github.com/aristanetworks/goarista v0.0.0-20200224203130-895b4c57c44d // indirect
 	github.com/asaskevich/govalidator v0.0.0-20200907205600-7a23bdc65eef // indirect
