@@ -176,7 +176,7 @@ func (ppp *PrePreparePool) IsValidPrePrepare(prePrepare *types2.Message) bool {
 			}
 		}
 
-		if msg.Type = ftypes.MessageTypeSecp256k1 {
+		if msg.Type == ftypes.MessageTypeSecp256k1 {
 			if err = sigs.Verify(msg.Signature, msg.Message.From.Bytes(), msg.Message.Cid().Bytes()); err != nil {
 				logrus.Errorf("Couldn't verify transaction %v", err)
 			}
