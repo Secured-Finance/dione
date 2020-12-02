@@ -16,8 +16,10 @@ require (
 	github.com/drand/kyber v1.1.5
 	github.com/elastic/gosigar v0.10.5 // indirect
 	github.com/ethereum/go-ethereum v1.9.5
-	github.com/filecoin-project/go-address v0.0.4
-	github.com/filecoin-project/go-state-types v0.0.0-20201021025442-0ac4de847f4f
+	github.com/filecoin-project/go-address v0.0.5-0.20201103152444-f2023ef3f5bb
+	github.com/filecoin-project/go-crypto v0.0.0-20191218222705-effae4ea9f03
+	github.com/filecoin-project/go-state-types v0.0.0-20201102161440-c8033295a1fc
+	github.com/filecoin-project/lotus v1.2.1
 	github.com/fjl/memsize v0.0.0-20190710130421-bcb5799ab5e5 // indirect
 	github.com/fxamacker/cbor/v2 v2.2.0
 	github.com/gballet/go-libpcsclite v0.0.0-20191108122812-4678299bea08 // indirect
@@ -30,18 +32,16 @@ require (
 	github.com/gopherjs/gopherjs v0.0.0-20190812055157-5d271430af9f // indirect
 	github.com/ipfs/go-datastore v0.4.5 // indirect
 	github.com/ipfs/go-ds-badger2 v0.1.1-0.20200708190120-187fc06f714e // indirect
-	github.com/ipfs/go-ipld-cbor v0.0.5-0.20200428170625-a0bd04d3cbdf // indirect
 	github.com/ipfs/go-ipld-format v0.2.0 // indirect
 	github.com/ipfs/go-log v1.0.4
 	github.com/ipfs/go-log/v2 v2.1.2-0.20200626104915-0016c0b4b3e4 // indirect
 	github.com/jmoiron/sqlx v1.2.0
 	github.com/karalabe/usb v0.0.0-20191104083709-911d15fe12a9 // indirect
 	github.com/lib/pq v1.7.0 // indirect
-	github.com/libp2p/go-libp2p v0.11.0
-	github.com/libp2p/go-libp2p-core v0.6.1
+	github.com/libp2p/go-libp2p v0.12.0
+	github.com/libp2p/go-libp2p-core v0.7.0
 	github.com/libp2p/go-libp2p-noise v0.1.2 // indirect
-	github.com/libp2p/go-libp2p-pubsub v0.3.6
-	github.com/libp2p/go-libp2p-testing v0.1.2-0.20200422005655-8775583591d8 // indirect
+	github.com/libp2p/go-libp2p-pubsub v0.4.0
 	github.com/mattn/go-colorable v0.1.6 // indirect
 	github.com/mattn/go-sqlite3 v1.9.0
 	github.com/minio/blake2b-simd v0.0.0-20160723061019-3f5f724cb5b1
@@ -69,7 +69,7 @@ require (
 	github.com/wsddn/go-ecdh v0.0.0-20161211032359-48726bab9208 // indirect
 	github.com/xorcare/golden v0.6.1-0.20191112154924-b87f686d7542
 	go.uber.org/fx v1.13.1 // indirect
-	go.uber.org/zap v1.15.0
+	go.uber.org/zap v1.16.0
 	golang.org/x/lint v0.0.0-20200302205851-738671d3881b // indirect
 	golang.org/x/tools v0.0.0-20200827010519-17fd2f27a9e3 // indirect
 	golang.org/x/xerrors v0.0.0-20200804184101-5ec99f83aff1

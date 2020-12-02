@@ -14,7 +14,9 @@ type SigType byte
 const (
 	SigTypeUnknown = SigType(math.MaxUint8)
 
-	SigTypeEd25519 = SigType(iota)
+	SigTypeSecp256k1 = SigType(iota)
+	SigTypeBLS
+	SigTypeEd25519
 )
 
 func (t SigType) Name() (string, error) {
@@ -23,6 +25,10 @@ func (t SigType) Name() (string, error) {
 		return "unknown", nil
 	case SigTypeEd25519:
 		return "ed25519", nil
+	case SigTypeSecp256k1:
+		return "secp256k1", nil
+	case SigTypeBLS:
+		return "bls", nil
 	default:
 		return "", fmt.Errorf("invalid signature type: %d", t)
 	}
@@ -85,6 +91,10 @@ func (s *Signature) UnmarshalCBOR(br io.Reader) error {
 		return fmt.Errorf("invalid signature type in cbor input: %d", buf[0])
 	case SigTypeEd25519:
 		s.Type = SigTypeEd25519
+	case SigTypeSecp256k1:
+		s.Type = SigTypeSecp256k1
+	case SigTypeBLS:
+		s.Type = SigTypeBLS
 	}
 	s.Data = buf[1:]
 	return nil
@@ -112,6 +122,10 @@ func (s *Signature) UnmarshalBinary(bs []byte) error {
 		s.Type = SigTypeUnknown
 	case SigTypeEd25519:
 		s.Type = SigTypeEd25519
+	case SigTypeSecp256k1:
+		s.Type = SigTypeSecp256k1
+	case SigTypeBLS:
+		s.Type = SigTypeBLS
 	}
 	s.Data = bs[1:]
 	return nil

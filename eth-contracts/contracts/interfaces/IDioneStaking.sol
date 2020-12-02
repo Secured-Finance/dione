@@ -1,6 +1,8 @@
+// SPDX-License-Identifier: MIT
+
 pragma solidity ^0.6.0;
 
-interface DioneStakingInterface {
+interface IDioneStaking {
     function mine(address _minerAddr) external;
     function mineAndStake(address _minerAddr) external;
     function stake(uint256 _amount) external;

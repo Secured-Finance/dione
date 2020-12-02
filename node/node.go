@@ -131,7 +131,7 @@ func (n *Node) Run(ctx context.Context) error {
 		}
 	}
 
-	return nil
+	// return nil
 }
 
 func (n *Node) runLibp2pAsync(ctx context.Context) error {
@@ -271,12 +271,12 @@ func provideEthereumClient(config *config.Config) (*ethclient.EthereumClient, er
 
 func (n *Node) setupRPCClients() error {
 	fc := filecoin.NewLotusClient()
-	rpc.RegisterRPC(rtypes.RPCTypeFilecoin, map[string]func(string) (string, error){
+	rpc.RegisterRPC(rtypes.RPCTypeFilecoin, map[string]func(string) ([]byte, error){
 		"getTransaction": fc.GetTransaction,
 	})
 
 	sl := solana2.NewSolanaClient()
-	rpc.RegisterRPC(rtypes.RPCTypeSolana, map[string]func(string) (string, error){
+	rpc.RegisterRPC(rtypes.RPCTypeSolana, map[string]func(string) ([]byte, error){
 		"getTransaction": sl.GetTransaction,
 	})
 

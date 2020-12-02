@@ -16,7 +16,7 @@ func verifyTaskSignature(msg types.ConsensusMessage) error {
 	}
 	err = sigs.Verify(
 		&types2.Signature{Type: types2.SigTypeEd25519, Data: msg.Signature},
-		msg.Task.Miner,
+		[]byte(msg.Task.Miner.String()),
 		[]byte(fmt.Sprintf("%v", cHash)),
 	)
 	if err != nil {

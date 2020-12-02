@@ -4,8 +4,6 @@ import (
 	"context"
 	fmt "fmt"
 
-	"github.com/libp2p/go-libp2p-core/peer"
-
 	"github.com/Secured-Finance/dione/types"
 	"github.com/filecoin-project/go-address"
 	"golang.org/x/xerrors"
@@ -30,7 +28,7 @@ func Sign(sigType types.SigType, privkey []byte, msg []byte) (*types.Signature, 
 }
 
 // Verify verifies signatures
-func Verify(sig *types.Signature, addr peer.ID, msg []byte) error {
+func Verify(sig *types.Signature, addrByte []byte, msg []byte) error {
 	if sig == nil {
 		return xerrors.Errorf("signature is nil")
 	}
@@ -40,7 +38,7 @@ func Verify(sig *types.Signature, addr peer.ID, msg []byte) error {
 		return fmt.Errorf("cannot verify signature of unsupported type: %v", sig.Type)
 	}
 
-	return sv.Verify(sig.Data, addr, msg)
+	return sv.Verify(sig.Data, addrByte, msg)
 }
 
 // Generate generates private key of given type
@@ -92,7 +90,7 @@ type SigShim interface {
 	GenPrivate() ([]byte, error)
 	ToPublic(pk []byte) ([]byte, error)
 	Sign(pk []byte, msg []byte) ([]byte, error)
-	Verify(sig []byte, a peer.ID, msg []byte) error
+	Verify(sig []byte, a []byte, msg []byte) error
 }
 
 var sigs map[types.SigType]SigShim

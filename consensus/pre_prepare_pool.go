@@ -1,6 +1,7 @@
 package consensus
 
 import (
+	"bytes"
 	"fmt"
 
 	oracleEmitter "github.com/Secured-Finance/dione/contracts/oracleemitter"
@@ -9,7 +10,9 @@ import (
 
 	"github.com/filecoin-project/go-state-types/crypto"
 
+	ftypes "github.com/Secured-Finance/dione/rpc/filecoin/types"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/filecoin-project/go-state-types/crypto"
 
 	types2 "github.com/Secured-Finance/dione/consensus/types"
 	"github.com/Secured-Finance/dione/sigs"
@@ -92,6 +95,18 @@ func (ppp *PrePreparePool) IsValidPrePrepare(prePrepare *types2.Message) bool {
 
 		logrus.Errorf("the incoming task and cached request event don't match!")
 		return false
+	// === verify filecoin message signature ===
+	if consensusMsg.Task.RequestType == "GetTransaction" && consensusMsg.Task.OriginChain == 1 {
+		var msg ftypes.SignedMessage
+		if err := msg.UnmarshalCBOR(bytes.NewReader(consensusMsg.Task.Payload)); err != nil {
+			if err := msg.Message.UnmarshalCBOR(bytes.NewReader(consensusMsg.Task.Payload)); err != nil {
+				return false
+			}
+		}
+
+		if err = sigs.Verify(msg.Signature, msg.Message.From.Bytes(), msg.Message.Cid().Bytes()); err != nil {
+			logrus.Errorf("Couldn't verify transaction %v", err)
+		}
 	}
 	/////////////////////////////////
 

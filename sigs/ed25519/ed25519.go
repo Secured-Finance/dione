@@ -32,8 +32,12 @@ func (ed25519Signer) Sign(p []byte, msg []byte) ([]byte, error) {
 	return ed25519.Sign(privKey, msg), nil
 }
 
-func (ed25519Signer) Verify(sig []byte, a peer.ID, msg []byte) error {
-	pubKey, err := a.ExtractPublicKey()
+func (ed25519Signer) Verify(sig []byte, a []byte, msg []byte) error {
+	id, err := peer.IDFromBytes(a)
+	if err != nil {
+		return err
+	}
+	pubKey, err := id.ExtractPublicKey()
 	if err != nil {
 		return err
 	}

@@ -4,14 +4,19 @@ pragma solidity ^0.6.12;
 import "@openzeppelin/contracts/math/SafeMath.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 
-import "./interfaces/DioneStakingInterface.sol";
+import "./interfaces/IDioneStaking.sol";
 
 contract DioneOracle is Ownable {
   using SafeMath for uint256;
   
+  // Global counter of oracle requests, works as an index in mapping structures
   uint256 private requestCounter;
+  // Maximum time for computing oracle request
   uint256 constant public MAXIMUM_DELAY = 5 minutes;
-  DioneStakingInterface public dioneStaking;
+  // Dione staking contract
+  IDioneStaking public dioneStaking;
+  // Minimum amount of DIONE tokens required to vote against miner result
+  uint256 public minimumDisputeFee = 100**18;
 
   struct OracleRequest {
     uint8 originChain; // origin blockchain for request
@@ -51,7 +56,7 @@ contract DioneOracle is Ownable {
   );
 
   modifier onlyPendingRequest(uint256 _reqID) {
-    require(pendingRequests[_reqID] != 0, "Invalid requestId");
+    require(pendingRequests[_reqID] != 0, "This request is not pending");
     _;
   }
 
@@ -60,7 +65,7 @@ contract DioneOracle is Ownable {
     _;
   }
 
-  constructor(DioneStakingInterface _dioneStaking) public {
+  constructor(IDioneStaking _dioneStaking) public {
       dioneStaking = _dioneStaking;
   }
 
@@ -83,7 +88,7 @@ contract DioneOracle is Ownable {
     emit CancelOracleRequest(_reqID);
   }
 
-  function submitOracleRequest(string memory _requestParams, address _callbackAddress, bytes4 _callbackMethodID, uint256 _reqID, uint256 _requestDeadline, bytes memory _data) public onlyActiveNode returns (bool) {
+  function submitOracleRequest(string memory _requestParams, address _callbackAddress, bytes4 _callbackMethodID, uint256 _reqID, uint256 _requestDeadline, bytes memory _data) public onlyPendingRequest(_reqID) onlyActiveNode returns (bool) {
     bytes32 requestHash = keccak256(abi.encodePacked(_requestParams, _callbackAddress, _callbackMethodID, _reqID, _requestDeadline));
     require(pendingRequests[_reqID] == requestHash, "Params do not match request ID");
     delete pendingRequests[_reqID];

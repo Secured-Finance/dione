@@ -132,7 +132,6 @@ func (m *Miner) MineTask(ctx context.Context, event *oracleEmitter.OracleEmitter
 	if err != nil {
 		return nil, xerrors.Errorf("couldn't do rpc request: %w", err)
 	}
-	bres := []byte(res)
 
 	return &types.DioneTask{
 		OriginChain:   event.OriginChain,
@@ -143,7 +142,7 @@ func (m *Miner) MineTask(ctx context.Context, event *oracleEmitter.OracleEmitter
 		Ticket:        ticket,
 		ElectionProof: winner,
 		BeaconEntries: beaconValues,
-		Payload:       bres,
+		Payload:       res,
 		DrandRound:    types.DrandRound(randomBase.Round),
 	}, nil
 }

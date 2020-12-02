@@ -28,7 +28,7 @@ func ComputeVRF(sign SignFunc, worker peer.ID, sigInput []byte) ([]byte, error) 
 }
 
 func VerifyVRF(worker peer.ID, vrfBase, vrfproof []byte) error {
-	err := sigs.Verify(&types.Signature{Type: types.SigTypeEd25519, Data: vrfproof}, worker, vrfBase)
+	err := sigs.Verify(&types.Signature{Type: types.SigTypeEd25519, Data: vrfproof}, []byte(worker), vrfBase)
 	if err != nil {
 		return xerrors.Errorf("vrf was invalid: %w", err)
 	}
