@@ -4,8 +4,6 @@ import (
 	"fmt"
 
 	"github.com/Secured-Finance/dione/consensus/validation"
-	rtypes "github.com/Secured-Finance/dione/rpc/types"
-
 	oracleEmitter "github.com/Secured-Finance/dione/contracts/oracleemitter"
 
 	"github.com/Secured-Finance/dione/node"
@@ -166,11 +164,13 @@ func (ppp *PrePreparePool) IsValidPrePrepare(prePrepare *types2.Message) bool {
 	//////////////////////////////////////
 
 	// === validate payload by specific-chain checks ===
-	if validationFunc := validation.GetValidationMethod(rtypes.RPCTypeFilecoin, consensusMsg.Task.RequestType); validationFunc != nil {
+	if validationFunc := validation.GetValidationMethod(consensusMsg.Task.OriginChain, consensusMsg.Task.RequestType); validationFunc != nil {
 		err := validationFunc(consensusMsg.Task.Payload)
 		if err != nil {
 			logrus.Errorf("payload validation has failed: %v", err)
 		}
+	} else {
+		logrus.Warnf("Origin chain [%v]/request type[%v] doesn't have any payload validation!", consensusMsg.Task.OriginChain, consensusMsg.Task.RequestType)
 	}
 	/////////////////////////////////
 
