@@ -4,6 +4,8 @@ import (
 	"bytes"
 	"fmt"
 
+	rtypes "github.com/Secured-Finance/dione/rpc/types"
+
 	ftypes "github.com/Secured-Finance/dione/rpc/filecoin/types"
 
 	oracleEmitter "github.com/Secured-Finance/dione/contracts/oracleemitter"
@@ -166,7 +168,7 @@ func (ppp *PrePreparePool) IsValidPrePrepare(prePrepare *types2.Message) bool {
 	//////////////////////////////////////
 
 	// === verify filecoin message signature ===
-	if consensusMsg.Task.RequestType == "GetTransaction" && consensusMsg.Task.OriginChain == 1 {
+	if consensusMsg.Task.OriginChain == rtypes.RPCTypeFilecoin && consensusMsg.Task.RequestType == "getTransaction" {
 		var msg ftypes.SignedMessage
 		if err := msg.UnmarshalCBOR(bytes.NewReader(consensusMsg.Task.Payload)); err != nil {
 			if err := msg.Message.UnmarshalCBOR(bytes.NewReader(consensusMsg.Task.Payload)); err != nil {
