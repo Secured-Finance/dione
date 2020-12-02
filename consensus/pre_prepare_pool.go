@@ -3,6 +3,10 @@ package consensus
 import (
 	"fmt"
 
+	oracleEmitter "github.com/Secured-Finance/dione/contracts/oracleemitter"
+
+	"github.com/Secured-Finance/dione/node"
+
 	"github.com/filecoin-project/go-state-types/crypto"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -17,22 +21,25 @@ import (
 type PrePreparePool struct {
 	prePrepareMsgs map[string][]*types2.Message
 	miner          *Miner
+	eventLogCache  *node.EventLogCache
 }
 
-func NewPrePreparePool(miner *Miner) *PrePreparePool {
+func NewPrePreparePool(miner *Miner, evc *node.EventLogCache) *PrePreparePool {
 	return &PrePreparePool{
 		prePrepareMsgs: map[string][]*types2.Message{},
 		miner:          miner,
+		eventLogCache:  evc,
 	}
 }
 
-func (pp *PrePreparePool) CreatePrePrepare(consensusID string, task types.DioneTask, requestID string, callbackAddress string, privateKey []byte) (*types2.Message, error) {
+func (pp *PrePreparePool) CreatePrePrepare(consensusID string, task types.DioneTask, requestID, callbackAddress, callbackMethodID string, privateKey []byte) (*types2.Message, error) {
 	var message types2.Message
 	message.Type = types2.MessageTypePrePrepare
 	var consensusMsg types2.ConsensusMessage
 	consensusMsg.ConsensusID = consensusID
 	consensusMsg.RequestID = requestID
 	consensusMsg.CallbackAddress = callbackAddress
+	consensusMsg.CallbackMethodID = callbackMethodID
 	consensusMsg.Task = task
 	cHash, err := hashstructure.Hash(consensusMsg, hashstructure.FormatV2, nil)
 	if err != nil {
@@ -66,6 +73,24 @@ func (ppp *PrePreparePool) IsValidPrePrepare(prePrepare *types2.Message) bool {
 	err := verifyTaskSignature(consensusMsg)
 	if err != nil {
 		logrus.Errorf("unable to verify signature: %v", err)
+		return false
+	}
+	/////////////////////////////////
+
+	// === verify if request exists in event log cache ===
+	requestEventPlain, err := ppp.eventLogCache.Get("request_" + consensusMsg.RequestID)
+	if err != nil {
+		logrus.Errorf("the incoming request task event doesn't exist in the EVC, or is broken: %v", err)
+		return false
+	}
+	requestEvent := requestEventPlain.(*oracleEmitter.OracleEmitterNewOracleRequest)
+	if requestEvent.CallbackAddress.String() != consensusMsg.CallbackAddress ||
+		string(requestEvent.CallbackMethodID[:]) != consensusMsg.CallbackMethodID ||
+		requestEvent.OriginChain != consensusMsg.Task.OriginChain ||
+		requestEvent.RequestType != consensusMsg.Task.RequestType ||
+		requestEvent.RequestParams != consensusMsg.Task.RequestParams {
+
+		logrus.Errorf("the incoming task and cached request event don't match!")
 		return false
 	}
 	/////////////////////////////////

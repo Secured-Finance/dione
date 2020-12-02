@@ -105,7 +105,10 @@ func NewNode(config *config.Config, prvKey crypto.PrivKey, pexDiscoveryUpdateTim
 	miner := provideMiner(n.Host.ID(), *n.Ethereum.GetEthAddress(), n.Beacon, n.Ethereum, rawPrivKey)
 	n.Miner = miner
 
-	cManager := provideConsensusManager(psb, miner, ethClient, rawPrivKey, n.Config.ConsensusMinApprovals)
+	eventLogCache := provideEventLogCache()
+	n.EventLogCache = eventLogCache
+
+	cManager := provideConsensusManager(psb, miner, ethClient, rawPrivKey, n.Config.ConsensusMinApprovals, eventLogCache)
 	n.ConsensusManager = cManager
 
 	wallet, err := provideWallet(n.Host.ID(), rawPrivKey)
@@ -113,9 +116,6 @@ func NewNode(config *config.Config, prvKey crypto.PrivKey, pexDiscoveryUpdateTim
 		logrus.Fatal(err)
 	}
 	n.Wallet = wallet
-
-	eventLogCache := provideEventLogCache()
-	n.EventLogCache = eventLogCache
 
 	return n, nil
 }
@@ -194,15 +194,18 @@ func (n *Node) subscribeOnEthContractsAsync(ctx context.Context) {
 						logrus.Errorf("Failed to store new request event to event log cache: %v", err)
 					}
 
-					task, err := n.Miner.MineTask(ctx, event)
+					logrus.Info("Let's wait a little so that all nodes have time to receive the request and cache it")
+					time.Sleep(5 * time.Second)
+
+					task, err := n.Miner.MineTask(context.TODO(), event)
 					if err != nil {
 						logrus.Fatal("Failed to mine task, exiting... ", err)
 					}
 					if task == nil {
 						continue
 					}
-					logrus.Infof("Started new consensus round with ID: %s", event.RequestID.String())
-					err = n.ConsensusManager.Propose(event.RequestID.String(), *task, event.RequestID, event.CallbackAddress)
+					logrus.Infof("Proposed new Dione task with ID: %s", event.RequestID.String())
+					err = n.ConsensusManager.Propose(event.RequestID.String(), *task, event)
 					if err != nil {
 						logrus.Errorf("Failed to propose task: %w", err)
 					}
@@ -284,8 +287,8 @@ func providePubsubRouter(lhost host.Host, config *config.Config) *pubsub2.PubSub
 	return pubsub2.NewPubSubRouter(lhost, config.PubSub.ServiceTopicName)
 }
 
-func provideConsensusManager(psb *pubsub2.PubSubRouter, miner *consensus.Miner, ethClient *ethclient.EthereumClient, privateKey []byte, minApprovals int) *consensus.PBFTConsensusManager {
-	return consensus.NewPBFTConsensusManager(psb, minApprovals, privateKey, ethClient, miner)
+func provideConsensusManager(psb *pubsub2.PubSubRouter, miner *consensus.Miner, ethClient *ethclient.EthereumClient, privateKey []byte, minApprovals int, evc *EventLogCache) *consensus.PBFTConsensusManager {
+	return consensus.NewPBFTConsensusManager(psb, minApprovals, privateKey, ethClient, miner, evc)
 }
 
 func provideLibp2pNode(config *config.Config, privateKey crypto.PrivKey, pexDiscoveryUpdateTime time.Duration) (host.Host, *pex.PEXDiscovery, error) {

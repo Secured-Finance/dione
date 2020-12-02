@@ -4,6 +4,10 @@ import (
 	"math/big"
 	"sync"
 
+	"github.com/Secured-Finance/dione/node"
+
+	oracleEmitter "github.com/Secured-Finance/dione/contracts/oracleemitter"
+
 	"github.com/Secured-Finance/dione/consensus/types"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -32,11 +36,11 @@ type ConsensusData struct {
 	alreadySubmitted bool
 }
 
-func NewPBFTConsensusManager(psb *pubsub.PubSubRouter, minApprovals int, privKey []byte, ethereumClient *ethclient.EthereumClient, miner *Miner) *PBFTConsensusManager {
+func NewPBFTConsensusManager(psb *pubsub.PubSubRouter, minApprovals int, privKey []byte, ethereumClient *ethclient.EthereumClient, miner *Miner, evc *node.EventLogCache) *PBFTConsensusManager {
 	pcm := &PBFTConsensusManager{}
 	pcm.psb = psb
 	pcm.miner = miner
-	pcm.prePreparePool = NewPrePreparePool(miner)
+	pcm.prePreparePool = NewPrePreparePool(miner, evc)
 	pcm.preparePool = NewPreparePool()
 	pcm.commitPool = NewCommitPool()
 	pcm.minApprovals = minApprovals
@@ -49,11 +53,17 @@ func NewPBFTConsensusManager(psb *pubsub.PubSubRouter, minApprovals int, privKey
 	return pcm
 }
 
-func (pcm *PBFTConsensusManager) Propose(consensusID string, task types2.DioneTask, requestID *big.Int, callbackAddress common.Address) error {
+func (pcm *PBFTConsensusManager) Propose(consensusID string, task types2.DioneTask, requestEvent *oracleEmitter.OracleEmitterNewOracleRequest) error {
 	pcm.consensusInfo[consensusID] = &ConsensusData{}
-	reqIDRaw := requestID.String()
-	callbackAddressHex := callbackAddress.Hex()
-	prePrepareMsg, err := pcm.prePreparePool.CreatePrePrepare(consensusID, task, reqIDRaw, callbackAddressHex, pcm.privKey)
+
+	prePrepareMsg, err := pcm.prePreparePool.CreatePrePrepare(
+		consensusID,
+		task,
+		requestEvent.RequestID.String(),
+		requestEvent.CallbackAddress.Hex(),
+		string(requestEvent.CallbackMethodID[:]),
+		pcm.privKey,
+	)
 	if err != nil {
 		return err
 	}
