@@ -100,13 +100,11 @@ func (psr *PubSubRouter) handleMessage(p *pubsub.Message) {
 }
 
 func (psr *PubSubRouter) Hook(messageType types.MessageType, handler Handler) {
-	handlers, ok := psr.handlers[messageType]
+	_, ok := psr.handlers[messageType]
 	if !ok {
-		emptyArray := []Handler{}
-		psr.handlers[messageType] = emptyArray
-		handlers = emptyArray
+		psr.handlers[messageType] = []Handler{}
 	}
-	psr.handlers[messageType] = append(handlers, handler)
+	psr.handlers[messageType] = append(psr.handlers[messageType], handler)
 }
 
 func (psr *PubSubRouter) BroadcastToServiceTopic(msg *types.Message) error {
