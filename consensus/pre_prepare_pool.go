@@ -1,12 +1,10 @@
 package consensus
 
 import (
-	"bytes"
 	"fmt"
 
+	"github.com/Secured-Finance/dione/consensus/validation"
 	rtypes "github.com/Secured-Finance/dione/rpc/types"
-
-	ftypes "github.com/Secured-Finance/dione/rpc/filecoin/types"
 
 	oracleEmitter "github.com/Secured-Finance/dione/contracts/oracleemitter"
 
@@ -167,23 +165,11 @@ func (ppp *PrePreparePool) IsValidPrePrepare(prePrepare *types2.Message) bool {
 	}
 	//////////////////////////////////////
 
-	// === verify filecoin message signature ===
-	if consensusMsg.Task.OriginChain == rtypes.RPCTypeFilecoin && consensusMsg.Task.RequestType == "getTransaction" {
-		var msg ftypes.SignedMessage
-		if err := msg.UnmarshalCBOR(bytes.NewReader(consensusMsg.Task.Payload)); err != nil {
-			if err := msg.Message.UnmarshalCBOR(bytes.NewReader(consensusMsg.Task.Payload)); err != nil {
-				return false
-			}
-		}
-
-		if msg.Type == ftypes.MessageTypeSecp256k1 {
-			if err = sigs.Verify(msg.Signature, msg.Message.From.Bytes(), msg.Message.Cid().Bytes()); err != nil {
-				logrus.Errorf("Couldn't verify transaction %v", err)
-			}
-			return true
-		} else {
-			// TODO: BLS Signature verification
-			return true
+	// === validate payload by specific-chain checks ===
+	if validationFunc := validation.GetValidationMethod(rtypes.RPCTypeFilecoin, consensusMsg.Task.RequestType); validationFunc != nil {
+		err := validationFunc(consensusMsg.Task.Payload)
+		if err != nil {
+			logrus.Errorf("payload validation has failed: %v", err)
 		}
 	}
 	/////////////////////////////////
