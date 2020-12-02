@@ -15,11 +15,6 @@ import (
 
 var filecoinURL = "https://api.node.glif.io/"
 
-const (
-	blsType       = 0x1
-	secp256k1Type = 0x2
-)
-
 // client implements the `Client` interface.
 type LotusClient struct {
 	host       string
@@ -86,9 +81,9 @@ func (c *LotusClient) GetTransaction(cid string) ([]byte, error) {
 
 	switch msg.Message.From.Protocol() | msg.Message.To.Protocol() {
 	case address.BLS:
-		msg.Type = blsType
+		msg.Type = ftypes.MessageTypeBLS
 	case address.SECP256K1:
-		msg.Type = secp256k1Type
+		msg.Type = ftypes.MessageTypeSecp256k1
 	default:
 		return nil, fmt.Errorf("Address has unsupported protocol %v", err)
 	}

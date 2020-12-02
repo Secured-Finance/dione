@@ -174,8 +174,14 @@ func (ppp *PrePreparePool) IsValidPrePrepare(prePrepare *types2.Message) bool {
 			}
 		}
 
-		if err = sigs.Verify(msg.Signature, msg.Message.From.Bytes(), msg.Message.Cid().Bytes()); err != nil {
-			logrus.Errorf("Couldn't verify transaction %v", err)
+		if msg.Type = ftypes.MessageTypeSecp256k1 {
+			if err = sigs.Verify(msg.Signature, msg.Message.From.Bytes(), msg.Message.Cid().Bytes()); err != nil {
+				logrus.Errorf("Couldn't verify transaction %v", err)
+			}
+			return true
+		} else {
+			// TODO: BLS Signature verification
+			return true
 		}
 	}
 	/////////////////////////////////
