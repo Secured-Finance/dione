@@ -19,7 +19,6 @@ func (e DrandRound) String() string {
 
 // DioneTask represents the values of task computation
 type DioneTask struct {
-	_             struct{} `cbor:",toarray" hash:"-"`
 	OriginChain   uint8
 	RequestType   string
 	RequestParams string

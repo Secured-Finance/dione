@@ -20,7 +20,8 @@ type PubSubRouter struct {
 	contextCancel       context.CancelFunc
 	serviceSubscription *pubsub.Subscription
 	handlers            map[types.MessageType][]Handler
-	oracleTopic         string
+	oracleTopicName     string
+	oracleTopic         *pubsub.Topic
 }
 
 func NewPubSubRouter(h host.Host, oracleTopic string) *PubSubRouter {
@@ -33,16 +34,18 @@ func NewPubSubRouter(h host.Host, oracleTopic string) *PubSubRouter {
 		handlers:      make(map[types.MessageType][]Handler),
 	}
 
-	pb, err := pubsub.NewFloodSub(
+	pb, err := pubsub.NewGossipSub(
 		context.TODO(),
-		psr.node, //pubsub.WithMessageSigning(true),
+		psr.node,
+		//pubsub.WithMessageSigning(true),
 		//pubsub.WithStrictSignatureVerification(true),
+		pubsub.WithPeerExchange(true),
 	)
 	if err != nil {
 		logrus.Fatal("Error occurred when create PubSub", err)
 	}
 
-	psr.oracleTopic = oracleTopic
+	psr.oracleTopicName = oracleTopic
 	topic, err := pb.Join(oracleTopic)
 	if err != nil {
 		logrus.Fatal("Error occurred when subscribing to service topic", err)
@@ -51,6 +54,7 @@ func NewPubSubRouter(h host.Host, oracleTopic string) *PubSubRouter {
 	subscription, err := topic.Subscribe()
 	psr.serviceSubscription = subscription
 	psr.Pubsub = pb
+	psr.oracleTopic = topic
 
 	go func() {
 		for {
@@ -112,7 +116,7 @@ func (psr *PubSubRouter) BroadcastToServiceTopic(msg *types.Message) error {
 	if err != nil {
 		return err
 	}
-	err = psr.Pubsub.Publish(psr.oracleTopic, data)
+	err = psr.oracleTopic.Publish(context.TODO(), data)
 	return err
 }
 

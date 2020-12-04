@@ -9,6 +9,8 @@ import (
 	"os"
 	"time"
 
+	"github.com/Secured-Finance/dione/cache"
+
 	pubsub "github.com/libp2p/go-libp2p-pubsub"
 
 	"github.com/Secured-Finance/dione/drand"
@@ -62,7 +64,7 @@ type Node struct {
 	Miner            *consensus.Miner
 	Beacon           beacon.BeaconNetworks
 	Wallet           *wallet.LocalWallet
-	EventLogCache    *EventLogCache
+	EventLogCache    *cache.EventLogCache
 }
 
 func NewNode(config *config.Config, prvKey crypto.PrivKey, pexDiscoveryUpdateTime time.Duration) (*Node, error) {
@@ -219,8 +221,8 @@ func (n *Node) subscribeOnEthContractsAsync(ctx context.Context) {
 	}()
 }
 
-func provideEventLogCache() *EventLogCache {
-	return NewEventLogCache()
+func provideEventLogCache() *cache.EventLogCache {
+	return cache.NewEventLogCache()
 }
 
 func provideMiner(peerID peer.ID, ethAddress common.Address, beacon beacon.BeaconNetworks, ethClient *ethclient.EthereumClient, privateKey []byte) *consensus.Miner {
@@ -287,7 +289,7 @@ func providePubsubRouter(lhost host.Host, config *config.Config) *pubsub2.PubSub
 	return pubsub2.NewPubSubRouter(lhost, config.PubSub.ServiceTopicName)
 }
 
-func provideConsensusManager(psb *pubsub2.PubSubRouter, miner *consensus.Miner, ethClient *ethclient.EthereumClient, privateKey []byte, minApprovals int, evc *EventLogCache) *consensus.PBFTConsensusManager {
+func provideConsensusManager(psb *pubsub2.PubSubRouter, miner *consensus.Miner, ethClient *ethclient.EthereumClient, privateKey []byte, minApprovals int, evc *cache.EventLogCache) *consensus.PBFTConsensusManager {
 	return consensus.NewPBFTConsensusManager(psb, minApprovals, privateKey, ethClient, miner, evc)
 }
 

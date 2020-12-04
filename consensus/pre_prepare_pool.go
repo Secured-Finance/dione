@@ -1,13 +1,12 @@
 package consensus
 
 import (
+	"bytes"
 	"fmt"
 
+	"github.com/Secured-Finance/dione/cache"
+
 	"github.com/Secured-Finance/dione/consensus/validation"
-	oracleEmitter "github.com/Secured-Finance/dione/contracts/oracleemitter"
-
-	"github.com/Secured-Finance/dione/node"
-
 	"github.com/filecoin-project/go-state-types/crypto"
 
 	types2 "github.com/Secured-Finance/dione/consensus/types"
@@ -21,10 +20,10 @@ import (
 type PrePreparePool struct {
 	prePrepareMsgs map[string][]*types2.Message
 	miner          *Miner
-	eventLogCache  *node.EventLogCache
+	eventLogCache  *cache.EventLogCache
 }
 
-func NewPrePreparePool(miner *Miner, evc *node.EventLogCache) *PrePreparePool {
+func NewPrePreparePool(miner *Miner, evc *cache.EventLogCache) *PrePreparePool {
 	return &PrePreparePool{
 		prePrepareMsgs: map[string][]*types2.Message{},
 		miner:          miner,
@@ -32,7 +31,7 @@ func NewPrePreparePool(miner *Miner, evc *node.EventLogCache) *PrePreparePool {
 	}
 }
 
-func (pp *PrePreparePool) CreatePrePrepare(consensusID string, task types.DioneTask, requestID, callbackAddress, callbackMethodID string, privateKey []byte) (*types2.Message, error) {
+func (pp *PrePreparePool) CreatePrePrepare(consensusID string, task types.DioneTask, requestID string, callbackAddress, callbackMethodID, privateKey []byte) (*types2.Message, error) {
 	var message types2.Message
 	message.Type = types2.MessageTypePrePrepare
 	var consensusMsg types2.ConsensusMessage
@@ -78,14 +77,13 @@ func (ppp *PrePreparePool) IsValidPrePrepare(prePrepare *types2.Message) bool {
 	/////////////////////////////////
 
 	// === verify if request exists in event log cache ===
-	requestEventPlain, err := ppp.eventLogCache.Get("request_" + consensusMsg.RequestID)
+	requestEvent, err := ppp.eventLogCache.GetOracleRequestEvent("request_" + consensusMsg.RequestID)
 	if err != nil {
 		logrus.Errorf("the incoming request task event doesn't exist in the EVC, or is broken: %v", err)
 		return false
 	}
-	requestEvent := requestEventPlain.(*oracleEmitter.OracleEmitterNewOracleRequest)
-	if requestEvent.CallbackAddress.String() != consensusMsg.CallbackAddress ||
-		string(requestEvent.CallbackMethodID[:]) != consensusMsg.CallbackMethodID ||
+	if bytes.Compare(requestEvent.CallbackAddress.Bytes(), consensusMsg.CallbackAddress) != 0 ||
+		bytes.Compare(requestEvent.CallbackMethodID[:], consensusMsg.CallbackMethodID) != 0 ||
 		requestEvent.OriginChain != consensusMsg.Task.OriginChain ||
 		requestEvent.RequestType != consensusMsg.Task.RequestType ||
 		requestEvent.RequestParams != consensusMsg.Task.RequestParams {

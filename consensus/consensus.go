@@ -4,7 +4,7 @@ import (
 	"math/big"
 	"sync"
 
-	"github.com/Secured-Finance/dione/node"
+	"github.com/Secured-Finance/dione/cache"
 
 	oracleEmitter "github.com/Secured-Finance/dione/contracts/oracleemitter"
 
@@ -36,7 +36,7 @@ type ConsensusData struct {
 	alreadySubmitted bool
 }
 
-func NewPBFTConsensusManager(psb *pubsub.PubSubRouter, minApprovals int, privKey []byte, ethereumClient *ethclient.EthereumClient, miner *Miner, evc *node.EventLogCache) *PBFTConsensusManager {
+func NewPBFTConsensusManager(psb *pubsub.PubSubRouter, minApprovals int, privKey []byte, ethereumClient *ethclient.EthereumClient, miner *Miner, evc *cache.EventLogCache) *PBFTConsensusManager {
 	pcm := &PBFTConsensusManager{}
 	pcm.psb = psb
 	pcm.miner = miner
@@ -60,8 +60,8 @@ func (pcm *PBFTConsensusManager) Propose(consensusID string, task types2.DioneTa
 		consensusID,
 		task,
 		requestEvent.RequestID.String(),
-		requestEvent.CallbackAddress.Hex(),
-		string(requestEvent.CallbackMethodID[:]),
+		requestEvent.CallbackAddress.Bytes(),
+		requestEvent.CallbackMethodID[:],
 		pcm.privKey,
 	)
 	if err != nil {
@@ -151,7 +151,7 @@ func (pcm *PBFTConsensusManager) handleCommit(message *types.Message) {
 			if !ok {
 				logrus.Errorf("Failed to parse big int: %v", consensusMsg.RequestID)
 			}
-			callbackAddress := common.HexToAddress(consensusMsg.CallbackAddress)
+			callbackAddress := common.BytesToAddress(consensusMsg.CallbackAddress)
 			err := pcm.ethereumClient.SubmitRequestAnswer(reqID, string(consensusMsg.Task.Payload), callbackAddress)
 			if err != nil {
 				logrus.Errorf("Failed to submit on-chain result: %w", err)

@@ -16,17 +16,16 @@ const (
 )
 
 type ConsensusMessage struct {
-	_                struct{} `cbor:",toarray" hash:"-"`
 	ConsensusID      string
 	Signature        []byte `hash:"-"`
 	RequestID        string
-	CallbackAddress  string
-	CallbackMethodID string
+	CallbackAddress  []byte
+	CallbackMethodID []byte
 	Task             types.DioneTask
 }
 
 type Message struct {
-	Type    MessageType      `cbor:"1,keyasint"`
-	Payload ConsensusMessage `cbor:"2,keyasint"`
-	From    peer.ID          `cbor:"-"`
+	Type    MessageType
+	Payload ConsensusMessage
+	From    peer.ID `cbor:"-"`
 }
