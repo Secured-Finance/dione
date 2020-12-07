@@ -2,6 +2,7 @@ package pubsub
 
 import (
 	"context"
+	"time"
 
 	"github.com/fxamacker/cbor/v2"
 
@@ -24,7 +25,7 @@ type PubSubRouter struct {
 	oracleTopic         *pubsub.Topic
 }
 
-func NewPubSubRouter(h host.Host, oracleTopic string) *PubSubRouter {
+func NewPubSubRouter(h host.Host, oracleTopic string, isBootstrap bool) *PubSubRouter {
 	ctx, ctxCancel := context.WithCancel(context.Background())
 
 	psr := &PubSubRouter{
@@ -34,21 +35,36 @@ func NewPubSubRouter(h host.Host, oracleTopic string) *PubSubRouter {
 		handlers:      make(map[types.MessageType][]Handler),
 	}
 
+	var pbOptions []pubsub.Option
+
+	if isBootstrap {
+		// turn off the mesh in bootstrappers -- only do gossip and PX
+		pubsub.GossipSubD = 0
+		pubsub.GossipSubDscore = 0
+		pubsub.GossipSubDlo = 0
+		pubsub.GossipSubDhi = 0
+		pubsub.GossipSubDout = 0
+		pubsub.GossipSubDlazy = 64
+		pubsub.GossipSubGossipFactor = 0.25
+		pubsub.GossipSubPruneBackoff = 5 * time.Minute
+		// turn on PX
+		pbOptions = append(pbOptions, pubsub.WithPeerExchange(true))
+	}
+
 	pb, err := pubsub.NewGossipSub(
 		context.TODO(),
 		psr.node,
-		//pubsub.WithMessageSigning(true),
-		//pubsub.WithStrictSignatureVerification(true),
-		pubsub.WithPeerExchange(true),
+		pbOptions...,
 	)
+
 	if err != nil {
-		logrus.Fatal("Error occurred when create PubSub", err)
+		logrus.Fatalf("Error occurred when initializing PubSub subsystem: %v", err)
 	}
 
 	psr.oracleTopicName = oracleTopic
 	topic, err := pb.Join(oracleTopic)
 	if err != nil {
-		logrus.Fatal("Error occurred when subscribing to service topic", err)
+		logrus.Fatalf("Error occurred when subscribing to service topic: %v", err)
 	}
 
 	subscription, err := topic.Subscribe()
@@ -65,7 +81,7 @@ func NewPubSubRouter(h host.Host, oracleTopic string) *PubSubRouter {
 				{
 					msg, err := subscription.Next(psr.context)
 					if err != nil {
-						logrus.Warn("Failed to receive pubsub message: ", err.Error())
+						logrus.Warnf("Failed to receive pubsub message: %v", err)
 					}
 					psr.handleMessage(msg)
 				}
