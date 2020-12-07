@@ -1,10 +1,13 @@
 package consensus
 
 import (
+	"sync"
+
 	types2 "github.com/Secured-Finance/dione/consensus/types"
 )
 
 type PreparePool struct {
+	mut         sync.RWMutex
 	prepareMsgs map[string][]*types2.Message
 	privateKey  []byte
 }
@@ -24,6 +27,9 @@ func (pp *PreparePool) CreatePrepare(prePrepareMsg *types2.Message, privateKey [
 }
 
 func (pp *PreparePool) IsExistingPrepare(prepareMsg *types2.Message) bool {
+	pp.mut.RLock()
+	defer pp.mut.RUnlock()
+
 	consensusMessage := prepareMsg.Payload
 	var exists bool
 	for _, v := range pp.prepareMsgs[consensusMessage.ConsensusID] {
@@ -44,6 +50,9 @@ func (pp *PreparePool) IsValidPrepare(prepare *types2.Message) bool {
 }
 
 func (pp *PreparePool) AddPrepare(prepare *types2.Message) {
+	pp.mut.Lock()
+	defer pp.mut.Unlock()
+
 	consensusID := prepare.Payload.ConsensusID
 	if _, ok := pp.prepareMsgs[consensusID]; !ok {
 		pp.prepareMsgs[consensusID] = []*types2.Message{}
@@ -52,7 +61,10 @@ func (pp *PreparePool) AddPrepare(prepare *types2.Message) {
 	pp.prepareMsgs[consensusID] = append(pp.prepareMsgs[consensusID], prepare)
 }
 
-func (pp *PreparePool) PrepareSize(consensusID string) int {
+func (pp *PreparePool) PreparePoolSize(consensusID string) int {
+	pp.mut.RLock()
+	defer pp.mut.RUnlock()
+
 	if v, ok := pp.prepareMsgs[consensusID]; ok {
 		return len(v)
 	}

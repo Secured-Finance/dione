@@ -58,7 +58,7 @@ func (c *SolanaClient) GetTransaction(txHash string) ([]byte, error) {
 		return nil, err
 	}
 	bodyBytes := resp.Body()
-	logrus.Info(string(bodyBytes))
+	logrus.Debugf("Solana RPC reply: %v", string(bodyBytes))
 	return bodyBytes, nil
 }
 

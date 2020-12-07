@@ -3,6 +3,7 @@ package consensus
 import (
 	"bytes"
 	"fmt"
+	"sync"
 
 	"github.com/Secured-Finance/dione/cache"
 
@@ -18,6 +19,7 @@ import (
 )
 
 type PrePreparePool struct {
+	mut            sync.RWMutex
 	prePrepareMsgs map[string][]*types2.Message
 	miner          *Miner
 	eventLogCache  *cache.EventLogCache
@@ -54,6 +56,9 @@ func (pp *PrePreparePool) CreatePrePrepare(consensusID string, task types.DioneT
 }
 
 func (ppp *PrePreparePool) IsExistingPrePrepare(prepareMsg *types2.Message) bool {
+	ppp.mut.RLock()
+	defer ppp.mut.RUnlock()
+
 	consensusMessage := prepareMsg.Payload
 	var exists bool
 	for _, v := range ppp.prePrepareMsgs[consensusMessage.ConsensusID] {
@@ -176,6 +181,9 @@ func (ppp *PrePreparePool) IsValidPrePrepare(prePrepare *types2.Message) bool {
 }
 
 func (ppp *PrePreparePool) AddPrePrepare(prePrepare *types2.Message) {
+	ppp.mut.Lock()
+	defer ppp.mut.Unlock()
+
 	consensusID := prePrepare.Payload.ConsensusID
 	if _, ok := ppp.prePrepareMsgs[consensusID]; !ok {
 		ppp.prePrepareMsgs[consensusID] = []*types2.Message{}

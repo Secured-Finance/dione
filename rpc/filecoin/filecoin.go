@@ -114,6 +114,6 @@ func (c *LotusClient) HandleRequest(method string, params []interface{}) ([]byte
 		return nil, err
 	}
 	bodyBytes := resp.Body()
-	logrus.Info(string(bodyBytes))
+	logrus.Debugf("Filecoin RPC reply: %v", string(bodyBytes))
 	return bodyBytes, nil
 }

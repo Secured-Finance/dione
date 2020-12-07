@@ -112,7 +112,7 @@ func (pcm *PBFTConsensusManager) handlePrepare(message *types.Message) {
 		return
 	}
 
-	if pcm.preparePool.PrepareSize(message.Payload.ConsensusID) >= pcm.minApprovals {
+	if pcm.preparePool.PreparePoolSize(message.Payload.ConsensusID) >= pcm.minApprovals {
 		commitMsg, err := pcm.commitPool.CreateCommit(message, pcm.privKey)
 		if err != nil {
 			logrus.Errorf("failed to create commit message: %w", err)

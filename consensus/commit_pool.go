@@ -1,11 +1,14 @@
 package consensus
 
 import (
+	"sync"
+
 	types2 "github.com/Secured-Finance/dione/consensus/types"
 	"github.com/sirupsen/logrus"
 )
 
 type CommitPool struct {
+	mut        sync.RWMutex
 	commitMsgs map[string][]*types2.Message
 }
 
@@ -24,6 +27,9 @@ func (cp *CommitPool) CreateCommit(prepareMsg *types2.Message, privateKey []byte
 }
 
 func (cp *CommitPool) IsExistingCommit(commitMsg *types2.Message) bool {
+	cp.mut.RLock()
+	defer cp.mut.RUnlock()
+
 	consensusMessage := commitMsg.Payload
 	var exists bool
 	for _, v := range cp.commitMsgs[consensusMessage.ConsensusID] {
@@ -45,6 +51,9 @@ func (cp *CommitPool) IsValidCommit(commit *types2.Message) bool {
 }
 
 func (cp *CommitPool) AddCommit(commit *types2.Message) {
+	cp.mut.Lock()
+	defer cp.mut.Unlock()
+
 	consensusID := commit.Payload.ConsensusID
 	if _, ok := cp.commitMsgs[consensusID]; !ok {
 		cp.commitMsgs[consensusID] = []*types2.Message{}
@@ -54,6 +63,9 @@ func (cp *CommitPool) AddCommit(commit *types2.Message) {
 }
 
 func (cp *CommitPool) CommitSize(consensusID string) int {
+	cp.mut.RLock()
+	defer cp.mut.RUnlock()
+
 	if v, ok := cp.commitMsgs[consensusID]; ok {
 		return len(v)
 	}
