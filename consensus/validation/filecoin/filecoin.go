@@ -21,7 +21,7 @@ func ValidateGetTransaction(payload []byte) error {
 	}
 
 	if msg.Type == ftypes.MessageTypeSecp256k1 {
-		if err := sigs.Verify(msg.Signature, msg.Message.From.Bytes(), msg.Message.Cid().Bytes()); err != nil {
+		if err := sigs.Verify(&msg.Signature, msg.Message.From.Bytes(), msg.Message.Cid().Bytes()); err != nil {
 			logrus.Errorf("Couldn't verify transaction %v", err)
 			return xerrors.Errorf("Couldn't verify transaction: %v")
 		}

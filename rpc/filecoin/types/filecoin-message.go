@@ -12,7 +12,7 @@ import (
 
 type SignedMessage struct {
 	Message   ltypes.Message
-	Signature *types.Signature
+	Signature types.Signature
 	Type      MessageType
 }
 
@@ -41,8 +41,6 @@ func (t MessageType) Name() (string, error) {
 // CBOR operations from lotus
 
 func (t *SignedMessage) UnmarshalCBOR(r io.Reader) error {
-	*t = SignedMessage{}
-
 	br := cbg.GetPeeker(r)
 	scratch := make([]byte, 8)
 
@@ -58,21 +56,14 @@ func (t *SignedMessage) UnmarshalCBOR(r io.Reader) error {
 		return fmt.Errorf("cbor input had wrong number of fields")
 	}
 
-	{
-
-		if err := t.Message.UnmarshalCBOR(br); err != nil {
-			return fmt.Errorf("unmarshaling t.Message: %w", err)
-		}
-
+	if err := t.Message.UnmarshalCBOR(br); err != nil {
+		return fmt.Errorf("unmarshaling t.Message: %w", err)
 	}
 
-	{
-
-		if err := t.Signature.UnmarshalCBOR(br); err != nil {
-			return fmt.Errorf("unmarshaling t.Signature: %w", err)
-		}
-
+	if err := t.Signature.UnmarshalCBOR(br); err != nil {
+		return fmt.Errorf("unmarshaling t.Signature: %w", err)
 	}
+
 	return nil
 }
 

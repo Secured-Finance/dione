@@ -8,6 +8,7 @@ import (
 	"github.com/Secured-Finance/dione/cache"
 
 	"github.com/Secured-Finance/dione/consensus/validation"
+	_ "github.com/Secured-Finance/dione/consensus/validation/filecoin" // enable filecoin validation
 	"github.com/filecoin-project/go-state-types/crypto"
 
 	types2 "github.com/Secured-Finance/dione/consensus/types"
