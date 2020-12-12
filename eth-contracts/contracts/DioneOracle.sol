@@ -13,6 +13,7 @@ contract DioneOracle is Ownable {
   uint256 private requestCounter;
   // Maximum time for computing oracle request
   uint256 constant public MAXIMUM_DELAY = 5 minutes;
+  uint256 constant public FINALIZATION = 3 minutes;
   // Dione staking contract
   IDioneStaking public dioneStaking;
   // Minimum amount of DIONE tokens required to vote against miner result
@@ -29,7 +30,15 @@ contract DioneOracle is Ownable {
     bytes data;
   }
 
+  struct MinedTask {
+    uint32 disputes;
+    bytes32 taskHash;
+    address miner;
+    uint256 deadline;
+  }
+
   mapping(uint256 => bytes32) private pendingRequests;
+  mapping(uint256 => MinedTask) private nonFinTasks;
   mapping(address => bool) private activeNodes;
 
   event NewOracleRequest(
@@ -95,7 +104,20 @@ contract DioneOracle is Ownable {
     dioneStaking.mine(msg.sender);
     (bool success, ) = _callbackAddress.call(abi.encodeWithSelector(_callbackMethodID, _reqID, _data));
     emit SubmittedOracleRequest(_requestParams, _callbackAddress, _callbackMethodID, _reqID, _requestDeadline, _data);
+    MinedTask storage task = nonFinTasks[_reqID];
+    task.miner = msg.sender;
+    task.taskHash = requestHash;
     return success;
+  }
+
+  function disputeTask(uint256 _reqID, bytes memory _data) public {
+   // send minimum dispute fee (100 DIONE tokens)
+    MinedTask storage task = nonFinTasks[_reqID];
+    task.disputes += 1;
+    votes = div(activeNodes.length, 2)
+    if (task.disputes >= votes) {
+      // dione staking 50% stake penalty
+    }
   }
 
   function setNodeStatus(address _miner, bool _status) public {

@@ -8,6 +8,7 @@ import (
 
 	"github.com/Secured-Finance/dione/sigs"
 	_ "github.com/Secured-Finance/dione/sigs/ed25519" // enable ed25519 signatures
+	_ "github.com/Secured-Finance/dione/sigs/secp"    // enable secp signatures
 	"github.com/Secured-Finance/dione/types"
 	"github.com/filecoin-project/go-address"
 	"github.com/sirupsen/logrus"
