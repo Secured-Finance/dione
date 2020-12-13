@@ -1,8 +1,13 @@
 package consensus
 
 import (
+	"bytes"
+	"encoding/json"
 	"math/big"
 	"sync"
+
+	ftypes "github.com/Secured-Finance/dione/rpc/filecoin/types"
+	rtypes "github.com/Secured-Finance/dione/rpc/types"
 
 	"github.com/Secured-Finance/dione/cache"
 
@@ -152,7 +157,24 @@ func (pcm *PBFTConsensusManager) handleCommit(message *types.Message) {
 				logrus.Errorf("Failed to parse big int: %v", consensusMsg.RequestID)
 			}
 			callbackAddress := common.BytesToAddress(consensusMsg.CallbackAddress)
-			err := pcm.ethereumClient.SubmitRequestAnswer(reqID, string(consensusMsg.Task.Payload), callbackAddress)
+
+			/// FIXME
+			var payload []byte
+			if consensusMsg.Task.OriginChain == rtypes.RPCTypeFilecoin {
+				var msg ftypes.SignedMessage
+				if err := msg.UnmarshalCBOR(bytes.NewReader(consensusMsg.Task.Payload)); err != nil {
+					if err := msg.Message.UnmarshalCBOR(bytes.NewReader(consensusMsg.Task.Payload)); err != nil {
+						logrus.Error("we can't unmarshal filecoin obj")
+						return
+					}
+				}
+				payload, _ = json.Marshal(msg)
+			} else {
+				payload = consensusMsg.Task.Payload
+			}
+			///
+
+			err := pcm.ethereumClient.SubmitRequestAnswer(reqID, string(payload), callbackAddress)
 			if err != nil {
 				logrus.Errorf("Failed to submit on-chain result: %w", err)
 			}
