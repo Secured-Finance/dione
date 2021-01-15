@@ -17,6 +17,7 @@ type Config struct {
 	PubSub                PubSubConfig   `mapstructure:"pubSub"`
 	Store                 StoreConfig    `mapstructure:"store"`
 	ConsensusMinApprovals int            `mapstructure:"consensus_min_approvals"`
+	BLSPrivateKey         string         `mapstructure:"bls_private_key"`
 }
 
 type EthereumConfig struct {

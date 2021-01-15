@@ -125,7 +125,10 @@ func NewNode(config *config.Config, prvKey crypto.PrivKey, pexDiscoveryUpdateTim
 	n.EventLogCache = eventLogCache
 
 	// initialize consensus subsystem
-	cManager := provideConsensusManager(psb, miner, ethClient, rawPrivKey, n.Config.ConsensusMinApprovals, eventLogCache)
+	cManager, err := provideConsensusManager(psb, miner, ethClient, rawPrivKey, n.Config.BLSPrivateKey, n.Config.ConsensusMinApprovals, eventLogCache)
+	if err != nil {
+		logrus.Fatal(err)
+	}
 	n.ConsensusManager = cManager
 
 	// initialize internal eth wallet
@@ -305,8 +308,8 @@ func providePubsubRouter(lhost host.Host, config *config.Config) *pubsub2.PubSub
 	return pubsub2.NewPubSubRouter(lhost, config.PubSub.ServiceTopicName, config.IsBootstrap)
 }
 
-func provideConsensusManager(psb *pubsub2.PubSubRouter, miner *consensus.Miner, ethClient *ethclient.EthereumClient, privateKey []byte, minApprovals int, evc *cache.EventLogCache) *consensus.PBFTConsensusManager {
-	return consensus.NewPBFTConsensusManager(psb, minApprovals, privateKey, ethClient, miner, evc)
+func provideConsensusManager(psb *pubsub2.PubSubRouter, miner *consensus.Miner, ethClient *ethclient.EthereumClient, privateKey []byte, blsPrivKey string, minApprovals int, evc *cache.EventLogCache) (*consensus.PBFTConsensusManager, error) {
+	return consensus.NewPBFTConsensusManager(psb, minApprovals, privateKey, blsPrivKey, ethClient, miner, evc)
 }
 
 func provideLibp2pHost(config *config.Config, privateKey crypto.PrivKey, pexDiscoveryUpdateTime time.Duration) (host.Host, error) {

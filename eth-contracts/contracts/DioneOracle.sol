@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.6.12;
+pragma solidity >=0.6.12;
 
 import "@openzeppelin/contracts/math/SafeMath.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
@@ -109,23 +109,4 @@ contract DioneOracle is Ownable {
     task.taskHash = requestHash;
     return success;
   }
-
-  function disputeTask(uint256 _reqID, bytes memory _data) public {
-   // send minimum dispute fee (100 DIONE tokens)
-    MinedTask storage task = nonFinTasks[_reqID];
-    task.disputes += 1;
-    votes = div(activeNodes.length, 2)
-    if (task.disputes >= votes) {
-      // dione staking 50% stake penalty
-    }
-  }
-
-  function setNodeStatus(address _miner, bool _status) public {
-    activeNodes[_miner] = _status;
-  }
-
-  function isActiveNode(address _miner) public view returns (bool) {
-    return activeNodes[_miner];
-  }
-
 }

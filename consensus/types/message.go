@@ -16,6 +16,7 @@ const (
 )
 
 type ConsensusMessage struct {
+	BLSPubKey        string `cbor:",omitempty"`
 	ConsensusID      string
 	Signature        []byte `hash:"-"`
 	RequestID        string

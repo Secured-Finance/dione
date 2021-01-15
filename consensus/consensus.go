@@ -36,13 +36,25 @@ type ConsensusData struct {
 	alreadySubmitted bool
 }
 
-func NewPBFTConsensusManager(psb *pubsub.PubSubRouter, minApprovals int, privKey []byte, ethereumClient *ethclient.EthereumClient, miner *Miner, evc *cache.EventLogCache) *PBFTConsensusManager {
+func NewPBFTConsensusManager(
+	psb *pubsub.PubSubRouter,
+	minApprovals int,
+	privKey []byte,
+	blsPrivKey string,
+	ethereumClient *ethclient.EthereumClient,
+	miner *Miner,
+	evc *cache.EventLogCache,
+) (*PBFTConsensusManager, error) {
 	pcm := &PBFTConsensusManager{}
 	pcm.psb = psb
 	pcm.miner = miner
 	pcm.prePreparePool = NewPrePreparePool(miner, evc)
 	pcm.preparePool = NewPreparePool()
-	pcm.commitPool = NewCommitPool()
+	commitPool, err := NewCommitPool(blsPrivKey)
+	if err != nil {
+		return nil, err
+	}
+	pcm.commitPool = commitPool
 	pcm.minApprovals = minApprovals
 	pcm.privKey = privKey
 	pcm.ethereumClient = ethereumClient
@@ -50,7 +62,7 @@ func NewPBFTConsensusManager(psb *pubsub.PubSubRouter, minApprovals int, privKey
 	pcm.psb.Hook(types.MessageTypePrePrepare, pcm.handlePrePrepare)
 	pcm.psb.Hook(types.MessageTypePrepare, pcm.handlePrepare)
 	pcm.psb.Hook(types.MessageTypeCommit, pcm.handleCommit)
-	return pcm
+	return pcm, nil
 }
 
 func (pcm *PBFTConsensusManager) Propose(consensusID string, task types2.DioneTask, requestEvent *oracleEmitter.OracleEmitterNewOracleRequest) error {
@@ -113,9 +125,9 @@ func (pcm *PBFTConsensusManager) handlePrepare(message *types.Message) {
 	}
 
 	if pcm.preparePool.PreparePoolSize(message.Payload.ConsensusID) >= pcm.minApprovals {
-		commitMsg, err := pcm.commitPool.CreateCommit(message, pcm.privKey)
+		commitMsg, err := pcm.commitPool.CreateCommit(message)
 		if err != nil {
-			logrus.Errorf("failed to create commit message: %w", err)
+			logrus.Errorf("failed to create commit message: %v", err)
 		}
 		pcm.psb.BroadcastToServiceTopic(commitMsg)
 	}
@@ -143,6 +155,8 @@ func (pcm *PBFTConsensusManager) handleCommit(message *types.Message) {
 		if info, ok := pcm.consensusInfo[consensusMsg.ConsensusID]; ok {
 			info.mutex.Lock()
 			defer info.mutex.Unlock()
+
+			// TODO aggregate signature
 			if info.alreadySubmitted {
 				return
 			}
@@ -152,7 +166,8 @@ func (pcm *PBFTConsensusManager) handleCommit(message *types.Message) {
 				logrus.Errorf("Failed to parse big int: %v", consensusMsg.RequestID)
 			}
 			callbackAddress := common.BytesToAddress(consensusMsg.CallbackAddress)
-			err := pcm.ethereumClient.SubmitRequestAnswer(reqID, string(consensusMsg.Task.Payload), callbackAddress)
+
+			err = pcm.ethereumClient.SubmitRequestAnswer(reqID, string(consensusMsg.Task.Payload), callbackAddress)
 			if err != nil {
 				logrus.Errorf("Failed to submit on-chain result: %w", err)
 			}
