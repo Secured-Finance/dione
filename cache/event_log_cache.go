@@ -55,7 +55,7 @@ func (elc *EventLogCache) Store(key string, event interface{}) error {
 	return nil
 }
 
-func (erc *EventLogCache) GetOracleRequestEvent(key string) (*oracleEmitter.OracleEmitterNewOracleRequest, error) {
+func (elc *EventLogCache) GetOracleRequestEvent(key string) (*oracleEmitter.OracleEmitterNewOracleRequest, error) {
 	var mData []byte
 	mData = elc.cache.GetBig(mData, []byte(key))
 
