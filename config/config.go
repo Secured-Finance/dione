@@ -18,6 +18,7 @@ type Config struct {
 	Store                 StoreConfig    `mapstructure:"store"`
 	ConsensusMinApprovals int            `mapstructure:"consensus_min_approvals"`
 	BLSPrivateKey         string         `mapstructure:"bls_private_key"`
+	Reddis                ReddisConfig   `mapstructure:"reddis"`
 }
 
 type EthereumConfig struct {
@@ -42,6 +43,12 @@ type StoreConfig struct {
 	DatabaseURL string `mapstructure:"database_url"`
 }
 
+type ReddisConfig struct {
+	Addr     string `mapstructure:"reddis_addr"`
+	Password string `mapstructure:"reddis_password"`
+	DB       int    `mapstructure:"reddis_db"`
+}
+
 // NewConfig creates a new config based on default values or provided .env file
 func NewConfig(configPath string) (*Config, error) {
 	dbName := "dione"
@@ -63,6 +70,11 @@ func NewConfig(configPath string) (*Config, error) {
 		Store: StoreConfig{
 			DatabaseURL: dbURL,
 		},
+		Reddis: ReddisConfig{
+			Addr: "redisDB:6379",
+	   	 	Password: "",
+	   	 	DB: 0,
+		}
 	}
 
 	viper.SetConfigFile(configPath)
