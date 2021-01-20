@@ -83,7 +83,7 @@ func (erc *EventRedisCache) StoreRedis(key string, event interface{}) error {
 	return nil
 }
 
-func (elc *EventRedisCache) GetOracleRequestEventFromRedis(key string) (*oracleEmitter.OracleEmitterNewOracleRequest, error) {
+func (erc *EventRedisCache) GetOracleRequestEventFromRedis(key string) (*oracleEmitter.OracleEmitterNewOracleRequest, error) {
 	var mData []byte
 	mData = erc.Client.Get(key)
 
@@ -96,6 +96,6 @@ func (elc *EventRedisCache) GetOracleRequestEventFromRedis(key string) (*oracleE
 	return event, nil
 }
 
-func (elc *EventRedisCache) DeleteRedisKey(key string) {
+func (erc *EventRedisCache) DeleteRedisKey(key string) {
 	erc.Client.Del([]byte(key))
 }
