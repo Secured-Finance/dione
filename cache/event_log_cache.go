@@ -97,5 +97,5 @@ func (erc *EventRedisCache) GetOracleRequestEventFromRedis(key string) (*oracleE
 }
 
 func (erc *EventRedisCache) DeleteRedisKey(key string) {
-	erc.Client.Del([]byte(key))
+	erc.Client.Del(key)
 }
