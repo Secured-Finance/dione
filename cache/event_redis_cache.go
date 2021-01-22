@@ -1,4 +1,4 @@
-package reddisCache
+package cache
 
 import (
 	oracleEmitter "github.com/Secured-Finance/dione/contracts/oracleemitter"
@@ -13,9 +13,9 @@ type EventRedisCache struct {
 
 func NewEventRedisCache(config *config.Config) *EventRedisCache {
 	client := redis.NewClient(&redis.Options{
-	   Addr: config.Reddis.Addr,
-	   Password: config.Reddis.Password,
-	   DB: config.Reddis.DB,
+	   Addr: config.Redis.Addr,
+	   Password: config.Redis.Password,
+	   DB: config.Redis.DB,
 	})
 
 	return &EventRedisCache{
