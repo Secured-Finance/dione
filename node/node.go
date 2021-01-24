@@ -64,7 +64,8 @@ type Node struct {
 	Miner            *consensus.Miner
 	Beacon           beacon.BeaconNetworks
 	Wallet           *wallet.LocalWallet
-	EventLogCache    *cache.EventLogCache
+//	EventLogCache    *cache.EventLogCache
+	EventCache      cache.EventCache
 }
 
 func NewNode(config *config.Config, prvKey crypto.PrivKey, pexDiscoveryUpdateTime time.Duration) (*Node, error) {
@@ -121,8 +122,11 @@ func NewNode(config *config.Config, prvKey crypto.PrivKey, pexDiscoveryUpdateTim
 	n.Miner = miner
 
 	// initialize event log cache subsystem
-	eventLogCache := provideEventLogCache()
-	n.EventLogCache = eventLogCache
+	//eventLogCache := provideEventLogCache()
+	//n.EventLogCache = eventLogCache
+	eventCache := provideEventCache(config)
+	n.EventCache = eventCache
+
 
 	// initialize consensus subsystem
 	cManager, err := provideConsensusManager(psb, miner, ethClient, rawPrivKey, n.Config.BLSPrivateKey, n.Config.ConsensusMinApprovals, eventLogCache)
@@ -242,6 +246,19 @@ func (n *Node) subscribeOnEthContractsAsync(ctx context.Context) {
 
 func provideEventLogCache() *cache.EventLogCache {
 	return cache.NewEventLogCache()
+}
+
+func provideEventCache(config *config.Config) cache.EventCache {
+	var backend cache.EventCache
+	switch config.CacheType {
+	case "in-memory":
+		backend = cache.NewEventLogCache()
+	case "redis":
+		backend = cache.NewEventRedisCache(config)
+	default:
+		backend = cache.NewEventLogCache()
+	}
+	return backend
 }
 
 func provideMiner(peerID peer.ID, ethAddress common.Address, beacon beacon.BeaconNetworks, ethClient *ethclient.EthereumClient, privateKey []byte) *consensus.Miner {

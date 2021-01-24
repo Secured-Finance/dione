@@ -19,6 +19,7 @@ type Config struct {
 	ConsensusMinApprovals int            `mapstructure:"consensus_min_approvals"`
 	BLSPrivateKey         string         `mapstructure:"bls_private_key"`
 	Redis                 RedisConfig    `mapstructure:"redis"`
+	CacheType             string         `mapstructure:"cache_type"`
 }
 
 type EthereumConfig struct {
@@ -75,6 +76,7 @@ func NewConfig(configPath string) (*Config, error) {
 	   	 	Password: "",
 	   	 	DB: 0,
 		}
+		CacheType: "in-memory"
 	}
 
 	viper.SetConfigFile(configPath)
