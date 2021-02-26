@@ -30,7 +30,6 @@ contract DioneOracle is Ownable {
   }
 
   mapping(uint256 => bytes32) private pendingRequests;
-  mapping(address => bool) private activeNodes;
 
   event NewOracleRequest(
     uint8 originChain,
@@ -97,13 +96,4 @@ contract DioneOracle is Ownable {
     emit SubmittedOracleRequest(_requestParams, _callbackAddress, _callbackMethodID, _reqID, _requestDeadline, _data);
     return success;
   }
-
-  function setNodeStatus(address _miner, bool _status) public {
-    activeNodes[_miner] = _status;
-  }
-
-  function isActiveNode(address _miner) public view returns (bool) {
-    return activeNodes[_miner];
-  }
-
 }
