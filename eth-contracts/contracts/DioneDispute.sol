@@ -15,6 +15,7 @@ contract DioneDispute {
         bool disputeResult; // true - dispute had basis, false - dispute was false
         address miner; // the miner against whom the dispute
         address disputeInitiator; // the miner who started the dispute
+        uint256 timestamp; // dispute creation timestamp
         mapping(address => bool) voted; // map of miners who vote for/against
     }
 
@@ -29,6 +30,7 @@ contract DioneDispute {
     }
 
     function beginDispute(address miner, uint256 requestID) public {
+        require(!disputes[dhash], "dispute already exists");
         bytes32 dhash = keccak256(miner, requestID, now);
         Dispute dispute = Dispute(
             {
@@ -37,6 +39,7 @@ contract DioneDispute {
                 finished: false,
                 disputeResult: true,
                 miner: miner,
+                timesyamp: now,
                 disputeInitiator: msg.sender,
             }
         );
@@ -47,10 +50,10 @@ contract DioneDispute {
     }
 
     function vote(bytes32 dhash, bool voteStatus) public {
-        require(disputes[dhash]);
+        require(disputes[dhash], "dispute doesn't exist");
         Dispute storage dispute = disputes[dhash];
-        require(dispute.finished == false);
-        require(dioneStaking.isMiner(msg.sender));
+        require(dispute.finished == false, "dispute already finished");
+        require(dioneStaking.isMiner(msg.sender), "caller isn't dione miner");
         int256 stake = dioneStaking.minerStake(msg.sender);
         if (voteStatus) {
             dispute.sum.sub(stake);
@@ -63,15 +66,20 @@ contract DioneDispute {
     }
 
     function finishDispute(bytes32 dhash) public {
-        require(disputes[dhash]);
+        require(disputes[dhash], "dispute doesn't exist");
         Dispute storage dispute = disputes[dhash];
-        require(dispute.finished == false);
-        require(dispute.disputeInitiator == msg.sender);
+        require((now - dispute[dhash].timestamp) >= 2 hours, "vote window must be two hours");
+        require(dispute.finished == false, "dispute already finished");
+        require(dispute.disputeInitiator == msg.sender, "only dispute initiator can call this function");
         if (dispute.sum < 0) {
             dispute.disputeResult = false;
         } else {
             dispute.disputeResult = true;
         }
+
+        dioneStaking.slashMiner(dispute.miner);
+
+        dispute.finished = true;
 
         emit DisputeFinished(dhash, dispute.disputeResult);
     }

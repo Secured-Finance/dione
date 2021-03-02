@@ -24,6 +24,8 @@ contract DioneStaking is Ownable, ReentrancyGuard {
     DioneToken public dione;
     // Aggregator contract address.
     address public aggregatorAddr;
+    // Dispute contract address.
+    address public disputeContractAddr;
     // Miner rewards in DIONE tokens.
     uint256 public minerReward;
     // The block number when DIONE mining starts.
@@ -42,6 +44,11 @@ contract DioneStaking is Ownable, ReentrancyGuard {
 
     modifier onlyMiner(address _minerAddr) {
         require(isMiner(_minerAddr), "Exception: caller is not the miner");
+        _;
+    }
+
+     modifier onlyDispute(address addr) {
+        require(addr == disputeContractAddr, "Exception: caller is not the dispute contract");
         _;
     }
 
@@ -131,5 +138,14 @@ contract DioneStaking is Ownable, ReentrancyGuard {
 
     function setAggregator(address _aggregatorAddr) public onlyOwner {
         aggregatorAddr = _aggregatorAddr;
+    }
+
+    function slashMiner(address miner, address[] receipentMiners) public onlyDispute {
+        uint256 share = minerInfo[miner].amount.div(receipentMiners.length);
+
+        for (var i = 0; i < receipentMiners.length; i++) {
+            minerInfo[miner].amount.sub(share);
+            minerInfo[receipentMiners[i]].amount += share;
+        }
     }
 }
