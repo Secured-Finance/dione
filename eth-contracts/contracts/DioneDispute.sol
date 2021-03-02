@@ -75,9 +75,8 @@ contract DioneDispute {
             dispute.disputeResult = false;
         } else {
             dispute.disputeResult = true;
+            dioneStaking.slashMiner(dispute.miner);
         }
-
-        dioneStaking.slashMiner(dispute.miner);
 
         dispute.finished = true;
 
