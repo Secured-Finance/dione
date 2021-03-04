@@ -59,11 +59,6 @@ contract DioneOracle is Ownable {
     _;
   }
 
-  modifier onlyActiveNode() {
-    require(activeNodes[msg.sender], "Not an active miner");
-    _;
-  }
-
   constructor(IDioneStaking _dioneStaking) public {
       dioneStaking = _dioneStaking;
   }
@@ -87,7 +82,7 @@ contract DioneOracle is Ownable {
     emit CancelOracleRequest(_reqID);
   }
 
-  function submitOracleRequest(string memory _requestParams, address _callbackAddress, bytes4 _callbackMethodID, uint256 _reqID, uint256 _requestDeadline, bytes memory _data) public onlyPendingRequest(_reqID) onlyActiveNode returns (bool) {
+  function submitOracleRequest(string memory _requestParams, address _callbackAddress, bytes4 _callbackMethodID, uint256 _reqID, uint256 _requestDeadline, bytes memory _data) public onlyPendingRequest(_reqID) returns (bool) {
     bytes32 requestHash = keccak256(abi.encodePacked(_requestParams, _callbackAddress, _callbackMethodID, _reqID, _requestDeadline));
     require(pendingRequests[_reqID] == requestHash, "Params do not match request ID");
     delete pendingRequests[_reqID];

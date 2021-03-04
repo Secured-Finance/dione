@@ -13,4 +13,5 @@ interface IDioneStaking {
     function isMiner(address _minerAddr) external view returns (bool);
     function setMinimumStake(uint256 _minimumStake) external;
     function setAggregator(address _aggregatorAddr) external;
+    function slashMiner(address miner, address[] memory receipentMiners) external;
 }

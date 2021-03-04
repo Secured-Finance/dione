@@ -10,13 +10,13 @@ contract DioneDispute {
 
     struct Dispute {
         bytes32 dhash; // id of dispute - keccak256(_miner,_requestId,_timestamp)
-        int256 sum; // vote measure (for/against this dispute)
+        uint256 sum; // vote measure (for/against this dispute)
         bool finished; // dispute was finished (closed) or not
         bool disputeResult; // true - dispute had basis, false - dispute was false
         address miner; // the miner against whom the dispute
         address disputeInitiator; // the miner who started the dispute
         uint256 timestamp; // dispute creation timestamp
-        mapping(address => bool) voted; // map of miners who vote for/against
+        address[] voted; // map of miners who vote for/against
     }
 
     mapping(bytes32 => Dispute) disputes;
@@ -30,19 +30,16 @@ contract DioneDispute {
     }
 
     function beginDispute(address miner, uint256 requestID) public {
-        require(!disputes[dhash], "dispute already exists");
-        bytes32 dhash = keccak256(miner, requestID, now);
-        Dispute dispute = Dispute(
-            {
-                dhash: dhash,
-                sum: 0,
-                finished: false,
-                disputeResult: true,
-                miner: miner,
-                timesyamp: now,
-                disputeInitiator: msg.sender,
-            }
-        );
+        bytes32 dhash = keccak256(abi.encodePacked(miner, requestID, now));
+        require(disputes[dhash].dhash.length != 0, "dispute already exists");
+        Dispute storage dispute = disputes[dhash];
+        dispute.dhash = dhash;
+        dispute.sum = 0;
+        dispute.finished = false;
+        dispute.disputeResult = false;
+        dispute.miner = miner;
+        dispute.timestamp = now;
+        dispute.disputeInitiator = msg.sender;
 
         disputes[dhash] = dispute;
 
@@ -50,32 +47,33 @@ contract DioneDispute {
     }
 
     function vote(bytes32 dhash, bool voteStatus) public {
-        require(disputes[dhash], "dispute doesn't exist");
+        require(disputes[dhash].dhash.length == 0, "dispute doesn't exist");
         Dispute storage dispute = disputes[dhash];
         require(dispute.finished == false, "dispute already finished");
         require(dioneStaking.isMiner(msg.sender), "caller isn't dione miner");
-        int256 stake = dioneStaking.minerStake(msg.sender);
+        uint256 stake = dioneStaking.minerStake(msg.sender);
         if (voteStatus) {
             dispute.sum.sub(stake);
         } else {
             dispute.sum.add(stake);
         }
-        dispute.voted[msg.sender] = voteStatus;
+        dispute.voted.push(msg.sender);
 
         emit NewVote(dhash, msg.sender);
     }
 
     function finishDispute(bytes32 dhash) public {
-        require(disputes[dhash], "dispute doesn't exist");
+        require(disputes[dhash].dhash.length == 0, "dispute doesn't exist");
         Dispute storage dispute = disputes[dhash];
-        require((now - dispute[dhash].timestamp) >= 2 hours, "vote window must be two hours");
+        require((now - dispute.timestamp) >= 2 hours, "vote window must be two hours");
         require(dispute.finished == false, "dispute already finished");
         require(dispute.disputeInitiator == msg.sender, "only dispute initiator can call this function");
         if (dispute.sum < 0) {
             dispute.disputeResult = false;
         } else {
             dispute.disputeResult = true;
-            dioneStaking.slashMiner(dispute.miner);
+            dispute.voted.push(msg.sender);
+            dioneStaking.slashMiner(dispute.miner, dispute.voted);
         }
 
         dispute.finished = true;

@@ -47,11 +47,6 @@ contract DioneStaking is Ownable, ReentrancyGuard {
         _;
     }
 
-     modifier onlyDispute(address addr) {
-        require(addr == disputeContractAddr, "Exception: caller is not the dispute contract");
-        _;
-    }
-
     constructor(
         DioneToken _dione,
         uint256 _minerReward,
@@ -140,10 +135,11 @@ contract DioneStaking is Ownable, ReentrancyGuard {
         aggregatorAddr = _aggregatorAddr;
     }
 
-    function slashMiner(address miner, address[] receipentMiners) public onlyDispute {
+    function slashMiner(address miner, address[] memory receipentMiners) public {
+        require(msg.sender == disputeContractAddr, "Exception: caller is not the dispute contract");
         uint256 share = minerInfo[miner].amount.div(receipentMiners.length);
 
-        for (var i = 0; i < receipentMiners.length; i++) {
+        for (uint8 i = 0; i < receipentMiners.length; i++) {
             minerInfo[miner].amount.sub(share);
             minerInfo[receipentMiners[i]].amount += share;
         }
