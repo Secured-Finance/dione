@@ -280,6 +280,7 @@ func provideEthereumClient(config *config.Config) (*ethclient.EthereumClient, er
 		config.Ethereum.OracleEmitterContractAddress,
 		config.Ethereum.AggregatorContractAddress,
 		config.Ethereum.DioneStakingContractAddress,
+		config.Ethereum.DisputeContractAddress,
 	)
 	if err != nil {
 		return nil, xerrors.Errorf("failed to initialize ethereum client: %v", err)

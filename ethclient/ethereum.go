@@ -2,9 +2,11 @@ package ethclient
 
 import (
 	"context"
+	"encoding/hex"
 	"math/big"
 
 	"github.com/Secured-Finance/dione/contracts/aggregator"
+	"github.com/Secured-Finance/dione/contracts/dioneDispute"
 	"github.com/Secured-Finance/dione/contracts/dioneStaking"
 	stakingContract "github.com/Secured-Finance/dione/contracts/dioneStaking"
 	oracleEmitter "github.com/Secured-Finance/dione/contracts/oracleemitter"
@@ -17,12 +19,13 @@ import (
 
 //	TODO: change artifacts for other contracts
 type EthereumClient struct {
-	client         *ethclient.Client
-	ethAddress     *common.Address
-	authTransactor *bind.TransactOpts
-	oracleEmitter  *oracleEmitter.OracleEmitterSession
-	aggregator     *aggregator.AggregatorSession
-	dioneStaking   *stakingContract.DioneStakingSession
+	client          *ethclient.Client
+	ethAddress      *common.Address
+	authTransactor  *bind.TransactOpts
+	oracleEmitter   *oracleEmitter.OracleEmitterSession
+	aggregator      *aggregator.AggregatorSession
+	dioneStaking    *stakingContract.DioneStakingSession
+	disputeContract *dioneDispute.DioneDisputeSession
 	// dioneOracle    *dioneOracle.DioneOracleSession
 }
 
@@ -38,6 +41,8 @@ type Ethereum interface {
 	Balance(context.Context, string) (*big.Int, error)
 	SubscribeOnSmartContractEvents(context.Context, string)
 	SubmitRequestAnswer(reqID *big.Int, data string, callbackAddress common.Address, callbackMethodID [4]byte) error
+	BeginDispute(miner common.Address, requestID *big.Int) error
+	VoteDispute() error
 }
 
 func NewEthereumClient() *EthereumClient {
@@ -46,7 +51,7 @@ func NewEthereumClient() *EthereumClient {
 	return ethereumClient
 }
 
-func (c *EthereumClient) Initialize(ctx context.Context, url, privateKey, oracleEmitterContractAddress, aggregatorContractAddress, dioneStakingAddress string) error {
+func (c *EthereumClient) Initialize(ctx context.Context, url, privateKey, oracleEmitterContractAddress, aggregatorContractAddress, dioneStakingAddress, disputeContractAddress string) error {
 	client, err := ethclient.Dial(url)
 	if err != nil {
 		return err
@@ -69,6 +74,10 @@ func (c *EthereumClient) Initialize(ctx context.Context, url, privateKey, oracle
 		return err
 	}
 	stakingContract, err := dioneStaking.NewDioneStaking(common.HexToAddress(dioneStakingAddress), client)
+	if err != nil {
+		return err
+	}
+	disputeContract, err := dioneDispute.NewDioneDispute(common.HexToAddress(disputeContractAddress), client)
 	if err != nil {
 		return err
 	}
@@ -118,6 +127,21 @@ func (c *EthereumClient) Initialize(ctx context.Context, url, privateKey, oracle
 			Signer:   authTransactor.Signer,
 			GasLimit: 200000,                 // 0 automatically estimates gas limit
 			GasPrice: big.NewInt(1860127603), // nil automatically suggests gas price
+			Context:  context.Background(),
+		},
+	}
+	c.disputeContract = &dioneDispute.DioneDisputeSession{
+		Contract: disputeContract,
+		CallOpts: bind.CallOpts{
+			Pending: true,
+			From:    authTransactor.From,
+			Context: context.Background(),
+		},
+		TransactOpts: bind.TransactOpts{
+			From:     authTransactor.From,
+			Signer:   authTransactor.Signer,
+			GasLimit: 0,   // 0 automatically estimates gas limit
+			GasPrice: nil, // nil automatically suggests gas price
 			Context:  context.Background(),
 		},
 	}
@@ -176,4 +200,56 @@ func (c *EthereumClient) SubmitRequestAnswer(reqID *big.Int, data string, callba
 	}
 
 	return nil
+}
+
+func (c *EthereumClient) BeginDispute(miner common.Address, requestID *big.Int) error {
+	_, err := c.disputeContract.BeginDispute(miner, requestID)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (c *EthereumClient) VoteDispute(dhash string, voteStatus bool) error {
+	dhashRawSlice, err := hex.DecodeString(dhash)
+	if err != nil {
+		return err
+	}
+	var dhashRaw [32]byte
+	copy(dhashRaw[:], dhashRawSlice)
+	_, err = c.disputeContract.Vote(dhashRaw, voteStatus)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (c *EthereumClient) FinishDispute(dhash string) error {
+	dhashRawSlice, err := hex.DecodeString(dhash)
+	if err != nil {
+		return err
+	}
+	var dhashRaw [32]byte
+	copy(dhashRaw[:], dhashRawSlice)
+	_, err = c.disputeContract.FinishDispute(dhashRaw)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (c *EthereumClient) SubscribeOnNewDisputes(ctx context.Context) (chan *dioneDispute.DioneDisputeNewDispute, event.Subscription, error) {
+	resChan := make(chan *dioneDispute.DioneDisputeNewDispute)
+	requestsFilter := c.disputeContract.Contract.DioneDisputeFilterer
+	subscription, err := requestsFilter.WatchNewDispute(&bind.WatchOpts{
+		Start:   nil, //last block
+		Context: ctx,
+	}, resChan, nil, nil)
+	if err != nil {
+		return nil, nil, err
+	}
+	return resChan, subscription, err
 }

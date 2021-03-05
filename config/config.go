@@ -25,6 +25,7 @@ type EthereumConfig struct {
 	OracleEmitterContractAddress string `mapstructure:"oracle_emitter_contract_address"`
 	AggregatorContractAddress    string `mapstructure:"aggregator_contract_address"`
 	DioneStakingContractAddress  string `mapstructure:"dione_staking_address"`
+	DisputeContractAddress       string `mapstructure:"dispute_contract_address"`
 }
 
 type FilecoinConfig struct {
