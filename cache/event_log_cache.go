@@ -1,7 +1,7 @@
 package cache
 
 import (
-	oracleEmitter "github.com/Secured-Finance/dione/contracts/oracleemitter"
+	"github.com/Secured-Finance/dione/contracts/dioneOracle"
 	"github.com/VictoriaMetrics/fastcache"
 	"github.com/fxamacker/cbor/v2"
 )
@@ -32,11 +32,11 @@ func (elc *EventLogCache) Store(key string, event interface{}) error {
 	return nil
 }
 
-func (elc *EventLogCache) GetOracleRequestEvent(key string) (*oracleEmitter.OracleEmitterNewOracleRequest, error) {
+func (elc *EventLogCache) GetOracleRequestEvent(key string) (*dioneOracle.DioneOracleNewOracleRequest, error) {
 	var mData []byte
 	mData = elc.cache.GetBig(mData, []byte(key))
 
-	var event *oracleEmitter.OracleEmitterNewOracleRequest
+	var event *dioneOracle.DioneOracleNewOracleRequest
 	err := cbor.Unmarshal(mData, &event)
 	if err != nil {
 		return nil, err

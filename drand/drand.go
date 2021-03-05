@@ -28,8 +28,8 @@ import (
 
 var log = logging.Logger("drand")
 
-//	DrandRes structure representing response from drand network
-type DrandRes struct {
+// DrandResponse structure representing response from drand network
+type DrandResponse struct {
 	// PreviousSig is the previous signature generated
 	PreviousSig []byte
 	// Round is the round number this beacon is tied to

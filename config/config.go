@@ -17,15 +17,16 @@ type Config struct {
 	PubSub                PubSubConfig   `mapstructure:"pubSub"`
 	Store                 StoreConfig    `mapstructure:"store"`
 	ConsensusMinApprovals int            `mapstructure:"consensus_min_approvals"`
+	Redis                 RedisConfig    `mapstructure:"redis"`
+	CacheType             string         `mapstructure:"cache_type"`
 }
 
 type EthereumConfig struct {
-	GatewayAddress               string `mapstructure:"gateway_address"`
-	PrivateKey                   string `mapstructure:"private_key"`
-	OracleEmitterContractAddress string `mapstructure:"oracle_emitter_contract_address"`
-	AggregatorContractAddress    string `mapstructure:"aggregator_contract_address"`
-	DioneStakingContractAddress  string `mapstructure:"dione_staking_address"`
-	DisputeContractAddress       string `mapstructure:"dispute_contract_address"`
+	GatewayAddress              string `mapstructure:"gateway_address"`
+	PrivateKey                  string `mapstructure:"private_key"`
+	DioneOracleContractAddress  string `mapstructure:"dione_oracle_contract_address"`
+	DioneStakingContractAddress string `mapstructure:"dione_staking_address"`
+	DisputeContractAddress      string `mapstructure:"dispute_contract_address"`
 }
 
 type FilecoinConfig struct {
@@ -40,6 +41,12 @@ type PubSubConfig struct {
 
 type StoreConfig struct {
 	DatabaseURL string `mapstructure:"database_url"`
+}
+
+type RedisConfig struct {
+	Addr     string `mapstructure:"redis_addr"`
+	Password string `mapstructure:"redis_password"`
+	DB       int    `mapstructure:"redis_db"`
 }
 
 // NewConfig creates a new config based on default values or provided .env file
@@ -63,6 +70,12 @@ func NewConfig(configPath string) (*Config, error) {
 		Store: StoreConfig{
 			DatabaseURL: dbURL,
 		},
+		Redis: RedisConfig{
+			Addr:     "redisDB:6379",
+			Password: "",
+			DB:       0,
+		},
+		CacheType: "in-memory",
 	}
 
 	viper.SetConfigFile(configPath)

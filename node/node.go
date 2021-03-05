@@ -64,7 +64,7 @@ type Node struct {
 	Miner            *consensus.Miner
 	Beacon           beacon.BeaconNetworks
 	Wallet           *wallet.LocalWallet
-	EventLogCache    *cache.EventLogCache
+	EventCache       cache.EventCache
 }
 
 func NewNode(config *config.Config, prvKey crypto.PrivKey, pexDiscoveryUpdateTime time.Duration) (*Node, error) {
@@ -121,11 +121,13 @@ func NewNode(config *config.Config, prvKey crypto.PrivKey, pexDiscoveryUpdateTim
 	n.Miner = miner
 
 	// initialize event log cache subsystem
-	eventLogCache := provideEventLogCache()
-	n.EventLogCache = eventLogCache
+	//eventLogCache := provideEventLogCache()
+	//n.EventLogCache = eventLogCache
+	eventCache := provideEventCache(config)
+	n.EventCache = eventCache
 
 	// initialize consensus subsystem
-	cManager := provideConsensusManager(psb, miner, ethClient, rawPrivKey, n.Config.ConsensusMinApprovals, eventLogCache)
+	cManager := provideConsensusManager(psb, miner, ethClient, rawPrivKey, n.Config.ConsensusMinApprovals, eventCache)
 	n.ConsensusManager = cManager
 
 	// initialize internal eth wallet
@@ -207,7 +209,7 @@ func (n *Node) subscribeOnEthContractsAsync(ctx context.Context) {
 			select {
 			case event := <-eventChan:
 				{
-					err := n.EventLogCache.Store("request_"+event.RequestID.String(), event)
+					err := n.EventCache.Store("request_"+event.ReqID.String(), event)
 					if err != nil {
 						logrus.Errorf("Failed to store new request event to event log cache: %v", err)
 					}
@@ -222,8 +224,8 @@ func (n *Node) subscribeOnEthContractsAsync(ctx context.Context) {
 					if task == nil {
 						continue
 					}
-					logrus.Infof("Proposed new Dione task with ID: %s", event.RequestID.String())
-					err = n.ConsensusManager.Propose(event.RequestID.String(), *task, event)
+					logrus.Infof("Proposed new Dione task with ID: %s", event.ReqID.String())
+					err = n.ConsensusManager.Propose(event.ReqID.String(), *task, event)
 					if err != nil {
 						logrus.Errorf("Failed to propose task: %w", err)
 					}
@@ -239,6 +241,19 @@ func (n *Node) subscribeOnEthContractsAsync(ctx context.Context) {
 
 func provideEventLogCache() *cache.EventLogCache {
 	return cache.NewEventLogCache()
+}
+
+func provideEventCache(config *config.Config) cache.EventCache {
+	var backend cache.EventCache
+	switch config.CacheType {
+	case "in-memory":
+		backend = cache.NewEventLogCache()
+	case "redis":
+		backend = cache.NewEventRedisCache(config)
+	default:
+		backend = cache.NewEventLogCache()
+	}
+	return backend
 }
 
 func provideMiner(peerID peer.ID, ethAddress common.Address, beacon beacon.BeaconNetworks, ethClient *ethclient.EthereumClient, privateKey []byte) *consensus.Miner {
@@ -277,10 +292,9 @@ func provideEthereumClient(config *config.Config) (*ethclient.EthereumClient, er
 	err := ethereum.Initialize(context.Background(),
 		config.Ethereum.GatewayAddress,
 		config.Ethereum.PrivateKey,
-		config.Ethereum.OracleEmitterContractAddress,
-		config.Ethereum.AggregatorContractAddress,
 		config.Ethereum.DioneStakingContractAddress,
 		config.Ethereum.DisputeContractAddress,
+		config.Ethereum.DioneOracleContractAddress,
 	)
 	if err != nil {
 		return nil, xerrors.Errorf("failed to initialize ethereum client: %v", err)
@@ -306,7 +320,7 @@ func providePubsubRouter(lhost host.Host, config *config.Config) *pubsub2.PubSub
 	return pubsub2.NewPubSubRouter(lhost, config.PubSub.ServiceTopicName, config.IsBootstrap)
 }
 
-func provideConsensusManager(psb *pubsub2.PubSubRouter, miner *consensus.Miner, ethClient *ethclient.EthereumClient, privateKey []byte, minApprovals int, evc *cache.EventLogCache) *consensus.PBFTConsensusManager {
+func provideConsensusManager(psb *pubsub2.PubSubRouter, miner *consensus.Miner, ethClient *ethclient.EthereumClient, privateKey []byte, minApprovals int, evc cache.EventCache) *consensus.PBFTConsensusManager {
 	return consensus.NewPBFTConsensusManager(psb, minApprovals, privateKey, ethClient, miner, evc)
 }
 

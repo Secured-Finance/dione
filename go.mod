@@ -24,12 +24,14 @@ require (
 	github.com/gballet/go-libpcsclite v0.0.0-20191108122812-4678299bea08 // indirect
 	github.com/go-kit/kit v0.10.0
 	github.com/go-ozzo/ozzo-validation v3.6.0+incompatible
+	github.com/go-redis/redis/v8 v8.7.0
 	github.com/gobwas/ws v1.0.4 // indirect
 	github.com/ipfs/go-log v1.0.4
 	github.com/jmoiron/sqlx v1.2.0
 	github.com/karalabe/usb v0.0.0-20191104083709-911d15fe12a9 // indirect
 	github.com/libp2p/go-libp2p v0.12.0
 	github.com/libp2p/go-libp2p-core v0.7.0
+	github.com/libp2p/go-libp2p-crypto v0.1.0
 	github.com/libp2p/go-libp2p-pubsub v0.4.0
 	github.com/mattn/go-sqlite3 v1.9.0
 	github.com/minio/blake2b-simd v0.0.0-20160723061019-3f5f724cb5b1
@@ -46,7 +48,7 @@ require (
 	github.com/status-im/keycard-go v0.0.0-20200402102358-957c09536969 // indirect
 	github.com/steakknife/bloomfilter v0.0.0-20180922174646-6819c0d2a570 // indirect
 	github.com/steakknife/hamming v0.0.0-20180906055917-c99c65617cd3 // indirect
-	github.com/stretchr/testify v1.6.1
+	github.com/stretchr/testify v1.7.0
 	github.com/tyler-smith/go-bip39 v1.0.2 // indirect
 	github.com/valyala/fasthttp v1.17.0
 	github.com/whyrusleeping/cbor-gen v0.0.0-20200826160007-0b9f6c5fb163

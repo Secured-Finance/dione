@@ -11,7 +11,7 @@ import (
 	"github.com/Secured-Finance/dione/rpc"
 
 	"github.com/Secured-Finance/dione/beacon"
-	oracleEmitter "github.com/Secured-Finance/dione/contracts/oracleemitter"
+	"github.com/Secured-Finance/dione/contracts/dioneOracle"
 	"github.com/libp2p/go-libp2p-core/peer"
 
 	"github.com/Secured-Finance/dione/ethclient"
@@ -88,7 +88,7 @@ func (m *Miner) GetStakeInfo(miner common.Address) (*types.BigInt, *types.BigInt
 	return mStake, nStake, nil
 }
 
-func (m *Miner) MineTask(ctx context.Context, event *oracleEmitter.OracleEmitterNewOracleRequest) (*types.DioneTask, error) {
+func (m *Miner) MineTask(ctx context.Context, event *dioneOracle.DioneOracleNewOracleRequest) (*types.DioneTask, error) {
 	beaconValues, err := beacon.BeaconEntriesForTask(ctx, m.beacon)
 	if err != nil {
 		return nil, xerrors.Errorf("failed to get beacon entries: %w", err)

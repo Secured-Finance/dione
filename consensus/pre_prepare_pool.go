@@ -23,10 +23,10 @@ type PrePreparePool struct {
 	mut            sync.RWMutex
 	prePrepareMsgs map[string][]*types2.Message
 	miner          *Miner
-	eventLogCache  *cache.EventLogCache
+	eventLogCache  cache.EventCache
 }
 
-func NewPrePreparePool(miner *Miner, evc *cache.EventLogCache) *PrePreparePool {
+func NewPrePreparePool(miner *Miner, evc cache.EventCache) *PrePreparePool {
 	return &PrePreparePool{
 		prePrepareMsgs: map[string][]*types2.Message{},
 		miner:          miner,

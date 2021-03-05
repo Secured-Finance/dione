@@ -6,7 +6,7 @@ import (
 
 	"github.com/Secured-Finance/dione/cache"
 
-	oracleEmitter "github.com/Secured-Finance/dione/contracts/oracleemitter"
+	"github.com/Secured-Finance/dione/contracts/dioneOracle"
 
 	"github.com/Secured-Finance/dione/consensus/types"
 
@@ -29,6 +29,7 @@ type PBFTConsensusManager struct {
 	consensusInfo  map[string]*ConsensusData
 	ethereumClient *ethclient.EthereumClient
 	miner          *Miner
+	eventCache     cache.EventCache
 }
 
 type ConsensusData struct {
@@ -36,7 +37,7 @@ type ConsensusData struct {
 	alreadySubmitted bool
 }
 
-func NewPBFTConsensusManager(psb *pubsub.PubSubRouter, minApprovals int, privKey []byte, ethereumClient *ethclient.EthereumClient, miner *Miner, evc *cache.EventLogCache) *PBFTConsensusManager {
+func NewPBFTConsensusManager(psb *pubsub.PubSubRouter, minApprovals int, privKey []byte, ethereumClient *ethclient.EthereumClient, miner *Miner, evc cache.EventCache) *PBFTConsensusManager {
 	pcm := &PBFTConsensusManager{}
 	pcm.psb = psb
 	pcm.miner = miner
@@ -46,6 +47,7 @@ func NewPBFTConsensusManager(psb *pubsub.PubSubRouter, minApprovals int, privKey
 	pcm.minApprovals = minApprovals
 	pcm.privKey = privKey
 	pcm.ethereumClient = ethereumClient
+	pcm.eventCache = evc
 	pcm.consensusInfo = map[string]*ConsensusData{}
 	pcm.psb.Hook(types.MessageTypePrePrepare, pcm.handlePrePrepare)
 	pcm.psb.Hook(types.MessageTypePrepare, pcm.handlePrepare)
@@ -53,13 +55,13 @@ func NewPBFTConsensusManager(psb *pubsub.PubSubRouter, minApprovals int, privKey
 	return pcm
 }
 
-func (pcm *PBFTConsensusManager) Propose(consensusID string, task types2.DioneTask, requestEvent *oracleEmitter.OracleEmitterNewOracleRequest) error {
+func (pcm *PBFTConsensusManager) Propose(consensusID string, task types2.DioneTask, requestEvent *dioneOracle.DioneOracleNewOracleRequest) error {
 	pcm.consensusInfo[consensusID] = &ConsensusData{}
 
 	prePrepareMsg, err := pcm.prePreparePool.CreatePrePrepare(
 		consensusID,
 		task,
-		requestEvent.RequestID.String(),
+		requestEvent.ReqID.String(),
 		requestEvent.CallbackAddress.Bytes(),
 		requestEvent.CallbackMethodID[:],
 		pcm.privKey,
@@ -149,12 +151,19 @@ func (pcm *PBFTConsensusManager) handleCommit(message *types.Message) {
 			logrus.Infof("Submitting on-chain result for consensus ID: %s", consensusMsg.ConsensusID)
 			reqID, ok := new(big.Int).SetString(consensusMsg.RequestID, 10)
 			if !ok {
-				logrus.Errorf("Failed to parse big int: %v", consensusMsg.RequestID)
+				logrus.Errorf("Failed to parse request ID: %v", consensusMsg.RequestID)
 			}
 			callbackAddress := common.BytesToAddress(consensusMsg.CallbackAddress)
-			err := pcm.ethereumClient.SubmitRequestAnswer(reqID, string(consensusMsg.Task.Payload), callbackAddress)
+
+			request, err := pcm.eventCache.GetOracleRequestEvent("request_" + consensusMsg.RequestID)
 			if err != nil {
-				logrus.Errorf("Failed to submit on-chain result: %w", err)
+				logrus.Errorf("Failed to get request from cache: %v", err.Error())
+				return
+			}
+
+			err = pcm.ethereumClient.SubmitRequestAnswer(reqID, callbackAddress, request.RequestParams, request.Deadline, consensusMsg.Task.Payload)
+			if err != nil {
+				logrus.Errorf("Failed to submit on-chain result: %v", err)
 			}
 			info.alreadySubmitted = true
 		}
