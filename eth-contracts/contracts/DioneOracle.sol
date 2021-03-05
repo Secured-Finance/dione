@@ -87,7 +87,7 @@ contract DioneOracle is Ownable {
     require(pendingRequests[_reqID] == requestHash, "Params do not match request ID");
     delete pendingRequests[_reqID];
     dioneStaking.mine(msg.sender);
-    (bool success, ) = _callbackAddress.call(abi.encodeWithSelector(_callbackMethodID, _reqID, _data));
+    (bool success, ) = _callbackAddress.call(abi.encodeWithSelector(_callbackMethodID, _reqID, _data)); // TODO: check on success call
     emit SubmittedOracleRequest(_requestParams, _callbackAddress, _callbackMethodID, _reqID, _requestDeadline, _data);
     return success;
   }
