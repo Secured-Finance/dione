@@ -27,7 +27,7 @@ var (
 )
 
 // DioneStakingABI is the input ABI used to generate the binding from.
-const DioneStakingABI = "[{\"inputs\":[{\"internalType\":\"contractDioneToken\",\"name\":\"_dione\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"_minerReward\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"_startBlock\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"_minimumStake\",\"type\":\"uint256\"}],\"stateMutability\":\"nonpayable\",\"type\":\"constructor\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"address\",\"name\":\"miner\",\"type\":\"address\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"blockNumber\",\"type\":\"uint256\"}],\"name\":\"Mine\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"address\",\"name\":\"previousOwner\",\"type\":\"address\"},{\"indexed\":true,\"internalType\":\"address\",\"name\":\"newOwner\",\"type\":\"address\"}],\"name\":\"OwnershipTransferred\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"address\",\"name\":\"miner\",\"type\":\"address\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"amount\",\"type\":\"uint256\"}],\"name\":\"Stake\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"address\",\"name\":\"miner\",\"type\":\"address\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"amount\",\"type\":\"uint256\"}],\"name\":\"Withdraw\",\"type\":\"event\"},{\"inputs\":[],\"name\":\"aggregatorAddr\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"dione\",\"outputs\":[{\"internalType\":\"contractDioneToken\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"name\":\"minerInfo\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"amount\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"firstStakeBlock\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"lastRewardBlock\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"minerReward\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"minimumStake\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"owner\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"renounceOwnership\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"startBlock\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"newOwner\",\"type\":\"address\"}],\"name\":\"transferOwnership\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"_minerAddr\",\"type\":\"address\"}],\"name\":\"mine\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"_minerAddr\",\"type\":\"address\"}],\"name\":\"mineAndStake\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"_amount\",\"type\":\"uint256\"}],\"name\":\"stake\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"_amount\",\"type\":\"uint256\"}],\"name\":\"withdraw\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"totalStake\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"_minerAddr\",\"type\":\"address\"}],\"name\":\"minerStake\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"_minerReward\",\"type\":\"uint256\"}],\"name\":\"setMinerReward\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"_minerAddr\",\"type\":\"address\"}],\"name\":\"isMiner\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"_minimumStake\",\"type\":\"uint256\"}],\"name\":\"setMinimumStake\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"_aggregatorAddr\",\"type\":\"address\"}],\"name\":\"setAggregator\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"}]"
+const DioneStakingABI = "[{\"inputs\":[{\"internalType\":\"contractDioneToken\",\"name\":\"_dione\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"_minerReward\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"_startBlock\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"_minimumStake\",\"type\":\"uint256\"}],\"stateMutability\":\"nonpayable\",\"type\":\"constructor\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"address\",\"name\":\"miner\",\"type\":\"address\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"blockNumber\",\"type\":\"uint256\"}],\"name\":\"Mine\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"address\",\"name\":\"previousOwner\",\"type\":\"address\"},{\"indexed\":true,\"internalType\":\"address\",\"name\":\"newOwner\",\"type\":\"address\"}],\"name\":\"OwnershipTransferred\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"address\",\"name\":\"miner\",\"type\":\"address\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"amount\",\"type\":\"uint256\"}],\"name\":\"Stake\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"address\",\"name\":\"miner\",\"type\":\"address\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"amount\",\"type\":\"uint256\"}],\"name\":\"Withdraw\",\"type\":\"event\"},{\"inputs\":[],\"name\":\"aggregatorAddr\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"dione\",\"outputs\":[{\"internalType\":\"contractDioneToken\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"disputeContractAddr\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"name\":\"minerInfo\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"amount\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"firstStakeBlock\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"lastRewardBlock\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"minerReward\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"minimumStake\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"owner\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"renounceOwnership\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"startBlock\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"newOwner\",\"type\":\"address\"}],\"name\":\"transferOwnership\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"_minerAddr\",\"type\":\"address\"}],\"name\":\"mine\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"_minerAddr\",\"type\":\"address\"}],\"name\":\"mineAndStake\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"_amount\",\"type\":\"uint256\"}],\"name\":\"stake\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"_amount\",\"type\":\"uint256\"}],\"name\":\"withdraw\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"totalStake\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"_minerAddr\",\"type\":\"address\"}],\"name\":\"minerStake\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"_minerReward\",\"type\":\"uint256\"}],\"name\":\"setMinerReward\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"_minerAddr\",\"type\":\"address\"}],\"name\":\"isMiner\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"_minimumStake\",\"type\":\"uint256\"}],\"name\":\"setMinimumStake\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"_aggregatorAddr\",\"type\":\"address\"}],\"name\":\"setAggregator\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"miner\",\"type\":\"address\"},{\"internalType\":\"address[]\",\"name\":\"receipentMiners\",\"type\":\"address[]\"}],\"name\":\"slashMiner\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"}]"
 
 // DioneStaking is an auto generated Go binding around an Ethereum contract.
 type DioneStaking struct {
@@ -137,7 +137,7 @@ func bindDioneStaking(address common.Address, caller bind.ContractCaller, transa
 // sets the output to result. The result type might be a single field for simple
 // returns, a slice of interfaces for anonymous returns and a struct for named
 // returns.
-func (_DioneStaking *DioneStakingRaw) Call(opts *bind.CallOpts, result interface{}, method string, params ...interface{}) error {
+func (_DioneStaking *DioneStakingRaw) Call(opts *bind.CallOpts, result *[]interface{}, method string, params ...interface{}) error {
 	return _DioneStaking.Contract.DioneStakingCaller.contract.Call(opts, result, method, params...)
 }
 
@@ -156,7 +156,7 @@ func (_DioneStaking *DioneStakingRaw) Transact(opts *bind.TransactOpts, method s
 // sets the output to result. The result type might be a single field for simple
 // returns, a slice of interfaces for anonymous returns and a struct for named
 // returns.
-func (_DioneStaking *DioneStakingCallerRaw) Call(opts *bind.CallOpts, result interface{}, method string, params ...interface{}) error {
+func (_DioneStaking *DioneStakingCallerRaw) Call(opts *bind.CallOpts, result *[]interface{}, method string, params ...interface{}) error {
 	return _DioneStaking.Contract.contract.Call(opts, result, method, params...)
 }
 
@@ -175,12 +175,17 @@ func (_DioneStaking *DioneStakingTransactorRaw) Transact(opts *bind.TransactOpts
 //
 // Solidity: function aggregatorAddr() view returns(address)
 func (_DioneStaking *DioneStakingCaller) AggregatorAddr(opts *bind.CallOpts) (common.Address, error) {
-	var (
-		ret0 = new(common.Address)
-	)
-	out := ret0
-	err := _DioneStaking.contract.Call(opts, out, "aggregatorAddr")
-	return *ret0, err
+	var out []interface{}
+	err := _DioneStaking.contract.Call(opts, &out, "aggregatorAddr")
+
+	if err != nil {
+		return *new(common.Address), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new(common.Address)).(*common.Address)
+
+	return out0, err
+
 }
 
 // AggregatorAddr is a free data retrieval call binding the contract method 0x82762600.
@@ -201,12 +206,17 @@ func (_DioneStaking *DioneStakingCallerSession) AggregatorAddr() (common.Address
 //
 // Solidity: function dione() view returns(address)
 func (_DioneStaking *DioneStakingCaller) Dione(opts *bind.CallOpts) (common.Address, error) {
-	var (
-		ret0 = new(common.Address)
-	)
-	out := ret0
-	err := _DioneStaking.contract.Call(opts, out, "dione")
-	return *ret0, err
+	var out []interface{}
+	err := _DioneStaking.contract.Call(opts, &out, "dione")
+
+	if err != nil {
+		return *new(common.Address), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new(common.Address)).(*common.Address)
+
+	return out0, err
+
 }
 
 // Dione is a free data retrieval call binding the contract method 0x3425dfa6.
@@ -223,16 +233,52 @@ func (_DioneStaking *DioneStakingCallerSession) Dione() (common.Address, error) 
 	return _DioneStaking.Contract.Dione(&_DioneStaking.CallOpts)
 }
 
+// DisputeContractAddr is a free data retrieval call binding the contract method 0x2accb21a.
+//
+// Solidity: function disputeContractAddr() view returns(address)
+func (_DioneStaking *DioneStakingCaller) DisputeContractAddr(opts *bind.CallOpts) (common.Address, error) {
+	var out []interface{}
+	err := _DioneStaking.contract.Call(opts, &out, "disputeContractAddr")
+
+	if err != nil {
+		return *new(common.Address), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new(common.Address)).(*common.Address)
+
+	return out0, err
+
+}
+
+// DisputeContractAddr is a free data retrieval call binding the contract method 0x2accb21a.
+//
+// Solidity: function disputeContractAddr() view returns(address)
+func (_DioneStaking *DioneStakingSession) DisputeContractAddr() (common.Address, error) {
+	return _DioneStaking.Contract.DisputeContractAddr(&_DioneStaking.CallOpts)
+}
+
+// DisputeContractAddr is a free data retrieval call binding the contract method 0x2accb21a.
+//
+// Solidity: function disputeContractAddr() view returns(address)
+func (_DioneStaking *DioneStakingCallerSession) DisputeContractAddr() (common.Address, error) {
+	return _DioneStaking.Contract.DisputeContractAddr(&_DioneStaking.CallOpts)
+}
+
 // IsMiner is a free data retrieval call binding the contract method 0x701b70ac.
 //
 // Solidity: function isMiner(address _minerAddr) view returns(bool)
 func (_DioneStaking *DioneStakingCaller) IsMiner(opts *bind.CallOpts, _minerAddr common.Address) (bool, error) {
-	var (
-		ret0 = new(bool)
-	)
-	out := ret0
-	err := _DioneStaking.contract.Call(opts, out, "isMiner", _minerAddr)
-	return *ret0, err
+	var out []interface{}
+	err := _DioneStaking.contract.Call(opts, &out, "isMiner", _minerAddr)
+
+	if err != nil {
+		return *new(bool), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new(bool)).(*bool)
+
+	return out0, err
+
 }
 
 // IsMiner is a free data retrieval call binding the contract method 0x701b70ac.
@@ -257,14 +303,21 @@ func (_DioneStaking *DioneStakingCaller) MinerInfo(opts *bind.CallOpts, arg0 com
 	FirstStakeBlock *big.Int
 	LastRewardBlock *big.Int
 }, error) {
-	ret := new(struct {
+	var out []interface{}
+	err := _DioneStaking.contract.Call(opts, &out, "minerInfo", arg0)
+
+	outstruct := new(struct {
 		Amount          *big.Int
 		FirstStakeBlock *big.Int
 		LastRewardBlock *big.Int
 	})
-	out := ret
-	err := _DioneStaking.contract.Call(opts, out, "minerInfo", arg0)
-	return *ret, err
+
+	outstruct.Amount = out[0].(*big.Int)
+	outstruct.FirstStakeBlock = out[1].(*big.Int)
+	outstruct.LastRewardBlock = out[2].(*big.Int)
+
+	return *outstruct, err
+
 }
 
 // MinerInfo is a free data retrieval call binding the contract method 0x03337fd8.
@@ -293,12 +346,17 @@ func (_DioneStaking *DioneStakingCallerSession) MinerInfo(arg0 common.Address) (
 //
 // Solidity: function minerReward() view returns(uint256)
 func (_DioneStaking *DioneStakingCaller) MinerReward(opts *bind.CallOpts) (*big.Int, error) {
-	var (
-		ret0 = new(*big.Int)
-	)
-	out := ret0
-	err := _DioneStaking.contract.Call(opts, out, "minerReward")
-	return *ret0, err
+	var out []interface{}
+	err := _DioneStaking.contract.Call(opts, &out, "minerReward")
+
+	if err != nil {
+		return *new(*big.Int), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new(*big.Int)).(**big.Int)
+
+	return out0, err
+
 }
 
 // MinerReward is a free data retrieval call binding the contract method 0xcbed45eb.
@@ -319,12 +377,17 @@ func (_DioneStaking *DioneStakingCallerSession) MinerReward() (*big.Int, error) 
 //
 // Solidity: function minerStake(address _minerAddr) view returns(uint256)
 func (_DioneStaking *DioneStakingCaller) MinerStake(opts *bind.CallOpts, _minerAddr common.Address) (*big.Int, error) {
-	var (
-		ret0 = new(*big.Int)
-	)
-	out := ret0
-	err := _DioneStaking.contract.Call(opts, out, "minerStake", _minerAddr)
-	return *ret0, err
+	var out []interface{}
+	err := _DioneStaking.contract.Call(opts, &out, "minerStake", _minerAddr)
+
+	if err != nil {
+		return *new(*big.Int), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new(*big.Int)).(**big.Int)
+
+	return out0, err
+
 }
 
 // MinerStake is a free data retrieval call binding the contract method 0x8eaa3850.
@@ -345,12 +408,17 @@ func (_DioneStaking *DioneStakingCallerSession) MinerStake(_minerAddr common.Add
 //
 // Solidity: function minimumStake() view returns(uint256)
 func (_DioneStaking *DioneStakingCaller) MinimumStake(opts *bind.CallOpts) (*big.Int, error) {
-	var (
-		ret0 = new(*big.Int)
-	)
-	out := ret0
-	err := _DioneStaking.contract.Call(opts, out, "minimumStake")
-	return *ret0, err
+	var out []interface{}
+	err := _DioneStaking.contract.Call(opts, &out, "minimumStake")
+
+	if err != nil {
+		return *new(*big.Int), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new(*big.Int)).(**big.Int)
+
+	return out0, err
+
 }
 
 // MinimumStake is a free data retrieval call binding the contract method 0xec5ffac2.
@@ -371,12 +439,17 @@ func (_DioneStaking *DioneStakingCallerSession) MinimumStake() (*big.Int, error)
 //
 // Solidity: function owner() view returns(address)
 func (_DioneStaking *DioneStakingCaller) Owner(opts *bind.CallOpts) (common.Address, error) {
-	var (
-		ret0 = new(common.Address)
-	)
-	out := ret0
-	err := _DioneStaking.contract.Call(opts, out, "owner")
-	return *ret0, err
+	var out []interface{}
+	err := _DioneStaking.contract.Call(opts, &out, "owner")
+
+	if err != nil {
+		return *new(common.Address), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new(common.Address)).(*common.Address)
+
+	return out0, err
+
 }
 
 // Owner is a free data retrieval call binding the contract method 0x8da5cb5b.
@@ -397,12 +470,17 @@ func (_DioneStaking *DioneStakingCallerSession) Owner() (common.Address, error) 
 //
 // Solidity: function startBlock() view returns(uint256)
 func (_DioneStaking *DioneStakingCaller) StartBlock(opts *bind.CallOpts) (*big.Int, error) {
-	var (
-		ret0 = new(*big.Int)
-	)
-	out := ret0
-	err := _DioneStaking.contract.Call(opts, out, "startBlock")
-	return *ret0, err
+	var out []interface{}
+	err := _DioneStaking.contract.Call(opts, &out, "startBlock")
+
+	if err != nil {
+		return *new(*big.Int), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new(*big.Int)).(**big.Int)
+
+	return out0, err
+
 }
 
 // StartBlock is a free data retrieval call binding the contract method 0x48cd4cb1.
@@ -423,12 +501,17 @@ func (_DioneStaking *DioneStakingCallerSession) StartBlock() (*big.Int, error) {
 //
 // Solidity: function totalStake() view returns(uint256)
 func (_DioneStaking *DioneStakingCaller) TotalStake(opts *bind.CallOpts) (*big.Int, error) {
-	var (
-		ret0 = new(*big.Int)
-	)
-	out := ret0
-	err := _DioneStaking.contract.Call(opts, out, "totalStake")
-	return *ret0, err
+	var out []interface{}
+	err := _DioneStaking.contract.Call(opts, &out, "totalStake")
+
+	if err != nil {
+		return *new(*big.Int), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new(*big.Int)).(**big.Int)
+
+	return out0, err
+
 }
 
 // TotalStake is a free data retrieval call binding the contract method 0x8b0e9f3f.
@@ -569,6 +652,27 @@ func (_DioneStaking *DioneStakingSession) SetMinimumStake(_minimumStake *big.Int
 // Solidity: function setMinimumStake(uint256 _minimumStake) returns()
 func (_DioneStaking *DioneStakingTransactorSession) SetMinimumStake(_minimumStake *big.Int) (*types.Transaction, error) {
 	return _DioneStaking.Contract.SetMinimumStake(&_DioneStaking.TransactOpts, _minimumStake)
+}
+
+// SlashMiner is a paid mutator transaction binding the contract method 0x54f96e12.
+//
+// Solidity: function slashMiner(address miner, address[] receipentMiners) returns()
+func (_DioneStaking *DioneStakingTransactor) SlashMiner(opts *bind.TransactOpts, miner common.Address, receipentMiners []common.Address) (*types.Transaction, error) {
+	return _DioneStaking.contract.Transact(opts, "slashMiner", miner, receipentMiners)
+}
+
+// SlashMiner is a paid mutator transaction binding the contract method 0x54f96e12.
+//
+// Solidity: function slashMiner(address miner, address[] receipentMiners) returns()
+func (_DioneStaking *DioneStakingSession) SlashMiner(miner common.Address, receipentMiners []common.Address) (*types.Transaction, error) {
+	return _DioneStaking.Contract.SlashMiner(&_DioneStaking.TransactOpts, miner, receipentMiners)
+}
+
+// SlashMiner is a paid mutator transaction binding the contract method 0x54f96e12.
+//
+// Solidity: function slashMiner(address miner, address[] receipentMiners) returns()
+func (_DioneStaking *DioneStakingTransactorSession) SlashMiner(miner common.Address, receipentMiners []common.Address) (*types.Transaction, error) {
+	return _DioneStaking.Contract.SlashMiner(&_DioneStaking.TransactOpts, miner, receipentMiners)
 }
 
 // Stake is a paid mutator transaction binding the contract method 0xa694fc3a.
@@ -775,6 +879,7 @@ func (_DioneStaking *DioneStakingFilterer) ParseMine(log types.Log) (*DioneStaki
 	if err := _DioneStaking.contract.UnpackLog(event, "Mine", log); err != nil {
 		return nil, err
 	}
+	event.Raw = log
 	return event, nil
 }
 
@@ -927,6 +1032,7 @@ func (_DioneStaking *DioneStakingFilterer) ParseOwnershipTransferred(log types.L
 	if err := _DioneStaking.contract.UnpackLog(event, "OwnershipTransferred", log); err != nil {
 		return nil, err
 	}
+	event.Raw = log
 	return event, nil
 }
 
@@ -1071,6 +1177,7 @@ func (_DioneStaking *DioneStakingFilterer) ParseStake(log types.Log) (*DioneStak
 	if err := _DioneStaking.contract.UnpackLog(event, "Stake", log); err != nil {
 		return nil, err
 	}
+	event.Raw = log
 	return event, nil
 }
 
@@ -1215,5 +1322,6 @@ func (_DioneStaking *DioneStakingFilterer) ParseWithdraw(log types.Log) (*DioneS
 	if err := _DioneStaking.contract.UnpackLog(event, "Withdraw", log); err != nil {
 		return nil, err
 	}
+	event.Raw = log
 	return event, nil
 }

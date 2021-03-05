@@ -27,7 +27,7 @@ var (
 )
 
 // DioneOracleABI is the input ABI used to generate the binding from.
-const DioneOracleABI = "[{\"inputs\":[{\"internalType\":\"contractDioneStakingInterface\",\"name\":\"_dioneStaking\",\"type\":\"address\"}],\"stateMutability\":\"nonpayable\",\"type\":\"constructor\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"reqID\",\"type\":\"uint256\"}],\"name\":\"CancelOracleRequest\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"internalType\":\"uint8\",\"name\":\"originChain\",\"type\":\"uint8\"},{\"indexed\":false,\"internalType\":\"string\",\"name\":\"requestType\",\"type\":\"string\"},{\"indexed\":false,\"internalType\":\"string\",\"name\":\"requestParams\",\"type\":\"string\"},{\"indexed\":false,\"internalType\":\"address\",\"name\":\"callbackAddress\",\"type\":\"address\"},{\"indexed\":false,\"internalType\":\"bytes4\",\"name\":\"callbackMethodID\",\"type\":\"bytes4\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"reqID\",\"type\":\"uint256\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"deadline\",\"type\":\"uint256\"}],\"name\":\"NewOracleRequest\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"address\",\"name\":\"previousOwner\",\"type\":\"address\"},{\"indexed\":true,\"internalType\":\"address\",\"name\":\"newOwner\",\"type\":\"address\"}],\"name\":\"OwnershipTransferred\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"internalType\":\"string\",\"name\":\"requestParams\",\"type\":\"string\"},{\"indexed\":false,\"internalType\":\"address\",\"name\":\"callbackAddress\",\"type\":\"address\"},{\"indexed\":false,\"internalType\":\"bytes4\",\"name\":\"callbackMethodID\",\"type\":\"bytes4\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"reqID\",\"type\":\"uint256\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"deadline\",\"type\":\"uint256\"},{\"indexed\":false,\"internalType\":\"bytes\",\"name\":\"data\",\"type\":\"bytes\"}],\"name\":\"SubmittedOracleRequest\",\"type\":\"event\"},{\"inputs\":[],\"name\":\"MAXIMUM_DELAY\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"dioneStaking\",\"outputs\":[{\"internalType\":\"contractDioneStakingInterface\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"owner\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"renounceOwnership\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"newOwner\",\"type\":\"address\"}],\"name\":\"transferOwnership\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint8\",\"name\":\"_originChain\",\"type\":\"uint8\"},{\"internalType\":\"string\",\"name\":\"_requestType\",\"type\":\"string\"},{\"internalType\":\"string\",\"name\":\"_requestParams\",\"type\":\"string\"},{\"internalType\":\"address\",\"name\":\"_callbackAddress\",\"type\":\"address\"},{\"internalType\":\"bytes4\",\"name\":\"_callbackMethodID\",\"type\":\"bytes4\"}],\"name\":\"requestOracles\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"string\",\"name\":\"_requestParams\",\"type\":\"string\"},{\"internalType\":\"bytes4\",\"name\":\"_callbackMethodID\",\"type\":\"bytes4\"},{\"internalType\":\"uint256\",\"name\":\"_reqID\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"_requestDeadline\",\"type\":\"uint256\"}],\"name\":\"cancelOracleRequest\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"string\",\"name\":\"_requestParams\",\"type\":\"string\"},{\"internalType\":\"address\",\"name\":\"_callbackAddress\",\"type\":\"address\"},{\"internalType\":\"bytes4\",\"name\":\"_callbackMethodID\",\"type\":\"bytes4\"},{\"internalType\":\"uint256\",\"name\":\"_reqID\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"_requestDeadline\",\"type\":\"uint256\"},{\"internalType\":\"bytes\",\"name\":\"_data\",\"type\":\"bytes\"}],\"name\":\"submitOracleRequest\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\"}],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"_miner\",\"type\":\"address\"},{\"internalType\":\"bool\",\"name\":\"_status\",\"type\":\"bool\"}],\"name\":\"setNodeStatus\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"_miner\",\"type\":\"address\"}],\"name\":\"isActiveNode\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\"}],\"stateMutability\":\"view\",\"type\":\"function\"}]"
+const DioneOracleABI = "[{\"inputs\":[{\"internalType\":\"contractIDioneStaking\",\"name\":\"_dioneStaking\",\"type\":\"address\"}],\"stateMutability\":\"nonpayable\",\"type\":\"constructor\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"reqID\",\"type\":\"uint256\"}],\"name\":\"CancelOracleRequest\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"internalType\":\"uint8\",\"name\":\"originChain\",\"type\":\"uint8\"},{\"indexed\":false,\"internalType\":\"string\",\"name\":\"requestType\",\"type\":\"string\"},{\"indexed\":false,\"internalType\":\"string\",\"name\":\"requestParams\",\"type\":\"string\"},{\"indexed\":false,\"internalType\":\"address\",\"name\":\"callbackAddress\",\"type\":\"address\"},{\"indexed\":false,\"internalType\":\"bytes4\",\"name\":\"callbackMethodID\",\"type\":\"bytes4\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"reqID\",\"type\":\"uint256\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"deadline\",\"type\":\"uint256\"}],\"name\":\"NewOracleRequest\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"address\",\"name\":\"previousOwner\",\"type\":\"address\"},{\"indexed\":true,\"internalType\":\"address\",\"name\":\"newOwner\",\"type\":\"address\"}],\"name\":\"OwnershipTransferred\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"internalType\":\"string\",\"name\":\"requestParams\",\"type\":\"string\"},{\"indexed\":false,\"internalType\":\"address\",\"name\":\"callbackAddress\",\"type\":\"address\"},{\"indexed\":false,\"internalType\":\"bytes4\",\"name\":\"callbackMethodID\",\"type\":\"bytes4\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"reqID\",\"type\":\"uint256\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"deadline\",\"type\":\"uint256\"},{\"indexed\":false,\"internalType\":\"bytes\",\"name\":\"data\",\"type\":\"bytes\"}],\"name\":\"SubmittedOracleRequest\",\"type\":\"event\"},{\"inputs\":[],\"name\":\"MAXIMUM_DELAY\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"dioneStaking\",\"outputs\":[{\"internalType\":\"contractIDioneStaking\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"minimumDisputeFee\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"owner\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"renounceOwnership\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"newOwner\",\"type\":\"address\"}],\"name\":\"transferOwnership\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint8\",\"name\":\"_originChain\",\"type\":\"uint8\"},{\"internalType\":\"string\",\"name\":\"_requestType\",\"type\":\"string\"},{\"internalType\":\"string\",\"name\":\"_requestParams\",\"type\":\"string\"},{\"internalType\":\"address\",\"name\":\"_callbackAddress\",\"type\":\"address\"},{\"internalType\":\"bytes4\",\"name\":\"_callbackMethodID\",\"type\":\"bytes4\"}],\"name\":\"requestOracles\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"string\",\"name\":\"_requestParams\",\"type\":\"string\"},{\"internalType\":\"bytes4\",\"name\":\"_callbackMethodID\",\"type\":\"bytes4\"},{\"internalType\":\"uint256\",\"name\":\"_reqID\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"_requestDeadline\",\"type\":\"uint256\"}],\"name\":\"cancelOracleRequest\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"string\",\"name\":\"_requestParams\",\"type\":\"string\"},{\"internalType\":\"address\",\"name\":\"_callbackAddress\",\"type\":\"address\"},{\"internalType\":\"bytes4\",\"name\":\"_callbackMethodID\",\"type\":\"bytes4\"},{\"internalType\":\"uint256\",\"name\":\"_reqID\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"_requestDeadline\",\"type\":\"uint256\"},{\"internalType\":\"bytes\",\"name\":\"_data\",\"type\":\"bytes\"}],\"name\":\"submitOracleRequest\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\"}],\"stateMutability\":\"nonpayable\",\"type\":\"function\"}]"
 
 // DioneOracle is an auto generated Go binding around an Ethereum contract.
 type DioneOracle struct {
@@ -137,7 +137,7 @@ func bindDioneOracle(address common.Address, caller bind.ContractCaller, transac
 // sets the output to result. The result type might be a single field for simple
 // returns, a slice of interfaces for anonymous returns and a struct for named
 // returns.
-func (_DioneOracle *DioneOracleRaw) Call(opts *bind.CallOpts, result interface{}, method string, params ...interface{}) error {
+func (_DioneOracle *DioneOracleRaw) Call(opts *bind.CallOpts, result *[]interface{}, method string, params ...interface{}) error {
 	return _DioneOracle.Contract.DioneOracleCaller.contract.Call(opts, result, method, params...)
 }
 
@@ -156,7 +156,7 @@ func (_DioneOracle *DioneOracleRaw) Transact(opts *bind.TransactOpts, method str
 // sets the output to result. The result type might be a single field for simple
 // returns, a slice of interfaces for anonymous returns and a struct for named
 // returns.
-func (_DioneOracle *DioneOracleCallerRaw) Call(opts *bind.CallOpts, result interface{}, method string, params ...interface{}) error {
+func (_DioneOracle *DioneOracleCallerRaw) Call(opts *bind.CallOpts, result *[]interface{}, method string, params ...interface{}) error {
 	return _DioneOracle.Contract.contract.Call(opts, result, method, params...)
 }
 
@@ -175,12 +175,17 @@ func (_DioneOracle *DioneOracleTransactorRaw) Transact(opts *bind.TransactOpts, 
 //
 // Solidity: function MAXIMUM_DELAY() view returns(uint256)
 func (_DioneOracle *DioneOracleCaller) MAXIMUMDELAY(opts *bind.CallOpts) (*big.Int, error) {
-	var (
-		ret0 = new(*big.Int)
-	)
-	out := ret0
-	err := _DioneOracle.contract.Call(opts, out, "MAXIMUM_DELAY")
-	return *ret0, err
+	var out []interface{}
+	err := _DioneOracle.contract.Call(opts, &out, "MAXIMUM_DELAY")
+
+	if err != nil {
+		return *new(*big.Int), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new(*big.Int)).(**big.Int)
+
+	return out0, err
+
 }
 
 // MAXIMUMDELAY is a free data retrieval call binding the contract method 0x7d645fab.
@@ -201,12 +206,17 @@ func (_DioneOracle *DioneOracleCallerSession) MAXIMUMDELAY() (*big.Int, error) {
 //
 // Solidity: function dioneStaking() view returns(address)
 func (_DioneOracle *DioneOracleCaller) DioneStaking(opts *bind.CallOpts) (common.Address, error) {
-	var (
-		ret0 = new(common.Address)
-	)
-	out := ret0
-	err := _DioneOracle.contract.Call(opts, out, "dioneStaking")
-	return *ret0, err
+	var out []interface{}
+	err := _DioneOracle.contract.Call(opts, &out, "dioneStaking")
+
+	if err != nil {
+		return *new(common.Address), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new(common.Address)).(*common.Address)
+
+	return out0, err
+
 }
 
 // DioneStaking is a free data retrieval call binding the contract method 0xe7013ddd.
@@ -223,42 +233,52 @@ func (_DioneOracle *DioneOracleCallerSession) DioneStaking() (common.Address, er
 	return _DioneOracle.Contract.DioneStaking(&_DioneOracle.CallOpts)
 }
 
-// IsActiveNode is a free data retrieval call binding the contract method 0x1d0f22d8.
+// MinimumDisputeFee is a free data retrieval call binding the contract method 0x4909f765.
 //
-// Solidity: function isActiveNode(address _miner) view returns(bool)
-func (_DioneOracle *DioneOracleCaller) IsActiveNode(opts *bind.CallOpts, _miner common.Address) (bool, error) {
-	var (
-		ret0 = new(bool)
-	)
-	out := ret0
-	err := _DioneOracle.contract.Call(opts, out, "isActiveNode", _miner)
-	return *ret0, err
+// Solidity: function minimumDisputeFee() view returns(uint256)
+func (_DioneOracle *DioneOracleCaller) MinimumDisputeFee(opts *bind.CallOpts) (*big.Int, error) {
+	var out []interface{}
+	err := _DioneOracle.contract.Call(opts, &out, "minimumDisputeFee")
+
+	if err != nil {
+		return *new(*big.Int), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new(*big.Int)).(**big.Int)
+
+	return out0, err
+
 }
 
-// IsActiveNode is a free data retrieval call binding the contract method 0x1d0f22d8.
+// MinimumDisputeFee is a free data retrieval call binding the contract method 0x4909f765.
 //
-// Solidity: function isActiveNode(address _miner) view returns(bool)
-func (_DioneOracle *DioneOracleSession) IsActiveNode(_miner common.Address) (bool, error) {
-	return _DioneOracle.Contract.IsActiveNode(&_DioneOracle.CallOpts, _miner)
+// Solidity: function minimumDisputeFee() view returns(uint256)
+func (_DioneOracle *DioneOracleSession) MinimumDisputeFee() (*big.Int, error) {
+	return _DioneOracle.Contract.MinimumDisputeFee(&_DioneOracle.CallOpts)
 }
 
-// IsActiveNode is a free data retrieval call binding the contract method 0x1d0f22d8.
+// MinimumDisputeFee is a free data retrieval call binding the contract method 0x4909f765.
 //
-// Solidity: function isActiveNode(address _miner) view returns(bool)
-func (_DioneOracle *DioneOracleCallerSession) IsActiveNode(_miner common.Address) (bool, error) {
-	return _DioneOracle.Contract.IsActiveNode(&_DioneOracle.CallOpts, _miner)
+// Solidity: function minimumDisputeFee() view returns(uint256)
+func (_DioneOracle *DioneOracleCallerSession) MinimumDisputeFee() (*big.Int, error) {
+	return _DioneOracle.Contract.MinimumDisputeFee(&_DioneOracle.CallOpts)
 }
 
 // Owner is a free data retrieval call binding the contract method 0x8da5cb5b.
 //
 // Solidity: function owner() view returns(address)
 func (_DioneOracle *DioneOracleCaller) Owner(opts *bind.CallOpts) (common.Address, error) {
-	var (
-		ret0 = new(common.Address)
-	)
-	out := ret0
-	err := _DioneOracle.contract.Call(opts, out, "owner")
-	return *ret0, err
+	var out []interface{}
+	err := _DioneOracle.contract.Call(opts, &out, "owner")
+
+	if err != nil {
+		return *new(common.Address), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new(common.Address)).(*common.Address)
+
+	return out0, err
+
 }
 
 // Owner is a free data retrieval call binding the contract method 0x8da5cb5b.
@@ -336,27 +356,6 @@ func (_DioneOracle *DioneOracleSession) RequestOracles(_originChain uint8, _requ
 // Solidity: function requestOracles(uint8 _originChain, string _requestType, string _requestParams, address _callbackAddress, bytes4 _callbackMethodID) returns(uint256)
 func (_DioneOracle *DioneOracleTransactorSession) RequestOracles(_originChain uint8, _requestType string, _requestParams string, _callbackAddress common.Address, _callbackMethodID [4]byte) (*types.Transaction, error) {
 	return _DioneOracle.Contract.RequestOracles(&_DioneOracle.TransactOpts, _originChain, _requestType, _requestParams, _callbackAddress, _callbackMethodID)
-}
-
-// SetNodeStatus is a paid mutator transaction binding the contract method 0x29589340.
-//
-// Solidity: function setNodeStatus(address _miner, bool _status) returns()
-func (_DioneOracle *DioneOracleTransactor) SetNodeStatus(opts *bind.TransactOpts, _miner common.Address, _status bool) (*types.Transaction, error) {
-	return _DioneOracle.contract.Transact(opts, "setNodeStatus", _miner, _status)
-}
-
-// SetNodeStatus is a paid mutator transaction binding the contract method 0x29589340.
-//
-// Solidity: function setNodeStatus(address _miner, bool _status) returns()
-func (_DioneOracle *DioneOracleSession) SetNodeStatus(_miner common.Address, _status bool) (*types.Transaction, error) {
-	return _DioneOracle.Contract.SetNodeStatus(&_DioneOracle.TransactOpts, _miner, _status)
-}
-
-// SetNodeStatus is a paid mutator transaction binding the contract method 0x29589340.
-//
-// Solidity: function setNodeStatus(address _miner, bool _status) returns()
-func (_DioneOracle *DioneOracleTransactorSession) SetNodeStatus(_miner common.Address, _status bool) (*types.Transaction, error) {
-	return _DioneOracle.Contract.SetNodeStatus(&_DioneOracle.TransactOpts, _miner, _status)
 }
 
 // SubmitOracleRequest is a paid mutator transaction binding the contract method 0xabb0e32a.
@@ -531,6 +530,7 @@ func (_DioneOracle *DioneOracleFilterer) ParseCancelOracleRequest(log types.Log)
 	if err := _DioneOracle.contract.UnpackLog(event, "CancelOracleRequest", log); err != nil {
 		return nil, err
 	}
+	event.Raw = log
 	return event, nil
 }
 
@@ -670,6 +670,7 @@ func (_DioneOracle *DioneOracleFilterer) ParseNewOracleRequest(log types.Log) (*
 	if err := _DioneOracle.contract.UnpackLog(event, "NewOracleRequest", log); err != nil {
 		return nil, err
 	}
+	event.Raw = log
 	return event, nil
 }
 
@@ -822,6 +823,7 @@ func (_DioneOracle *DioneOracleFilterer) ParseOwnershipTransferred(log types.Log
 	if err := _DioneOracle.contract.UnpackLog(event, "OwnershipTransferred", log); err != nil {
 		return nil, err
 	}
+	event.Raw = log
 	return event, nil
 }
 
@@ -960,5 +962,6 @@ func (_DioneOracle *DioneOracleFilterer) ParseSubmittedOracleRequest(log types.L
 	if err := _DioneOracle.contract.UnpackLog(event, "SubmittedOracleRequest", log); err != nil {
 		return nil, err
 	}
+	event.Raw = log
 	return event, nil
 }
