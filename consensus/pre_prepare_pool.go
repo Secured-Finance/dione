@@ -34,16 +34,16 @@ func NewPrePreparePool(miner *Miner, evc cache.EventCache) *PrePreparePool {
 	}
 }
 
-func (pp *PrePreparePool) CreatePrePrepare(consensusID string, task types.DioneTask, requestID string, callbackAddress, callbackMethodID, privateKey []byte) (*types2.Message, error) {
+func (pp *PrePreparePool) CreatePrePrepare(task *types.DioneTask, requestID string, callbackAddress, callbackMethodID, privateKey []byte) (*types2.Message, error) {
 	var message types2.Message
 	message.Type = types2.MessageTypePrePrepare
 	var consensusMsg types2.ConsensusMessage
-	consensusMsg.ConsensusID = consensusID
-	consensusMsg.RequestID = requestID
-	consensusMsg.CallbackAddress = callbackAddress
-	consensusMsg.CallbackMethodID = callbackMethodID
-	consensusMsg.Task = task
-	cHash, err := hashstructure.Hash(consensusMsg, hashstructure.FormatV2, nil)
+	consensusMsg.Task.ConsensusID = requestID
+	consensusMsg.Task.RequestID = requestID
+	consensusMsg.Task.CallbackAddress = callbackAddress
+	consensusMsg.Task.CallbackMethodID = callbackMethodID
+	consensusMsg.Task = *task
+	cHash, err := hashstructure.Hash(task, hashstructure.FormatV2, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -51,7 +51,7 @@ func (pp *PrePreparePool) CreatePrePrepare(consensusID string, task types.DioneT
 	if err != nil {
 		return nil, err
 	}
-	consensusMsg.Signature = signature.Data
+	consensusMsg.Task.Signature = signature.Data
 	message.Payload = consensusMsg
 	return &message, nil
 }
@@ -62,7 +62,7 @@ func (ppp *PrePreparePool) IsExistingPrePrepare(prepareMsg *types2.Message) bool
 
 	consensusMessage := prepareMsg.Payload
 	var exists bool
-	for _, v := range ppp.prePrepareMsgs[consensusMessage.ConsensusID] {
+	for _, v := range ppp.prePrepareMsgs[consensusMessage.Task.ConsensusID] {
 		if v.From == prepareMsg.From {
 			exists = true
 		}
@@ -83,13 +83,13 @@ func (ppp *PrePreparePool) IsValidPrePrepare(prePrepare *types2.Message) bool {
 	/////////////////////////////////
 
 	// === verify if request exists in event log cache ===
-	requestEvent, err := ppp.eventLogCache.GetOracleRequestEvent("request_" + consensusMsg.RequestID)
+	requestEvent, err := ppp.eventLogCache.GetOracleRequestEvent("request_" + consensusMsg.Task.RequestID)
 	if err != nil {
 		logrus.Errorf("the incoming request task event doesn't exist in the EVC, or is broken: %v", err)
 		return false
 	}
-	if bytes.Compare(requestEvent.CallbackAddress.Bytes(), consensusMsg.CallbackAddress) != 0 ||
-		bytes.Compare(requestEvent.CallbackMethodID[:], consensusMsg.CallbackMethodID) != 0 ||
+	if bytes.Compare(requestEvent.CallbackAddress.Bytes(), consensusMsg.Task.CallbackAddress) != 0 ||
+		bytes.Compare(requestEvent.CallbackMethodID[:], consensusMsg.Task.CallbackMethodID) != 0 ||
 		requestEvent.OriginChain != consensusMsg.Task.OriginChain ||
 		requestEvent.RequestType != consensusMsg.Task.RequestType ||
 		requestEvent.RequestParams != consensusMsg.Task.RequestParams {
@@ -185,7 +185,7 @@ func (ppp *PrePreparePool) AddPrePrepare(prePrepare *types2.Message) {
 	ppp.mut.Lock()
 	defer ppp.mut.Unlock()
 
-	consensusID := prePrepare.Payload.ConsensusID
+	consensusID := prePrepare.Payload.Task.ConsensusID
 	if _, ok := ppp.prePrepareMsgs[consensusID]; !ok {
 		ppp.prePrepareMsgs[consensusID] = []*types2.Message{}
 	}

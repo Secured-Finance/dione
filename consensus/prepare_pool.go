@@ -32,7 +32,7 @@ func (pp *PreparePool) IsExistingPrepare(prepareMsg *types2.Message) bool {
 
 	consensusMessage := prepareMsg.Payload
 	var exists bool
-	for _, v := range pp.prepareMsgs[consensusMessage.ConsensusID] {
+	for _, v := range pp.prepareMsgs[consensusMessage.Task.ConsensusID] {
 		if v.From == prepareMsg.From {
 			exists = true
 		}
@@ -53,7 +53,7 @@ func (pp *PreparePool) AddPrepare(prepare *types2.Message) {
 	pp.mut.Lock()
 	defer pp.mut.Unlock()
 
-	consensusID := prepare.Payload.ConsensusID
+	consensusID := prepare.Payload.Task.ConsensusID
 	if _, ok := pp.prepareMsgs[consensusID]; !ok {
 		pp.prepareMsgs[consensusID] = []*types2.Message{}
 	}

@@ -16,12 +16,7 @@ const (
 )
 
 type ConsensusMessage struct {
-	ConsensusID      string
-	Signature        []byte `hash:"-"`
-	RequestID        string
-	CallbackAddress  []byte
-	CallbackMethodID []byte
-	Task             types.DioneTask
+	Task types.DioneTask
 }
 
 type Message struct {

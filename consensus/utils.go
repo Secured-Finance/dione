@@ -15,7 +15,7 @@ func verifyTaskSignature(msg types.ConsensusMessage) error {
 		return err
 	}
 	err = sigs.Verify(
-		&types2.Signature{Type: types2.SigTypeEd25519, Data: msg.Signature},
+		&types2.Signature{Type: types2.SigTypeEd25519, Data: msg.Task.Signature},
 		[]byte(msg.Task.Miner),
 		[]byte(fmt.Sprintf("%v", cHash)),
 	)

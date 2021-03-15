@@ -27,7 +27,7 @@ var (
 )
 
 // DioneDisputeABI is the input ABI used to generate the binding from.
-const DioneDisputeABI = "[{\"inputs\":[{\"internalType\":\"contractIDioneStaking\",\"name\":\"_dioneStaking\",\"type\":\"address\"}],\"stateMutability\":\"nonpayable\",\"type\":\"constructor\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"internalType\":\"bytes32\",\"name\":\"dhash\",\"type\":\"bytes32\"},{\"indexed\":false,\"internalType\":\"bool\",\"name\":\"status\",\"type\":\"bool\"}],\"name\":\"DisputeFinished\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"internalType\":\"bytes32\",\"name\":\"dhash\",\"type\":\"bytes32\"},{\"indexed\":true,\"internalType\":\"address\",\"name\":\"miner\",\"type\":\"address\"},{\"indexed\":true,\"internalType\":\"address\",\"name\":\"disputeInitiator\",\"type\":\"address\"}],\"name\":\"NewDispute\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"internalType\":\"bytes32\",\"name\":\"dhash\",\"type\":\"bytes32\"},{\"indexed\":true,\"internalType\":\"address\",\"name\":\"votedMiner\",\"type\":\"address\"}],\"name\":\"NewVote\",\"type\":\"event\"},{\"inputs\":[],\"name\":\"dioneStaking\",\"outputs\":[{\"internalType\":\"contractIDioneStaking\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"miner\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"requestID\",\"type\":\"uint256\"}],\"name\":\"beginDispute\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes32\",\"name\":\"dhash\",\"type\":\"bytes32\"},{\"internalType\":\"bool\",\"name\":\"voteStatus\",\"type\":\"bool\"}],\"name\":\"vote\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes32\",\"name\":\"dhash\",\"type\":\"bytes32\"}],\"name\":\"finishDispute\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"}],"
+const DioneDisputeABI = "[{\"inputs\":[{\"internalType\":\"contractIDioneStaking\",\"name\":\"_dioneStaking\",\"type\":\"address\"}],\"stateMutability\":\"nonpayable\",\"type\":\"constructor\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"internalType\":\"bytes32\",\"name\":\"dhash\",\"type\":\"bytes32\"},{\"indexed\":false,\"internalType\":\"bool\",\"name\":\"status\",\"type\":\"bool\"}],\"name\":\"DisputeFinished\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"internalType\":\"bytes32\",\"name\":\"dhash\",\"type\":\"bytes32\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"requestID\",\"type\":\"uint256\"},{\"indexed\":true,\"internalType\":\"address\",\"name\":\"miner\",\"type\":\"address\"},{\"indexed\":true,\"internalType\":\"address\",\"name\":\"disputeInitiator\",\"type\":\"address\"}],\"name\":\"NewDispute\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"internalType\":\"bytes32\",\"name\":\"dhash\",\"type\":\"bytes32\"},{\"indexed\":true,\"internalType\":\"address\",\"name\":\"votedMiner\",\"type\":\"address\"}],\"name\":\"NewVote\",\"type\":\"event\"},{\"inputs\":[],\"name\":\"dioneStaking\",\"outputs\":[{\"internalType\":\"contractIDioneStaking\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"miner\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"requestID\",\"type\":\"uint256\"}],\"name\":\"beginDispute\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes32\",\"name\":\"dhash\",\"type\":\"bytes32\"},{\"internalType\":\"bool\",\"name\":\"voteStatus\",\"type\":\"bool\"}],\"name\":\"vote\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes32\",\"name\":\"dhash\",\"type\":\"bytes32\"}],\"name\":\"finishDispute\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"}]"
 
 // DioneDispute is an auto generated Go binding around an Ethereum contract.
 type DioneDispute struct {
@@ -470,14 +470,15 @@ func (it *DioneDisputeNewDisputeIterator) Close() error {
 // DioneDisputeNewDispute represents a NewDispute event raised by the DioneDispute contract.
 type DioneDisputeNewDispute struct {
 	Dhash            [32]byte
+	RequestID        *big.Int
 	Miner            common.Address
 	DisputeInitiator common.Address
 	Raw              types.Log // Blockchain specific contextual infos
 }
 
-// FilterNewDispute is a free log retrieval operation binding the contract event 0xcd3d2ebd72bbbf7e5659c6790b60f42174aafe2741b7ba3807007455faae522e.
+// FilterNewDispute is a free log retrieval operation binding the contract event 0x2ce1dcf0fdc2fa2126a7df604e89d10856ef74891a365a93e779a5c4aff5370a.
 //
-// Solidity: event NewDispute(bytes32 dhash, address indexed miner, address indexed disputeInitiator)
+// Solidity: event NewDispute(bytes32 dhash, uint256 requestID, address indexed miner, address indexed disputeInitiator)
 func (_DioneDispute *DioneDisputeFilterer) FilterNewDispute(opts *bind.FilterOpts, miner []common.Address, disputeInitiator []common.Address) (*DioneDisputeNewDisputeIterator, error) {
 
 	var minerRule []interface{}
@@ -496,9 +497,9 @@ func (_DioneDispute *DioneDisputeFilterer) FilterNewDispute(opts *bind.FilterOpt
 	return &DioneDisputeNewDisputeIterator{contract: _DioneDispute.contract, event: "NewDispute", logs: logs, sub: sub}, nil
 }
 
-// WatchNewDispute is a free log subscription operation binding the contract event 0xcd3d2ebd72bbbf7e5659c6790b60f42174aafe2741b7ba3807007455faae522e.
+// WatchNewDispute is a free log subscription operation binding the contract event 0x2ce1dcf0fdc2fa2126a7df604e89d10856ef74891a365a93e779a5c4aff5370a.
 //
-// Solidity: event NewDispute(bytes32 dhash, address indexed miner, address indexed disputeInitiator)
+// Solidity: event NewDispute(bytes32 dhash, uint256 requestID, address indexed miner, address indexed disputeInitiator)
 func (_DioneDispute *DioneDisputeFilterer) WatchNewDispute(opts *bind.WatchOpts, sink chan<- *DioneDisputeNewDispute, miner []common.Address, disputeInitiator []common.Address) (event.Subscription, error) {
 
 	var minerRule []interface{}
@@ -542,9 +543,9 @@ func (_DioneDispute *DioneDisputeFilterer) WatchNewDispute(opts *bind.WatchOpts,
 	}), nil
 }
 
-// ParseNewDispute is a log parse operation binding the contract event 0xcd3d2ebd72bbbf7e5659c6790b60f42174aafe2741b7ba3807007455faae522e.
+// ParseNewDispute is a log parse operation binding the contract event 0x2ce1dcf0fdc2fa2126a7df604e89d10856ef74891a365a93e779a5c4aff5370a.
 //
-// Solidity: event NewDispute(bytes32 dhash, address indexed miner, address indexed disputeInitiator)
+// Solidity: event NewDispute(bytes32 dhash, uint256 requestID, address indexed miner, address indexed disputeInitiator)
 func (_DioneDispute *DioneDisputeFilterer) ParseNewDispute(log types.Log) (*DioneDisputeNewDispute, error) {
 	event := new(DioneDisputeNewDispute)
 	if err := _DioneDispute.contract.UnpackLog(event, "NewDispute", log); err != nil {

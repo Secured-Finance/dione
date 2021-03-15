@@ -21,7 +21,7 @@ contract DioneDispute {
 
     mapping(bytes32 => Dispute) disputes;
 
-    event NewDispute(bytes32 dhash, address indexed miner, address indexed disputeInitiator);
+    event NewDispute(bytes32 dhash, uint256 requestID, address indexed miner, address indexed disputeInitiator);
     event NewVote(bytes32 dhash, address indexed votedMiner);
     event DisputeFinished(bytes32 dhash, bool status);
 
@@ -43,7 +43,7 @@ contract DioneDispute {
 
         disputes[dhash] = dispute;
 
-        emit NewDispute(dhash, miner, msg.sender);
+        emit NewDispute(dhash, requestID, miner, msg.sender);
     }
 
     function vote(bytes32 dhash, bool voteStatus) public {

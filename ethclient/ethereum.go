@@ -2,7 +2,6 @@ package ethclient
 
 import (
 	"context"
-	"encoding/hex"
 	"math/big"
 
 	"github.com/Secured-Finance/dione/contracts/dioneDispute"
@@ -158,14 +157,8 @@ func (c *EthereumClient) BeginDispute(miner common.Address, requestID *big.Int) 
 	return nil
 }
 
-func (c *EthereumClient) VoteDispute(dhash string, voteStatus bool) error {
-	dhashRawSlice, err := hex.DecodeString(dhash)
-	if err != nil {
-		return err
-	}
-	var dhashRaw [32]byte
-	copy(dhashRaw[:], dhashRawSlice)
-	_, err = c.disputeContract.Vote(dhashRaw, voteStatus)
+func (c *EthereumClient) VoteDispute(dhash [32]byte, voteStatus bool) error {
+	_, err := c.disputeContract.Vote(dhash, voteStatus)
 	if err != nil {
 		return err
 	}
@@ -173,14 +166,8 @@ func (c *EthereumClient) VoteDispute(dhash string, voteStatus bool) error {
 	return nil
 }
 
-func (c *EthereumClient) FinishDispute(dhash string) error {
-	dhashRawSlice, err := hex.DecodeString(dhash)
-	if err != nil {
-		return err
-	}
-	var dhashRaw [32]byte
-	copy(dhashRaw[:], dhashRawSlice)
-	_, err = c.disputeContract.FinishDispute(dhashRaw)
+func (c *EthereumClient) FinishDispute(dhash [32]byte) error {
+	_, err := c.disputeContract.FinishDispute(dhash)
 	if err != nil {
 		return err
 	}
@@ -205,7 +192,7 @@ func (c *EthereumClient) SubscribeOnNewSubmittions(ctx context.Context) (chan *d
 	resChan := make(chan *dioneOracle.DioneOracleSubmittedOracleRequest)
 	requestsFilter := c.dioneOracle.Contract.DioneOracleFilterer
 	subscription, err := requestsFilter.WatchSubmittedOracleRequest(&bind.WatchOpts{
-		Start:   nil, //last block
+		Start:   nil, // last block
 		Context: ctx,
 	}, resChan)
 	if err != nil {

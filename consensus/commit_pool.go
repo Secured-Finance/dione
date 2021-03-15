@@ -32,7 +32,7 @@ func (cp *CommitPool) IsExistingCommit(commitMsg *types2.Message) bool {
 
 	consensusMessage := commitMsg.Payload
 	var exists bool
-	for _, v := range cp.commitMsgs[consensusMessage.ConsensusID] {
+	for _, v := range cp.commitMsgs[consensusMessage.Task.ConsensusID] {
 		if v.From == commitMsg.From {
 			exists = true
 		}
@@ -54,7 +54,7 @@ func (cp *CommitPool) AddCommit(commit *types2.Message) {
 	cp.mut.Lock()
 	defer cp.mut.Unlock()
 
-	consensusID := commit.Payload.ConsensusID
+	consensusID := commit.Payload.Task.ConsensusID
 	if _, ok := cp.commitMsgs[consensusID]; !ok {
 		cp.commitMsgs[consensusID] = []*types2.Message{}
 	}

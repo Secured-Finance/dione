@@ -26,15 +26,17 @@ type PBFTConsensusManager struct {
 	prePreparePool *PrePreparePool
 	preparePool    *PreparePool
 	commitPool     *CommitPool
-	consensusInfo  map[string]*ConsensusData
+	consensusMap   map[string]*Consensus
 	ethereumClient *ethclient.EthereumClient
 	miner          *Miner
 	eventCache     cache.EventCache
 }
 
-type ConsensusData struct {
-	mutex            sync.Mutex
-	alreadySubmitted bool
+type Consensus struct {
+	mutex                sync.Mutex
+	Finished             bool
+	IsCurrentMinerLeader bool
+	Task                 *types2.DioneTask
 }
 
 func NewPBFTConsensusManager(psb *pubsub.PubSubRouter, minApprovals int, privKey []byte, ethereumClient *ethclient.EthereumClient, miner *Miner, evc cache.EventCache) *PBFTConsensusManager {
@@ -48,7 +50,7 @@ func NewPBFTConsensusManager(psb *pubsub.PubSubRouter, minApprovals int, privKey
 	pcm.privKey = privKey
 	pcm.ethereumClient = ethereumClient
 	pcm.eventCache = evc
-	pcm.consensusInfo = map[string]*ConsensusData{}
+	pcm.consensusMap = map[string]*Consensus{}
 	pcm.psb.Hook(types.MessageTypePrePrepare, pcm.handlePrePrepare)
 	pcm.psb.Hook(types.MessageTypePrepare, pcm.handlePrepare)
 	pcm.psb.Hook(types.MessageTypeCommit, pcm.handleCommit)
@@ -56,11 +58,10 @@ func NewPBFTConsensusManager(psb *pubsub.PubSubRouter, minApprovals int, privKey
 }
 
 func (pcm *PBFTConsensusManager) Propose(consensusID string, task types2.DioneTask, requestEvent *dioneOracle.DioneOracleNewOracleRequest) error {
-	pcm.consensusInfo[consensusID] = &ConsensusData{}
+	pcm.createConsensusInfo(&task, true)
 
 	prePrepareMsg, err := pcm.prePreparePool.CreatePrePrepare(
-		consensusID,
-		task,
+		&task,
 		requestEvent.ReqID.String(),
 		requestEvent.CallbackAddress.Bytes(),
 		requestEvent.CallbackMethodID[:],
@@ -74,6 +75,9 @@ func (pcm *PBFTConsensusManager) Propose(consensusID string, task types2.DioneTa
 }
 
 func (pcm *PBFTConsensusManager) handlePrePrepare(message *types.Message) {
+	if message.Payload.Task.Miner == pcm.miner.address {
+		return
+	}
 	if pcm.prePreparePool.IsExistingPrePrepare(message) {
 		logrus.Debug("received existing pre_prepare msg, dropping...")
 		return
@@ -94,6 +98,9 @@ func (pcm *PBFTConsensusManager) handlePrePrepare(message *types.Message) {
 	if err != nil {
 		logrus.Errorf("failed to create prepare message: %w", err)
 	}
+
+	pcm.createConsensusInfo(&message.Payload.Task, false)
+
 	pcm.psb.BroadcastToServiceTopic(prepareMsg)
 }
 
@@ -114,7 +121,7 @@ func (pcm *PBFTConsensusManager) handlePrepare(message *types.Message) {
 		return
 	}
 
-	if pcm.preparePool.PreparePoolSize(message.Payload.ConsensusID) >= pcm.minApprovals {
+	if pcm.preparePool.PreparePoolSize(message.Payload.Task.ConsensusID) >= pcm.minApprovals {
 		commitMsg, err := pcm.commitPool.CreateCommit(message, pcm.privKey)
 		if err != nil {
 			logrus.Errorf("failed to create commit message: %w", err)
@@ -141,21 +148,22 @@ func (pcm *PBFTConsensusManager) handleCommit(message *types.Message) {
 	}
 
 	consensusMsg := message.Payload
-	if pcm.commitPool.CommitSize(consensusMsg.ConsensusID) >= pcm.minApprovals {
-		if info, ok := pcm.consensusInfo[consensusMsg.ConsensusID]; ok {
-			info.mutex.Lock()
-			defer info.mutex.Unlock()
-			if info.alreadySubmitted {
-				return
-			}
-			logrus.Infof("Submitting on-chain result for consensus ID: %s", consensusMsg.ConsensusID)
-			reqID, ok := new(big.Int).SetString(consensusMsg.RequestID, 10)
+	if pcm.commitPool.CommitSize(consensusMsg.Task.ConsensusID) >= pcm.minApprovals {
+		info := pcm.consensusMap[consensusMsg.Task.ConsensusID]
+		info.mutex.Lock()
+		defer info.mutex.Unlock()
+		if info.Finished {
+			return
+		}
+		if info.IsCurrentMinerLeader {
+			logrus.Infof("Submitting on-chain result for consensus ID: %s", consensusMsg.Task.ConsensusID)
+			reqID, ok := new(big.Int).SetString(consensusMsg.Task.RequestID, 10)
 			if !ok {
-				logrus.Errorf("Failed to parse request ID: %v", consensusMsg.RequestID)
+				logrus.Errorf("Failed to parse request ID: %v", consensusMsg.Task.RequestID)
 			}
-			callbackAddress := common.BytesToAddress(consensusMsg.CallbackAddress)
+			callbackAddress := common.BytesToAddress(consensusMsg.Task.CallbackAddress)
 
-			request, err := pcm.eventCache.GetOracleRequestEvent("request_" + consensusMsg.RequestID)
+			request, err := pcm.eventCache.GetOracleRequestEvent("request_" + consensusMsg.Task.RequestID)
 			if err != nil {
 				logrus.Errorf("Failed to get request from cache: %v", err.Error())
 				return
@@ -165,7 +173,25 @@ func (pcm *PBFTConsensusManager) handleCommit(message *types.Message) {
 			if err != nil {
 				logrus.Errorf("Failed to submit on-chain result: %v", err)
 			}
-			info.alreadySubmitted = true
 		}
+
+		info.Finished = true
 	}
+}
+
+func (pcm *PBFTConsensusManager) createConsensusInfo(task *types2.DioneTask, isLeader bool) {
+	pcm.consensusMap[task.ConsensusID] = &Consensus{
+		IsCurrentMinerLeader: isLeader,
+		Task:                 task,
+		Finished:             false,
+	}
+}
+
+func (pcm *PBFTConsensusManager) GetConsensusInfo(consensusID string) *Consensus {
+	c, ok := pcm.consensusMap[consensusID]
+	if !ok {
+		return nil
+	}
+
+	return c
 }
