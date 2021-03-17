@@ -12,6 +12,7 @@ import (
 	pex "github.com/Secured-Finance/go-libp2p-pex"
 
 	"github.com/Secured-Finance/dione/cache"
+	"github.com/Secured-Finance/dione/consensus"
 
 	pubsub "github.com/libp2p/go-libp2p-pubsub"
 
@@ -38,7 +39,6 @@ import (
 	"github.com/Secured-Finance/dione/beacon"
 
 	"github.com/Secured-Finance/dione/config"
-	"github.com/Secured-Finance/dione/consensus"
 	"github.com/Secured-Finance/dione/ethclient"
 	pubsub2 "github.com/Secured-Finance/dione/pubsub"
 	"github.com/libp2p/go-libp2p"
@@ -65,6 +65,7 @@ type Node struct {
 	Beacon           beacon.BeaconNetworks
 	Wallet           *wallet.LocalWallet
 	EventCache       cache.EventCache
+	DisputeManager   *consensus.DisputeManager
 }
 
 func NewNode(config *config.Config, prvKey crypto.PrivKey, pexDiscoveryUpdateTime time.Duration) (*Node, error) {
@@ -121,14 +122,19 @@ func NewNode(config *config.Config, prvKey crypto.PrivKey, pexDiscoveryUpdateTim
 	n.Miner = miner
 
 	// initialize event log cache subsystem
-	//eventLogCache := provideEventLogCache()
-	//n.EventLogCache = eventLogCache
 	eventCache := provideEventCache(config)
 	n.EventCache = eventCache
 
 	// initialize consensus subsystem
 	cManager := provideConsensusManager(psb, miner, ethClient, rawPrivKey, n.Config.ConsensusMinApprovals, eventCache)
 	n.ConsensusManager = cManager
+
+	// initialize dispute subsystem
+	disputeManager, err := provideDisputeManager(context.TODO(), ethClient, cManager)
+	if err != nil {
+		logrus.Fatal(err)
+	}
+	n.DisputeManager = disputeManager
 
 	// initialize internal eth wallet
 	wallet, err := provideWallet(n.Host.ID(), rawPrivKey)
@@ -254,6 +260,10 @@ func provideEventCache(config *config.Config) cache.EventCache {
 		backend = cache.NewEventLogCache()
 	}
 	return backend
+}
+
+func provideDisputeManager(ctx context.Context, ethClient *ethclient.EthereumClient, pcm *consensus.PBFTConsensusManager) (*consensus.DisputeManager, error) {
+	return consensus.NewDisputeManager(ctx, ethClient, pcm)
 }
 
 func provideMiner(peerID peer.ID, ethAddress common.Address, beacon beacon.BeaconNetworks, ethClient *ethclient.EthereumClient, privateKey []byte) *consensus.Miner {
