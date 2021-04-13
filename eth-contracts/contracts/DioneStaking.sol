@@ -1,9 +1,9 @@
-pragma solidity 0.6.12;
+pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import "@openzeppelin/contracts/math/SafeMath.sol";
+import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
-import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
+import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "./DioneToken.sol";
 
 // DioneStaking is the main contract for Dione oracle network Proof-of-Stake mechanism
@@ -22,8 +22,8 @@ contract DioneStaking is Ownable, ReentrancyGuard {
     }
 
     DioneToken public dione;
-    // Aggregator contract address.
-    address public aggregatorAddr;
+    // DioneOracle contract address.
+    address public dioneOracleAddress;
     // Dispute contract address.
     address public disputeContractAddr;
     // Miner rewards in DIONE tokens.
@@ -52,16 +52,16 @@ contract DioneStaking is Ownable, ReentrancyGuard {
         uint256 _minerReward,
         uint256 _startBlock,
         uint256 _minimumStake
-    ) public {
+    ) {
         dione = _dione;
-        minerReward = _minerReward;
+        minerReward = _minerReward**18;
         startBlock = _startBlock;
-        minimumStake = _minimumStake;
+        minimumStake = _minimumStake**18;
     }
 
     // Mine new dione oracle task, only can be executed by aggregator contract
     function mine(address _minerAddr) public nonReentrant {
-        require(msg.sender == aggregatorAddr, "not aggregator contract");
+        require(msg.sender == dioneOracleAddress, "not aggregator contract");
         MinerInfo storage miner = minerInfo[_minerAddr];
         require(miner.amount >= minimumStake);
         dione.mint(_minerAddr, minerReward);
@@ -71,7 +71,7 @@ contract DioneStaking is Ownable, ReentrancyGuard {
 
     // Mine new dione oracle task and stake miner reward, only can be executed by aggregator contract
     function mineAndStake(address _minerAddr) public nonReentrant {
-        require(msg.sender == aggregatorAddr, "not aggregator contract");
+        require(msg.sender == dioneOracleAddress, "not aggregator contract");
         MinerInfo storage miner = minerInfo[_minerAddr];
         require(miner.amount >= minimumStake);
         dione.mint(address(this), minerReward);
@@ -131,8 +131,12 @@ contract DioneStaking is Ownable, ReentrancyGuard {
         minimumStake = _minimumStake;
     }
 
-    function setAggregator(address _aggregatorAddr) public onlyOwner {
-        aggregatorAddr = _aggregatorAddr;
+    function setOracleContractAddress(address _addr) public onlyOwner {
+        dioneOracleAddress = _addr;
+    }
+
+    function setDisputeContractAddress(address _addr) public onlyOwner {
+        disputeContractAddr = _addr;
     }
 
     function slashMiner(address miner, address[] memory receipentMiners) public {

@@ -1,10 +1,13 @@
-pragma solidity 0.6.12;
+pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 
 // DioneToken with Governance.
 contract DioneToken is ERC20("DioneToken", "DIONE"), Ownable {
+    using SafeMath for uint256;
+    
     /// @notice Creates `_amount` token to `_to`. Must only be called by the owner (MasterChef).
     function mint(address _to, uint256 _amount) public onlyOwner {
         _mint(_to, _amount);
@@ -17,7 +20,7 @@ contract DioneToken is ERC20("DioneToken", "DIONE"), Ownable {
     // Which is copied and modified from COMPOUND:
     // https://github.com/compound-finance/compound-protocol/blob/master/contracts/Governance/Comp.sol
 
-    /// @notice A record of each accounts delegate
+    // A record of each accounts delegate
     mapping (address => address) internal _delegates;
 
     /// @notice A checkpoint for marking number of votes from a given block
@@ -115,7 +118,7 @@ contract DioneToken is ERC20("DioneToken", "DIONE"), Ownable {
         address signatory = ecrecover(digest, v, r, s);
         require(signatory != address(0), "DIONE::delegateBySig: invalid signature");
         require(nonce == nonces[signatory]++, "DIONE::delegateBySig: invalid nonce");
-        require(now <= expiry, "DIONE::delegateBySig: signature expired");
+        require(block.timestamp <= expiry, "DIONE::delegateBySig: signature expired");
         return _delegate(signatory, delegatee);
     }
 
@@ -235,7 +238,7 @@ contract DioneToken is ERC20("DioneToken", "DIONE"), Ownable {
         return uint32(n);
     }
 
-    function getChainId() internal pure returns (uint) {
+    function getChainId() internal view returns (uint) {
         uint256 chainId;
         assembly { chainId := chainid() }
         return chainId;

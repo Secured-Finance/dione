@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity ^0.6.0;
+pragma solidity ^0.8.0;
 
 interface IDioneStaking {
     function mine(address _minerAddr) external;
@@ -13,5 +13,5 @@ interface IDioneStaking {
     function isMiner(address _minerAddr) external view returns (bool);
     function setMinimumStake(uint256 _minimumStake) external;
     function setAggregator(address _aggregatorAddr) external;
-    function slashMiner(address miner, address[] memory receipentMiners) external;
+    function slashMiner(address miner, address[] calldata receipentMiners) external;
 }

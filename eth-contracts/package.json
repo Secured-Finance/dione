@@ -1,27 +1,21 @@
 {
-  "name": "dione-smart-contracts",
+  "name": "dione",
   "version": "0.0.1",
-  "description": "Smart contracts for Dione network",
-  "main": "truffle-config.js",
-  "directories": {
-    "test": "test"
-  },
+  "description": "",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "compile": "truffle compile",
-    "fix-lint": "solium -d contracts/ --fix"
+    "test": "embark test"
   },
+  "keywords": [],
   "author": "",
   "license": "MIT",
-  "dependencies": {
-    "@truffle/hdwallet-provider": "^1.0.40",
-    "dotenv": "^8.2.0",
-    "ethlint": "^1.2.5",
-    "truffle": "^5.1.37",
-    "truffle-export-abi": "^1.0.1",
-    "truffle-flattener": "^1.5.0"
-  },
   "devDependencies": {
-    "@openzeppelin/contracts": "^3.2.0"
+    "embark": "^6.0.0",
+    "embark-geth": "^6.0.0",
+    "embarkjs": "^6.0.0",
+    "embarkjs-ens": "^6.0.0",
+    "embarkjs-web3": "^6.0.0"
+  },
+  "dependencies": {
+    "@openzeppelin/contracts": "^4.0.0"
   }
 }

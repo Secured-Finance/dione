@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.6.12;
+pragma solidity ^0.8.0;
 
-import "@openzeppelin/contracts/math/SafeMath.sol";
+import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 
 import "./interfaces/IDioneStaking.sol";
@@ -59,14 +59,14 @@ contract DioneOracle is Ownable {
     _;
   }
 
-  constructor(IDioneStaking _dioneStaking) public {
+  constructor(IDioneStaking _dioneStaking) {
       dioneStaking = _dioneStaking;
   }
 
   function requestOracles(uint8 _originChain, string memory _requestType, string memory _requestParams, address _callbackAddress, bytes4 _callbackMethodID) public returns (uint256) {
     requestCounter += 1;
     require(pendingRequests[requestCounter] == 0, "This counter is not unique");
-    uint256 requestDeadline = now.add(MAXIMUM_DELAY);
+    uint256 requestDeadline = block.timestamp.add(MAXIMUM_DELAY);
     pendingRequests[requestCounter] = keccak256(abi.encodePacked(_requestParams, _callbackAddress, _callbackMethodID, requestCounter, requestDeadline));
 
     emit NewOracleRequest(_originChain, _requestType, _requestParams, _callbackAddress, _callbackMethodID, requestCounter, requestDeadline);
@@ -76,7 +76,7 @@ contract DioneOracle is Ownable {
   function cancelOracleRequest(string memory _requestParams, bytes4 _callbackMethodID, uint256 _reqID, uint256 _requestDeadline) public {
     bytes32 requestHash = keccak256(abi.encodePacked(_requestParams, msg.sender, _callbackMethodID, _reqID, _requestDeadline));
     require(requestHash == pendingRequests[_reqID], "Request hash do not match it's origin");
-    require(_requestDeadline <= now, "Request didn't reached it's deadline");
+    require(_requestDeadline <= block.timestamp, "Request didn't reached it's deadline");
 
     delete pendingRequests[_reqID];
     emit CancelOracleRequest(_reqID);

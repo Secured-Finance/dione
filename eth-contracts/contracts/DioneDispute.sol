@@ -1,6 +1,6 @@
-pragma solidity ^0.6.12;
+pragma solidity ^0.8.0;
 
-import "@openzeppelin/contracts/math/SafeMath.sol";
+import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 import "./interfaces/IDioneStaking.sol";
 
 contract DioneDispute {
@@ -25,12 +25,12 @@ contract DioneDispute {
     event NewVote(bytes32 dhash, address indexed votedMiner);
     event DisputeFinished(bytes32 dhash, bool status);
 
-    constructor(IDioneStaking _dioneStaking) public {
+    constructor(IDioneStaking _dioneStaking) {
         dioneStaking = _dioneStaking;
     }
 
     function beginDispute(address miner, uint256 requestID) public {
-        bytes32 dhash = keccak256(abi.encodePacked(miner, requestID, now));
+        bytes32 dhash = keccak256(abi.encodePacked(miner, requestID, block.timestamp));
         require(disputes[dhash].dhash.length != 0, "dispute already exists");
         Dispute storage dispute = disputes[dhash];
         dispute.dhash = dhash;
@@ -38,7 +38,7 @@ contract DioneDispute {
         dispute.finished = false;
         dispute.disputeResult = false;
         dispute.miner = miner;
-        dispute.timestamp = now;
+        dispute.timestamp = block.timestamp;
         dispute.disputeInitiator = msg.sender;
 
         disputes[dhash] = dispute;
@@ -65,7 +65,7 @@ contract DioneDispute {
     function finishDispute(bytes32 dhash) public {
         require(disputes[dhash].dhash.length == 0, "dispute doesn't exist");
         Dispute storage dispute = disputes[dhash];
-        require((now - dispute.timestamp) >= 2 hours, "vote window must be two hours");
+        require((block.timestamp - dispute.timestamp) >= 2 hours, "vote window must be two hours");
         require(dispute.finished == false, "dispute already finished");
         require(dispute.disputeInitiator == msg.sender, "only dispute initiator can call this function");
         if (dispute.sum < 0) {
