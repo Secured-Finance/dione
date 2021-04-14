@@ -39,10 +39,13 @@ module.exports = {
         args: ['$DioneToken', 10, 0, 5000]
       },
       ERC20: {
-          deploy: false
+        deploy: false
       },
       Timelock: {
-          deploy: false
+        deploy: false
+      },
+      SafeMath: {
+        deploy: false
       }
     }
   },

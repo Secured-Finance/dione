@@ -23,7 +23,10 @@ type Config struct {
 
 type EthereumConfig struct {
 	GatewayAddress              string `mapstructure:"gateway_address"`
+	ChainID                     int    `mapstructure:"chain_id"`
 	PrivateKey                  string `mapstructure:"private_key"`
+	MnemonicPhrase              string `mapstructure:"mnemonic_phrase"`
+	HDDerivationPath            string `mapstructure:"hd_derivation_path"`
 	DioneOracleContractAddress  string `mapstructure:"dione_oracle_contract_address"`
 	DioneStakingContractAddress string `mapstructure:"dione_staking_address"`
 	DisputeContractAddress      string `mapstructure:"dispute_contract_address"`

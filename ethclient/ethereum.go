@@ -2,7 +2,13 @@ package ethclient
 
 import (
 	"context"
+	"crypto/ecdsa"
+	"fmt"
 	"math/big"
+
+	hdwallet "github.com/miguelmota/go-ethereum-hdwallet"
+
+	"github.com/Secured-Finance/dione/config"
 
 	"github.com/Secured-Finance/dione/contracts/dioneDispute"
 	"github.com/Secured-Finance/dione/contracts/dioneOracle"
@@ -48,29 +54,33 @@ func NewEthereumClient() *EthereumClient {
 	return ethereumClient
 }
 
-func (c *EthereumClient) Initialize(ctx context.Context, url, privateKey, dioneStakingAddress, disputeContractAddress, dioneOracleAddress string) error {
-	client, err := ethclient.Dial(url)
+func (c *EthereumClient) Initialize(cfg *config.EthereumConfig) error {
+	client, err := ethclient.Dial(cfg.GatewayAddress)
 	if err != nil {
 		return err
 	}
 	c.client = client
-	ecdsaKey, err := crypto.HexToECDSA(privateKey)
+
+	key, err := c.getPrivateKey(cfg)
 	if err != nil {
 		return err
 	}
-	authTransactor := bind.NewKeyedTransactor(ecdsaKey)
+	authTransactor, err := bind.NewKeyedTransactorWithChainID(key, big.NewInt(int64(cfg.ChainID)))
+	if err != nil {
+		return err
+	}
 	c.authTransactor = authTransactor
 	c.ethAddress = &c.authTransactor.From
 
-	stakingContract, err := dioneStaking.NewDioneStaking(common.HexToAddress(dioneStakingAddress), client)
+	stakingContract, err := dioneStaking.NewDioneStaking(common.HexToAddress(cfg.DioneStakingContractAddress), client)
 	if err != nil {
 		return err
 	}
-	oracleContract, err := dioneOracle.NewDioneOracle(common.HexToAddress(dioneOracleAddress), client)
+	oracleContract, err := dioneOracle.NewDioneOracle(common.HexToAddress(cfg.DioneOracleContractAddress), client)
 	if err != nil {
 		return err
 	}
-	disputeContract, err := dioneDispute.NewDioneDispute(common.HexToAddress(disputeContractAddress), client)
+	disputeContract, err := dioneDispute.NewDioneDispute(common.HexToAddress(cfg.DisputeContractAddress), client)
 	if err != nil {
 		return err
 	}
@@ -120,6 +130,41 @@ func (c *EthereumClient) Initialize(ctx context.Context, url, privateKey, dioneS
 		},
 	}
 	return nil
+}
+
+func (c *EthereumClient) getPrivateKey(cfg *config.EthereumConfig) (*ecdsa.PrivateKey, error) {
+	if cfg.PrivateKey != "" {
+		key, err := crypto.HexToECDSA(cfg.PrivateKey)
+		return key, err
+	}
+
+	if cfg.MnemonicPhrase != "" {
+		wallet, err := hdwallet.NewFromMnemonic(cfg.MnemonicPhrase)
+		if err != nil {
+			return nil, err
+		}
+		path := hdwallet.DefaultBaseDerivationPath
+
+		if cfg.HDDerivationPath != "" {
+			parsedPath, err := hdwallet.ParseDerivationPath(cfg.HDDerivationPath)
+			if err != nil {
+				return nil, err
+			}
+			path = parsedPath
+		}
+
+		account, err := wallet.Derive(path, true)
+		if err != nil {
+			return nil, err
+		}
+		key, err := wallet.PrivateKey(account)
+		if err != nil {
+			return nil, err
+		}
+		return key, nil
+	}
+
+	return nil, fmt.Errorf("private key or mnemonic phrase isn't specified")
 }
 
 func (c *EthereumClient) GetEthAddress() *common.Address {

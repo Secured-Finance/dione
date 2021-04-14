@@ -245,10 +245,6 @@ func (n *Node) subscribeOnEthContractsAsync(ctx context.Context) {
 	}()
 }
 
-func provideEventLogCache() *cache.EventLogCache {
-	return cache.NewEventLogCache()
-}
-
 func provideEventCache(config *config.Config) cache.EventCache {
 	var backend cache.EventCache
 	switch config.CacheType {
@@ -281,6 +277,7 @@ func provideBeacon(ps *pubsub.PubSub) (beacon.BeaconNetworks, error) {
 	return networks, nil
 }
 
+// FIXME: do we really need this?
 func provideWallet(peerID peer.ID, privKey []byte) (*wallet.LocalWallet, error) {
 	// TODO make persistent keystore
 	kstore := wallet.NewMemKeyStore()
@@ -299,13 +296,7 @@ func provideWallet(peerID peer.ID, privKey []byte) (*wallet.LocalWallet, error) 
 
 func provideEthereumClient(config *config.Config) (*ethclient.EthereumClient, error) {
 	ethereum := ethclient.NewEthereumClient()
-	err := ethereum.Initialize(context.Background(),
-		config.Ethereum.GatewayAddress,
-		config.Ethereum.PrivateKey,
-		config.Ethereum.DioneStakingContractAddress,
-		config.Ethereum.DisputeContractAddress,
-		config.Ethereum.DioneOracleContractAddress,
-	)
+	err := ethereum.Initialize(&config.Ethereum)
 	if err != nil {
 		return nil, xerrors.Errorf("failed to initialize ethereum client: %v", err)
 	}
