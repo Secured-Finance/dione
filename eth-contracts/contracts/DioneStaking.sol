@@ -54,14 +54,14 @@ contract DioneStaking is Ownable, ReentrancyGuard {
         uint256 _minimumStake
     ) {
         dione = _dione;
-        minerReward = _minerReward**18;
+        minerReward = _minerReward;
         startBlock = _startBlock;
-        minimumStake = _minimumStake**18;
+        minimumStake = _minimumStake;
     }
 
     // Mine new dione oracle task, only can be executed by aggregator contract
     function mine(address _minerAddr) public nonReentrant {
-        require(msg.sender == dioneOracleAddress, "not aggregator contract");
+        require(msg.sender == dioneOracleAddress, "not oracle contract");
         MinerInfo storage miner = minerInfo[_minerAddr];
         require(miner.amount >= minimumStake);
         dione.mint(_minerAddr, minerReward);
@@ -69,9 +69,9 @@ contract DioneStaking is Ownable, ReentrancyGuard {
         emit Mine(_minerAddr, block.number);
     }
 
-    // Mine new dione oracle task and stake miner reward, only can be executed by aggregator contract
+    // Mine new dione oracle task and stake miner reward, only can be executed by oracle contract
     function mineAndStake(address _minerAddr) public nonReentrant {
-        require(msg.sender == dioneOracleAddress, "not aggregator contract");
+        require(msg.sender == dioneOracleAddress, "not oracle contract");
         MinerInfo storage miner = minerInfo[_minerAddr];
         require(miner.amount >= minimumStake);
         dione.mint(address(this), minerReward);
