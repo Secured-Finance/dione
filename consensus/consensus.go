@@ -169,7 +169,7 @@ func (pcm *PBFTConsensusManager) handleCommit(message *types.Message) {
 				return
 			}
 
-			err = pcm.ethereumClient.SubmitRequestAnswer(reqID, callbackAddress, request.RequestParams, request.Deadline, consensusMsg.Task.Payload)
+			err = pcm.ethereumClient.SubmitRequestAnswer(reqID, callbackAddress, request.CallbackMethodID, request.RequestParams, request.Deadline, consensusMsg.Task.Payload)
 			if err != nil {
 				logrus.Errorf("Failed to submit on-chain result: %v", err)
 			}
@@ -180,10 +180,12 @@ func (pcm *PBFTConsensusManager) handleCommit(message *types.Message) {
 }
 
 func (pcm *PBFTConsensusManager) createConsensusInfo(task *types2.DioneTask, isLeader bool) {
-	pcm.consensusMap[task.ConsensusID] = &Consensus{
-		IsCurrentMinerLeader: isLeader,
-		Task:                 task,
-		Finished:             false,
+	if _, ok := pcm.consensusMap[task.ConsensusID]; !ok {
+		pcm.consensusMap[task.ConsensusID] = &Consensus{
+			IsCurrentMinerLeader: isLeader,
+			Task:                 task,
+			Finished:             false,
+		}
 	}
 }
 

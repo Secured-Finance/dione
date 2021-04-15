@@ -134,16 +134,20 @@ func (m *Miner) MineTask(ctx context.Context, event *dioneOracle.DioneOracleNewO
 	}
 
 	return &types.DioneTask{
-		OriginChain:   event.OriginChain,
-		RequestType:   event.RequestType,
-		RequestParams: event.RequestParams,
-		Miner:         m.address,
-		MinerEth:      m.ethAddress.Hex(),
-		Ticket:        ticket,
-		ElectionProof: winner,
-		BeaconEntries: beaconValues,
-		Payload:       res,
-		DrandRound:    types.DrandRound(randomBase.Round),
+		OriginChain:      event.OriginChain,
+		RequestType:      event.RequestType,
+		RequestParams:    event.RequestParams,
+		RequestID:        event.ReqID.String(),
+		ConsensusID:      event.ReqID.String(),
+		CallbackAddress:  event.CallbackAddress.Bytes(),
+		CallbackMethodID: event.CallbackMethodID[:],
+		Miner:            m.address,
+		MinerEth:         m.ethAddress.Hex(),
+		Ticket:           ticket,
+		ElectionProof:    winner,
+		BeaconEntries:    beaconValues,
+		Payload:          res,
+		DrandRound:       types.DrandRound(randomBase.Round),
 	}, nil
 }
 

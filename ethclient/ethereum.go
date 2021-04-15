@@ -184,8 +184,8 @@ func (c *EthereumClient) SubscribeOnOracleEvents(ctx context.Context) (chan *dio
 	return resChan, subscription, err
 }
 
-func (c *EthereumClient) SubmitRequestAnswer(reqID *big.Int, callbackAddress common.Address, requestParams string, requestDeadline *big.Int, data []byte) error {
-	_, err := c.dioneOracle.SubmitOracleRequest(requestParams, callbackAddress, [4]byte{}, reqID, requestDeadline, data)
+func (c *EthereumClient) SubmitRequestAnswer(reqID *big.Int, callbackAddress common.Address, callbackMethodID [4]byte, requestParams string, requestDeadline *big.Int, data []byte) error {
+	_, err := c.dioneOracle.SubmitOracleRequest(requestParams, callbackAddress, callbackMethodID, reqID, requestDeadline, data)
 	if err != nil {
 		return err
 	}

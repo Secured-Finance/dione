@@ -10,7 +10,7 @@ import (
 )
 
 func verifyTaskSignature(msg types.ConsensusMessage) error {
-	cHash, err := hashstructure.Hash(msg, hashstructure.FormatV2, nil)
+	cHash, err := hashstructure.Hash(msg.Task, hashstructure.FormatV2, nil)
 	if err != nil {
 		return err
 	}

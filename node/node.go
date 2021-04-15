@@ -307,6 +307,7 @@ func (n *Node) setupRPCClients() error {
 	fc := filecoin.NewLotusClient()
 	rpc.RegisterRPC(rtypes.RPCTypeFilecoin, map[string]func(string) ([]byte, error){
 		"getTransaction": fc.GetTransaction,
+		"getBlock":       fc.GetBlock,
 	})
 
 	sl := solana2.NewSolanaClient()
