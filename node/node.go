@@ -79,6 +79,7 @@ func NewNode(config *config.Config, prvKey crypto.PrivKey, pexDiscoveryUpdateTim
 		logrus.Fatal(err)
 	}
 	n.Host = lhost
+	logrus.Info("Started up Libp2p host!")
 
 	// initialize ethereum client
 	ethClient, err := provideEthereumClient(n.Config)
@@ -86,16 +87,19 @@ func NewNode(config *config.Config, prvKey crypto.PrivKey, pexDiscoveryUpdateTim
 		logrus.Fatal(err)
 	}
 	n.Ethereum = ethClient
+	logrus.Info("Started up Ethereum client!")
 
 	// initialize blockchain rpc clients
 	err = n.setupRPCClients()
 	if err != nil {
 		logrus.Fatal(err)
 	}
+	logrus.Info("RPC clients has successfully configured!")
 
 	// initialize pubsub subsystem
 	psb := providePubsubRouter(lhost, n.Config)
 	n.PubSubRouter = psb
+	logrus.Info("PubSub subsystem has initialized!")
 
 	// initialize peer discovery
 	peerDiscovery, err := providePeerDiscovery(n.Config, lhost, pexDiscoveryUpdateTime)
@@ -103,6 +107,7 @@ func NewNode(config *config.Config, prvKey crypto.PrivKey, pexDiscoveryUpdateTim
 		logrus.Fatal(err)
 	}
 	n.PeerDiscovery = peerDiscovery
+	logrus.Info("Peer discovery subsystem has initialized!")
 
 	// get private key of libp2p host
 	rawPrivKey, err := prvKey.Raw()
@@ -116,18 +121,22 @@ func NewNode(config *config.Config, prvKey crypto.PrivKey, pexDiscoveryUpdateTim
 		logrus.Fatal(err)
 	}
 	n.Beacon = randomBeaconNetwork
+	logrus.Info("Random beacon subsystem has initialized!")
 
 	// initialize mining subsystem
 	miner := provideMiner(n.Host.ID(), *n.Ethereum.GetEthAddress(), n.Beacon, n.Ethereum, rawPrivKey)
 	n.Miner = miner
+	logrus.Info("Mining subsystem has initialized!")
 
 	// initialize event log cache subsystem
 	eventCache := provideEventCache(config)
 	n.EventCache = eventCache
+	logrus.Info("Event cache subsystem has initialized!")
 
 	// initialize consensus subsystem
 	cManager := provideConsensusManager(psb, miner, ethClient, rawPrivKey, n.Config.ConsensusMinApprovals, eventCache)
 	n.ConsensusManager = cManager
+	logrus.Info("Consensus subsystem has initialized!")
 
 	// initialize dispute subsystem
 	disputeManager, err := provideDisputeManager(context.TODO(), ethClient, cManager)
@@ -135,6 +144,7 @@ func NewNode(config *config.Config, prvKey crypto.PrivKey, pexDiscoveryUpdateTim
 		logrus.Fatal(err)
 	}
 	n.DisputeManager = disputeManager
+	logrus.Info("Dispute subsystem has initialized!")
 
 	// initialize internal eth wallet
 	wallet, err := provideWallet(n.Host.ID(), rawPrivKey)
