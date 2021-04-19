@@ -8,6 +8,7 @@ async function main() {
     const DioneOracle = await ethers.getContractFactory("DioneOracle");
     const DioneDispute = await ethers.getContractFactory("DioneDispute");
     const DioneStaking = await ethers.getContractFactory("DioneStaking");
+    const Mediator = await ethers.getContractFactory("Mediator");
 
     const dioneToken = await DioneToken.deploy();
     await dioneToken.deployed();
@@ -15,15 +16,19 @@ async function main() {
 
     const dioneStaking = await DioneStaking.deploy(dioneToken.address, ethers.constants.WeiPerEther.mul(100), 0, ethers.constants.WeiPerEther.mul(5000));
     await dioneStaking.deployed();
-    console.log("DioneStaking deployed to:", dioneStaking.address);
+    console.log("staking_contract_address = \"" + dioneStaking.address+ "\"");
 
     const dioneDispute = await DioneDispute.deploy(dioneStaking.address);
     await dioneDispute.deployed();
-    console.log("DioneDispute deployed to:", dioneDispute.address);
+    console.log("dispute_contract_address = \"" + dioneDispute.address+ "\"");
 
     const dioneOracle = await DioneOracle.deploy(dioneStaking.address);
     await dioneOracle.deployed();
-    console.log("DioneOracle deployed to:", dioneOracle.address);
+    console.log("oracle_contract_address = \"" + dioneOracle.address+ "\"");
+
+    const mediator = await Mediator.deploy(dioneOracle.address);
+    await mediator.deployed();
+    console.log("mediator_contract_address = \"" + mediator.address +"\"")
 
     await dioneStaking.setOracleContractAddress(dioneOracle.address);
     await dioneStaking.setDisputeContractAddress(dioneOracle.address);
@@ -36,6 +41,8 @@ async function main() {
       }
       await dioneToken.transfer(address, ethers.constants.WeiPerEther.mul(6000));
     }
+
+    await dioneToken.transferOwnership(dioneStaking.address);
 
     const signers = await ethers.getSigners();
     for (var i = 0; i < addresses.length; i++) {
