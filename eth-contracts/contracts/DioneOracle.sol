@@ -6,11 +6,11 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 
 import "./interfaces/IDioneStaking.sol";
 
-contract DioneOracle is Ownable {
+contract DioneOracle {
   using SafeMath for uint256;
   
   // Global counter of oracle requests, works as an index in mapping structures
-  uint256 private requestCounter;
+  uint256 private requestCounter = 0;
   // Maximum time for computing oracle request
   uint256 constant public MAXIMUM_DELAY = 5 minutes;
   // Dione staking contract
@@ -19,6 +19,7 @@ contract DioneOracle is Ownable {
   uint256 public minimumDisputeFee = 100**18;
 
   struct OracleRequest {
+    address requestSender;
     uint8 originChain; // origin blockchain for request
     string requestType; // rpc call type
     string requestParams; // rpc call params
@@ -29,7 +30,7 @@ contract DioneOracle is Ownable {
     bytes data;
   }
 
-  mapping(uint256 => bytes32) private pendingRequests;
+  mapping(uint256 => OracleRequest) private pendingRequests;
 
   event NewOracleRequest(
     uint8 originChain,
@@ -46,16 +47,12 @@ contract DioneOracle is Ownable {
   );
 
   event SubmittedOracleRequest(
-    string requestParams,
-    address callbackAddress,
-    bytes4 callbackMethodID,
     uint256 reqID,
-    uint256 deadline,
     bytes data
   );
 
   modifier onlyPendingRequest(uint256 _reqID) {
-    require(pendingRequests[_reqID] != 0, "This request is not pending");
+    require(pendingRequests[_reqID].requestSender != address(0), "This request is not pending");
     _;
   }
 
@@ -65,30 +62,37 @@ contract DioneOracle is Ownable {
 
   function requestOracles(uint8 _originChain, string memory _requestType, string memory _requestParams, address _callbackAddress, bytes4 _callbackMethodID) public returns (uint256) {
     requestCounter += 1;
-    require(pendingRequests[requestCounter] == 0, "This counter is not unique");
+    require(pendingRequests[requestCounter].reqID == 0, "This counter is not unique");
     uint256 requestDeadline = block.timestamp.add(MAXIMUM_DELAY);
-    pendingRequests[requestCounter] = keccak256(abi.encodePacked(_requestParams, _callbackAddress, _callbackMethodID, requestCounter, requestDeadline));
+    pendingRequests[requestCounter] = OracleRequest({
+      requestSender: msg.sender,
+      originChain: _originChain,
+      requestType: _requestType,
+      requestParams: _requestParams,
+      callbackAddress: _callbackAddress,
+      callbackMethodID: _callbackMethodID,
+      reqID: requestCounter,
+      deadline: requestDeadline,
+      data: new bytes(0)
+    });
 
     emit NewOracleRequest(_originChain, _requestType, _requestParams, _callbackAddress, _callbackMethodID, requestCounter, requestDeadline);
     return requestCounter;
   }
 
-  function cancelOracleRequest(string memory _requestParams, bytes4 _callbackMethodID, uint256 _reqID, uint256 _requestDeadline) public {
-    bytes32 requestHash = keccak256(abi.encodePacked(_requestParams, msg.sender, _callbackMethodID, _reqID, _requestDeadline));
-    require(requestHash == pendingRequests[_reqID], "Request hash do not match it's origin");
-    require(_requestDeadline <= block.timestamp, "Request didn't reached it's deadline");
+  function cancelOracleRequest(uint256 _reqID) public onlyPendingRequest(_reqID) {
+    require(msg.sender == pendingRequests[_reqID].requestSender, "you aren't request sender");
 
     delete pendingRequests[_reqID];
     emit CancelOracleRequest(_reqID);
   }
 
-  function submitOracleRequest(string memory _requestParams, address _callbackAddress, bytes4 _callbackMethodID, uint256 _reqID, uint256 _requestDeadline, bytes memory _data) public onlyPendingRequest(_reqID) returns (bool) {
-    bytes32 requestHash = keccak256(abi.encodePacked(_requestParams, _callbackAddress, _callbackMethodID, _reqID, _requestDeadline));
-    require(pendingRequests[_reqID] == requestHash, "Params do not match request ID");
+  function submitOracleRequest(uint256 _reqID, bytes memory _data) public onlyPendingRequest(_reqID) returns (bool) {
     delete pendingRequests[_reqID];
     dioneStaking.mine(msg.sender);
-    (bool success, ) = _callbackAddress.call(abi.encodeWithSelector(_callbackMethodID, _reqID, _data)); // TODO: check on success call
-    emit SubmittedOracleRequest(_requestParams, _callbackAddress, _callbackMethodID, _reqID, _requestDeadline, _data);
-    return success;
+    (bool success, ) = pendingRequests[_reqID].callbackAddress.call(abi.encodeWithSelector(pendingRequests[_reqID].callbackMethodID, _reqID, _data));
+    require(success == true, "cannot call callback method");
+    emit SubmittedOracleRequest(_reqID, _data);
+    return true;
   }
 }

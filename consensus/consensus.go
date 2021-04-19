@@ -10,8 +10,6 @@ import (
 
 	"github.com/Secured-Finance/dione/consensus/types"
 
-	"github.com/ethereum/go-ethereum/common"
-
 	"github.com/Secured-Finance/dione/ethclient"
 	"github.com/sirupsen/logrus"
 
@@ -161,15 +159,8 @@ func (pcm *PBFTConsensusManager) handleCommit(message *types.Message) {
 			if !ok {
 				logrus.Errorf("Failed to parse request ID: %v", consensusMsg.Task.RequestID)
 			}
-			callbackAddress := common.BytesToAddress(consensusMsg.Task.CallbackAddress)
 
-			request, err := pcm.eventCache.GetOracleRequestEvent("request_" + consensusMsg.Task.RequestID)
-			if err != nil {
-				logrus.Errorf("Failed to get request from cache: %v", err.Error())
-				return
-			}
-
-			err = pcm.ethereumClient.SubmitRequestAnswer(reqID, callbackAddress, request.CallbackMethodID, request.RequestParams, request.Deadline, consensusMsg.Task.Payload)
+			err = pcm.ethereumClient.SubmitRequestAnswer(reqID, consensusMsg.Task.Payload)
 			if err != nil {
 				logrus.Errorf("Failed to submit on-chain result: %v", err)
 			}

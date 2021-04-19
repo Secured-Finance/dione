@@ -27,8 +27,8 @@ type EthereumConfig struct {
 	PrivateKey                  string `mapstructure:"private_key"`
 	MnemonicPhrase              string `mapstructure:"mnemonic_phrase"`
 	HDDerivationPath            string `mapstructure:"hd_derivation_path"`
-	DioneOracleContractAddress  string `mapstructure:"dione_oracle_contract_address"`
-	DioneStakingContractAddress string `mapstructure:"dione_staking_address"`
+	DioneOracleContractAddress  string `mapstructure:"oracle_contract_address"`
+	DioneStakingContractAddress string `mapstructure:"staking_contract_address"`
 	DisputeContractAddress      string `mapstructure:"dispute_contract_address"`
 }
 

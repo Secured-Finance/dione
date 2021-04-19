@@ -19,7 +19,7 @@ type DisputeManager struct {
 	ctx           context.Context
 	ethClient     *ethclient.EthereumClient
 	pcm           *PBFTConsensusManager
-	submittionMap map[string]*dioneOracle.DioneOracleSubmittedOracleRequest
+	submissionMap map[string]*dioneOracle.DioneOracleSubmittedOracleRequest
 	disputeMap    map[string]*dioneDispute.DioneDisputeNewDispute
 }
 
@@ -38,7 +38,8 @@ func NewDisputeManager(ctx context.Context, ethClient *ethclient.EthereumClient,
 		ethClient:     ethClient,
 		pcm:           pcm,
 		ctx:           ctx,
-		submittionMap: map[string]*dioneOracle.DioneOracleSubmittedOracleRequest{},
+		submissionMap: map[string]*dioneOracle.DioneOracleSubmittedOracleRequest{},
+		disputeMap:    map[string]*dioneDispute.DioneDisputeNewDispute{},
 	}
 
 	go func() {
@@ -52,7 +53,7 @@ func NewDisputeManager(ctx context.Context, ethClient *ethclient.EthereumClient,
 				}
 			case s := <-newSubmittionsChan:
 				{
-					dm.onNewSubmittion(s)
+					dm.onNewSubmission(s)
 				}
 			case d := <-newDisputesChan:
 				{
@@ -65,20 +66,21 @@ func NewDisputeManager(ctx context.Context, ethClient *ethclient.EthereumClient,
 	return dm, nil
 }
 
-func (dm *DisputeManager) onNewSubmittion(submittion *dioneOracle.DioneOracleSubmittedOracleRequest) {
+func (dm *DisputeManager) onNewSubmission(submittion *dioneOracle.DioneOracleSubmittedOracleRequest) {
 	c := dm.pcm.GetConsensusInfo(submittion.ReqID.String())
 	if c == nil {
 		// todo: warn
 		return
 	}
 
-	dm.submittionMap[submittion.ReqID.String()] = submittion
+	dm.submissionMap[submittion.ReqID.String()] = submittion
 
 	submHashBytes := sha3.Sum256(submittion.Data)
 	localHashBytes := sha3.Sum256(c.Task.Payload)
 	submHash := hex.EncodeToString(submHashBytes[:])
 	localHash := hex.EncodeToString(localHashBytes[:])
 	if submHash != localHash {
+		logrus.Debugf("submission of request id %s isn't valid - beginning dispute", c.Task.RequestID)
 		addr := common.HexToAddress(c.Task.MinerEth)
 		reqID, ok := big.NewInt(0).SetString(c.Task.RequestID, 10)
 		if !ok {
@@ -122,7 +124,7 @@ func (dm *DisputeManager) onNewDispute(dispute *dioneDispute.DioneDisputeNewDisp
 		return
 	}
 
-	subm, ok := dm.submittionMap[dispute.RequestID.String()]
+	subm, ok := dm.submissionMap[dispute.RequestID.String()]
 	if !ok {
 		// todo: warn
 		return
