@@ -18,7 +18,7 @@ async function main() {
     await dioneStaking.deployed();
     console.log("staking_contract_address = \"" + dioneStaking.address+ "\"");
 
-    const dioneDispute = await DioneDispute.deploy(dioneStaking.address);
+    const dioneDispute = await DioneDispute.deploy(dioneStaking.address, 5);
     await dioneDispute.deployed();
     console.log("dispute_contract_address = \"" + dioneDispute.address+ "\"");
 
@@ -31,7 +31,7 @@ async function main() {
     console.log("mediator_contract_address = \"" + mediator.address +"\"")
 
     await dioneStaking.setOracleContractAddress(dioneOracle.address);
-    await dioneStaking.setDisputeContractAddress(dioneOracle.address);
+    await dioneStaking.setDisputeContractAddress(dioneDispute.address);
 
     const addresses = ["0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266", "0x70997970c51812dc3a010c7d01b50e0d17dc79c8", "0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC", "0x90F79bf6EB2c4f870365E785982E1f101E93b906"]
     await dioneToken.mint(addresses[0], ethers.constants.WeiPerEther.mul(50000));
