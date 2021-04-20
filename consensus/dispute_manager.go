@@ -21,9 +21,10 @@ type DisputeManager struct {
 	pcm           *PBFTConsensusManager
 	submissionMap map[string]*dioneOracle.DioneOracleSubmittedOracleRequest
 	disputeMap    map[string]*dioneDispute.DioneDisputeNewDispute
+	voteWindow    time.Duration
 }
 
-func NewDisputeManager(ctx context.Context, ethClient *ethclient.EthereumClient, pcm *PBFTConsensusManager) (*DisputeManager, error) {
+func NewDisputeManager(ctx context.Context, ethClient *ethclient.EthereumClient, pcm *PBFTConsensusManager, voteWindow int) (*DisputeManager, error) {
 	newSubmittionsChan, submSubscription, err := ethClient.SubscribeOnNewSubmittions(ctx)
 	if err != nil {
 		return nil, err
@@ -40,6 +41,7 @@ func NewDisputeManager(ctx context.Context, ethClient *ethclient.EthereumClient,
 		ctx:           ctx,
 		submissionMap: map[string]*dioneOracle.DioneOracleSubmittedOracleRequest{},
 		disputeMap:    map[string]*dioneDispute.DioneDisputeNewDispute{},
+		voteWindow:    time.Duration(voteWindow) * time.Second,
 	}
 
 	go func() {
@@ -92,7 +94,7 @@ func (dm *DisputeManager) onNewSubmission(submittion *dioneOracle.DioneOracleSub
 			logrus.Errorf(err.Error())
 			return
 		}
-		disputeFinishTimer := time.NewTimer(time.Minute * 5)
+		disputeFinishTimer := time.NewTimer(dm.voteWindow)
 		go func() {
 			for {
 				select {

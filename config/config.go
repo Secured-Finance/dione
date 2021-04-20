@@ -30,6 +30,7 @@ type EthereumConfig struct {
 	DioneOracleContractAddress  string `mapstructure:"oracle_contract_address"`
 	DioneStakingContractAddress string `mapstructure:"staking_contract_address"`
 	DisputeContractAddress      string `mapstructure:"dispute_contract_address"`
+	DisputeVoteWindow           int    `mapstructure:"dispute_vote_window"` // in secs
 }
 
 type FilecoinConfig struct {

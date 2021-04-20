@@ -139,7 +139,7 @@ func NewNode(config *config.Config, prvKey crypto.PrivKey, pexDiscoveryUpdateTim
 	logrus.Info("Consensus subsystem has initialized!")
 
 	// initialize dispute subsystem
-	disputeManager, err := provideDisputeManager(context.TODO(), ethClient, cManager)
+	disputeManager, err := provideDisputeManager(context.TODO(), ethClient, cManager, config)
 	if err != nil {
 		logrus.Fatal(err)
 	}
@@ -268,8 +268,8 @@ func provideEventCache(config *config.Config) cache.EventCache {
 	return backend
 }
 
-func provideDisputeManager(ctx context.Context, ethClient *ethclient.EthereumClient, pcm *consensus.PBFTConsensusManager) (*consensus.DisputeManager, error) {
-	return consensus.NewDisputeManager(ctx, ethClient, pcm)
+func provideDisputeManager(ctx context.Context, ethClient *ethclient.EthereumClient, pcm *consensus.PBFTConsensusManager, cfg *config.Config) (*consensus.DisputeManager, error) {
+	return consensus.NewDisputeManager(ctx, ethClient, pcm, cfg.Ethereum.DisputeVoteWindow)
 }
 
 func provideMiner(peerID peer.ID, ethAddress common.Address, beacon beacon.BeaconNetworks, ethClient *ethclient.EthereumClient, privateKey []byte) *consensus.Miner {
