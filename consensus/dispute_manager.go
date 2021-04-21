@@ -112,6 +112,8 @@ func (dm *DisputeManager) onNewSubmission(submittion *dioneOracle.DioneOracleSub
 							logrus.Errorf(err.Error())
 							return
 						}
+						disputeFinishTimer.Stop()
+						return
 					}
 				}
 			}
