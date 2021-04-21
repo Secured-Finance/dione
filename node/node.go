@@ -241,7 +241,7 @@ func (n *Node) subscribeOnEthContractsAsync(ctx context.Context) {
 						continue
 					}
 					logrus.Infof("Proposed new Dione task with ID: %s", event.ReqID.String())
-					err = n.ConsensusManager.Propose(event.ReqID.String(), *task, event)
+					err = n.ConsensusManager.Propose(*task, event)
 					if err != nil {
 						logrus.Errorf("Failed to propose task: %w", err)
 					}

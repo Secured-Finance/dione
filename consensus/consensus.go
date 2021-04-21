@@ -55,7 +55,7 @@ func NewPBFTConsensusManager(psb *pubsub.PubSubRouter, minApprovals int, privKey
 	return pcm
 }
 
-func (pcm *PBFTConsensusManager) Propose(consensusID string, task types2.DioneTask, requestEvent *dioneOracle.DioneOracleNewOracleRequest) error {
+func (pcm *PBFTConsensusManager) Propose(task types2.DioneTask, requestEvent *dioneOracle.DioneOracleNewOracleRequest) error {
 	pcm.createConsensusInfo(&task, true)
 
 	prePrepareMsg, err := pcm.prePreparePool.CreatePrePrepare(
@@ -77,11 +77,10 @@ func (pcm *PBFTConsensusManager) handlePrePrepare(message *types.Message) {
 		return
 	}
 	if pcm.prePreparePool.IsExistingPrePrepare(message) {
-		logrus.Debug("received existing pre_prepare msg, dropping...")
 		return
 	}
 	if !pcm.prePreparePool.IsValidPrePrepare(message) {
-		logrus.Debug("received invalid pre_prepare msg, dropping...")
+		logrus.Warn("received invalid pre_prepare msg, dropping...")
 		return
 	}
 
@@ -104,11 +103,10 @@ func (pcm *PBFTConsensusManager) handlePrePrepare(message *types.Message) {
 
 func (pcm *PBFTConsensusManager) handlePrepare(message *types.Message) {
 	if pcm.preparePool.IsExistingPrepare(message) {
-		logrus.Debug("received existing prepare msg, dropping...")
 		return
 	}
 	if !pcm.preparePool.IsValidPrepare(message) {
-		logrus.Debug("received invalid prepare msg, dropping...")
+		logrus.Warn("received invalid prepare msg, dropping...")
 		return
 	}
 
@@ -130,11 +128,10 @@ func (pcm *PBFTConsensusManager) handlePrepare(message *types.Message) {
 
 func (pcm *PBFTConsensusManager) handleCommit(message *types.Message) {
 	if pcm.commitPool.IsExistingCommit(message) {
-		logrus.Debug("received existing commit msg, dropping...")
 		return
 	}
 	if !pcm.commitPool.IsValidCommit(message) {
-		logrus.Debug("received invalid commit msg, dropping...")
+		logrus.Warn("received invalid commit msg, dropping...")
 		return
 	}
 
@@ -147,7 +144,11 @@ func (pcm *PBFTConsensusManager) handleCommit(message *types.Message) {
 
 	consensusMsg := message.Payload
 	if pcm.commitPool.CommitSize(consensusMsg.Task.ConsensusID) >= pcm.minApprovals {
-		info := pcm.consensusMap[consensusMsg.Task.ConsensusID]
+		info := pcm.GetConsensusInfo(consensusMsg.Task.ConsensusID)
+		if info == nil {
+			logrus.Debugf("consensus doesn't exist in our consensus map - skipping...")
+			return
+		}
 		info.mutex.Lock()
 		defer info.mutex.Unlock()
 		if info.Finished {
