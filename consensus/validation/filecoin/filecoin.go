@@ -16,7 +16,7 @@ func ValidateGetTransaction(payload []byte) error {
 	var msg ftypes.SignedMessage
 	if err := msg.UnmarshalCBOR(bytes.NewReader(payload)); err != nil {
 		if err := msg.Message.UnmarshalCBOR(bytes.NewReader(payload)); err != nil {
-			return xerrors.Errorf("cannot unmarshal payload")
+			return xerrors.Errorf("cannot unmarshal payload: %s", err.Error())
 		}
 	}
 
