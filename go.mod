@@ -13,10 +13,10 @@ require (
 	github.com/drand/drand v1.2.6
 	github.com/drand/kyber v1.1.6
 	github.com/ethereum/go-ethereum v1.9.25
-	github.com/filecoin-project/go-address v0.0.5-0.20201103152444-f2023ef3f5bb
+	github.com/filecoin-project/go-address v0.0.5
 	github.com/filecoin-project/go-crypto v0.0.0-20191218222705-effae4ea9f03
-	github.com/filecoin-project/go-state-types v0.0.0-20201102161440-c8033295a1fc
-	github.com/filecoin-project/lotus v1.2.1
+	github.com/filecoin-project/go-state-types v0.1.0
+	github.com/filecoin-project/lotus v1.6.0
 	github.com/fjl/memsize v0.0.0-20190710130421-bcb5799ab5e5 // indirect
 	github.com/fxamacker/cbor/v2 v2.2.0
 	github.com/gballet/go-libpcsclite v0.0.0-20191108122812-4678299bea08 // indirect
@@ -30,11 +30,10 @@ require (
 	github.com/ipfs/go-log v1.0.4
 	github.com/jmoiron/sqlx v1.2.0
 	github.com/karalabe/usb v0.0.0-20191104083709-911d15fe12a9 // indirect
-	github.com/kilic/bls12-381 v0.0.0-20200820230200-6b2c19996391 // indirect
 	github.com/libp2p/go-libp2p v0.12.0
 	github.com/libp2p/go-libp2p-core v0.7.0
 	github.com/libp2p/go-libp2p-crypto v0.1.0
-	github.com/libp2p/go-libp2p-pubsub v0.4.0
+	github.com/libp2p/go-libp2p-pubsub v0.4.2-0.20210212194758-6c1addf493eb
 	github.com/mattn/go-sqlite3 v1.11.0
 	github.com/miguelmota/go-ethereum-hdwallet v0.0.0-20210314074952-8dd49aa599b9
 	github.com/minio/blake2b-simd v0.0.0-20160723061019-3f5f724cb5b1
@@ -53,7 +52,7 @@ require (
 	github.com/stretchr/testify v1.7.0
 	github.com/tyler-smith/go-bip39 v1.1.0 // indirect
 	github.com/valyala/fasthttp v1.17.0
-	github.com/whyrusleeping/cbor-gen v0.0.0-20200826160007-0b9f6c5fb163
+	github.com/whyrusleeping/cbor-gen v0.0.0-20210219115102-f37d292932f2
 	github.com/xorcare/golden v0.6.1-0.20191112154924-b87f686d7542
 	go.uber.org/zap v1.16.0
 	golang.org/x/crypto v0.0.0-20210220033148-5ea612d1eb83
