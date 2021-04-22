@@ -15,7 +15,7 @@ task("accounts", "Prints the list of accounts", async (args, hre) => {
 export default {
   solidity: "0.8.3",
   networks: {
-    ganache: {
+    geth: {
       url: `http://localhost:8545`,
       accounts: {
         mnemonic: "test test test test test test test test test test test junk"

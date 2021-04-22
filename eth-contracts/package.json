@@ -1,11 +1,11 @@
 {
-  "name": "eth-contracts",
+  "name": "dione-eth-contracts",
   "version": "1.0.0",
   "description": "",
-  "main": "index.js",
+  "main": "",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "deployLocal": "npx hardhat --network localhost run scripts/deploy.ts"
+    "test": "TS_NODE_FILES=true npx hardhat test",
+    "deployLocal": "TS_NODE_FILES=true npx hardhat --network geth run scripts/deploy.ts"
   },
   "author": "",
   "license": "ISC",
