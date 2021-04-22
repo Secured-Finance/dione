@@ -172,6 +172,7 @@ func (ppp *PrePreparePool) IsValidPrePrepare(prePrepare *types2.Message) bool {
 		err := validationFunc(consensusMsg.Task.Payload)
 		if err != nil {
 			logrus.Errorf("payload validation has failed: %v", err)
+			return false
 		}
 	} else {
 		logrus.Debugf("Origin chain [%v]/request type[%v] doesn't have any payload validation!", consensusMsg.Task.OriginChain, consensusMsg.Task.RequestType)
