@@ -36,8 +36,6 @@ contract DioneOracle {
     uint8 originChain,
     string requestType,
     string requestParams,
-    address callbackAddress,
-    bytes4 callbackMethodID,
     uint256 reqID,
     uint256 deadline
   );
@@ -76,7 +74,7 @@ contract DioneOracle {
       data: new bytes(0)
     });
 
-    emit NewOracleRequest(_originChain, _requestType, _requestParams, _callbackAddress, _callbackMethodID, requestCounter, requestDeadline);
+    emit NewOracleRequest(_originChain, _requestType, _requestParams, requestCounter, requestDeadline);
     return requestCounter;
   }
 

@@ -19,21 +19,19 @@ func (e DrandRound) String() string {
 
 // DioneTask represents the values of task computation
 type DioneTask struct {
-	OriginChain      uint8
-	RequestType      string
-	RequestParams    string
-	Miner            peer.ID
-	MinerEth         string
-	Ticket           *Ticket
-	ElectionProof    *ElectionProof
-	BeaconEntries    []BeaconEntry
-	DrandRound       DrandRound
-	Payload          []byte
-	RequestID        string
-	CallbackAddress  []byte
-	CallbackMethodID []byte
-	ConsensusID      string
-	Signature        []byte `hash:"-"`
+	OriginChain   uint8
+	RequestType   string
+	RequestParams string
+	Miner         peer.ID
+	MinerEth      string
+	Ticket        *Ticket
+	ElectionProof *ElectionProof
+	BeaconEntries []BeaconEntry
+	DrandRound    DrandRound
+	Payload       []byte
+	RequestID     string
+	ConsensusID   string
+	Signature     []byte `hash:"-"`
 }
 
 func NewDioneTask(

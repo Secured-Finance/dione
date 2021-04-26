@@ -31,13 +31,6 @@ type EthereumClient struct {
 	dioneOracle     *dioneOracle.DioneOracleSession
 }
 
-type OracleEvent struct {
-	RequestType      string
-	CallbackAddress  common.Address
-	CallbackMethodID [4]byte
-	RequestID        *big.Int
-}
-
 type Ethereum interface {
 	Initialize(ctx context.Context, url, connectionType, privateKey, oracleEmitterContractAddress, aggregatorContractAddress string) error
 	Balance(context.Context, string) (*big.Int, error)

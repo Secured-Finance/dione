@@ -27,7 +27,7 @@ var (
 )
 
 // DioneOracleABI is the input ABI used to generate the binding from.
-const DioneOracleABI = "[{\"inputs\":[{\"internalType\":\"contractIDioneStaking\",\"name\":\"_dioneStaking\",\"type\":\"address\"}],\"stateMutability\":\"nonpayable\",\"type\":\"constructor\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"reqID\",\"type\":\"uint256\"}],\"name\":\"CancelOracleRequest\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"internalType\":\"uint8\",\"name\":\"originChain\",\"type\":\"uint8\"},{\"indexed\":false,\"internalType\":\"string\",\"name\":\"requestType\",\"type\":\"string\"},{\"indexed\":false,\"internalType\":\"string\",\"name\":\"requestParams\",\"type\":\"string\"},{\"indexed\":false,\"internalType\":\"address\",\"name\":\"callbackAddress\",\"type\":\"address\"},{\"indexed\":false,\"internalType\":\"bytes4\",\"name\":\"callbackMethodID\",\"type\":\"bytes4\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"reqID\",\"type\":\"uint256\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"deadline\",\"type\":\"uint256\"}],\"name\":\"NewOracleRequest\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"address\",\"name\":\"previousOwner\",\"type\":\"address\"},{\"indexed\":true,\"internalType\":\"address\",\"name\":\"newOwner\",\"type\":\"address\"}],\"name\":\"OwnershipTransferred\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"reqID\",\"type\":\"uint256\"},{\"indexed\":false,\"internalType\":\"bytes\",\"name\":\"data\",\"type\":\"bytes\"}],\"name\":\"SubmittedOracleRequest\",\"type\":\"event\"},{\"inputs\":[],\"name\":\"MAXIMUM_DELAY\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"_reqID\",\"type\":\"uint256\"}],\"name\":\"cancelOracleRequest\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"dioneStaking\",\"outputs\":[{\"internalType\":\"contractIDioneStaking\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"minimumDisputeFee\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"owner\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"renounceOwnership\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint8\",\"name\":\"_originChain\",\"type\":\"uint8\"},{\"internalType\":\"string\",\"name\":\"_requestType\",\"type\":\"string\"},{\"internalType\":\"string\",\"name\":\"_requestParams\",\"type\":\"string\"},{\"internalType\":\"address\",\"name\":\"_callbackAddress\",\"type\":\"address\"},{\"internalType\":\"bytes4\",\"name\":\"_callbackMethodID\",\"type\":\"bytes4\"}],\"name\":\"requestOracles\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"_reqID\",\"type\":\"uint256\"},{\"internalType\":\"bytes\",\"name\":\"_data\",\"type\":\"bytes\"}],\"name\":\"submitOracleRequest\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\"}],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"newOwner\",\"type\":\"address\"}],\"name\":\"transferOwnership\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"}]"
+const DioneOracleABI = "[{\"inputs\":[{\"internalType\":\"contractIDioneStaking\",\"name\":\"_dioneStaking\",\"type\":\"address\"}],\"stateMutability\":\"nonpayable\",\"type\":\"constructor\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"reqID\",\"type\":\"uint256\"}],\"name\":\"CancelOracleRequest\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"internalType\":\"uint8\",\"name\":\"originChain\",\"type\":\"uint8\"},{\"indexed\":false,\"internalType\":\"string\",\"name\":\"requestType\",\"type\":\"string\"},{\"indexed\":false,\"internalType\":\"string\",\"name\":\"requestParams\",\"type\":\"string\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"reqID\",\"type\":\"uint256\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"deadline\",\"type\":\"uint256\"}],\"name\":\"NewOracleRequest\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"reqID\",\"type\":\"uint256\"},{\"indexed\":false,\"internalType\":\"bytes\",\"name\":\"data\",\"type\":\"bytes\"}],\"name\":\"SubmittedOracleRequest\",\"type\":\"event\"},{\"inputs\":[],\"name\":\"MAXIMUM_DELAY\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"_reqID\",\"type\":\"uint256\"}],\"name\":\"cancelOracleRequest\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"dioneStaking\",\"outputs\":[{\"internalType\":\"contractIDioneStaking\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"minimumDisputeFee\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint8\",\"name\":\"_originChain\",\"type\":\"uint8\"},{\"internalType\":\"string\",\"name\":\"_requestType\",\"type\":\"string\"},{\"internalType\":\"string\",\"name\":\"_requestParams\",\"type\":\"string\"},{\"internalType\":\"address\",\"name\":\"_callbackAddress\",\"type\":\"address\"},{\"internalType\":\"bytes4\",\"name\":\"_callbackMethodID\",\"type\":\"bytes4\"}],\"name\":\"requestOracles\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"_reqID\",\"type\":\"uint256\"},{\"internalType\":\"bytes\",\"name\":\"_data\",\"type\":\"bytes\"}],\"name\":\"submitOracleRequest\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\"}],\"stateMutability\":\"nonpayable\",\"type\":\"function\"}]"
 
 // DioneOracle is an auto generated Go binding around an Ethereum contract.
 type DioneOracle struct {
@@ -264,37 +264,6 @@ func (_DioneOracle *DioneOracleCallerSession) MinimumDisputeFee() (*big.Int, err
 	return _DioneOracle.Contract.MinimumDisputeFee(&_DioneOracle.CallOpts)
 }
 
-// Owner is a free data retrieval call binding the contract method 0x8da5cb5b.
-//
-// Solidity: function owner() view returns(address)
-func (_DioneOracle *DioneOracleCaller) Owner(opts *bind.CallOpts) (common.Address, error) {
-	var out []interface{}
-	err := _DioneOracle.contract.Call(opts, &out, "owner")
-
-	if err != nil {
-		return *new(common.Address), err
-	}
-
-	out0 := *abi.ConvertType(out[0], new(common.Address)).(*common.Address)
-
-	return out0, err
-
-}
-
-// Owner is a free data retrieval call binding the contract method 0x8da5cb5b.
-//
-// Solidity: function owner() view returns(address)
-func (_DioneOracle *DioneOracleSession) Owner() (common.Address, error) {
-	return _DioneOracle.Contract.Owner(&_DioneOracle.CallOpts)
-}
-
-// Owner is a free data retrieval call binding the contract method 0x8da5cb5b.
-//
-// Solidity: function owner() view returns(address)
-func (_DioneOracle *DioneOracleCallerSession) Owner() (common.Address, error) {
-	return _DioneOracle.Contract.Owner(&_DioneOracle.CallOpts)
-}
-
 // CancelOracleRequest is a paid mutator transaction binding the contract method 0x1d2a198a.
 //
 // Solidity: function cancelOracleRequest(uint256 _reqID) returns()
@@ -314,27 +283,6 @@ func (_DioneOracle *DioneOracleSession) CancelOracleRequest(_reqID *big.Int) (*t
 // Solidity: function cancelOracleRequest(uint256 _reqID) returns()
 func (_DioneOracle *DioneOracleTransactorSession) CancelOracleRequest(_reqID *big.Int) (*types.Transaction, error) {
 	return _DioneOracle.Contract.CancelOracleRequest(&_DioneOracle.TransactOpts, _reqID)
-}
-
-// RenounceOwnership is a paid mutator transaction binding the contract method 0x715018a6.
-//
-// Solidity: function renounceOwnership() returns()
-func (_DioneOracle *DioneOracleTransactor) RenounceOwnership(opts *bind.TransactOpts) (*types.Transaction, error) {
-	return _DioneOracle.contract.Transact(opts, "renounceOwnership")
-}
-
-// RenounceOwnership is a paid mutator transaction binding the contract method 0x715018a6.
-//
-// Solidity: function renounceOwnership() returns()
-func (_DioneOracle *DioneOracleSession) RenounceOwnership() (*types.Transaction, error) {
-	return _DioneOracle.Contract.RenounceOwnership(&_DioneOracle.TransactOpts)
-}
-
-// RenounceOwnership is a paid mutator transaction binding the contract method 0x715018a6.
-//
-// Solidity: function renounceOwnership() returns()
-func (_DioneOracle *DioneOracleTransactorSession) RenounceOwnership() (*types.Transaction, error) {
-	return _DioneOracle.Contract.RenounceOwnership(&_DioneOracle.TransactOpts)
 }
 
 // RequestOracles is a paid mutator transaction binding the contract method 0xe7c3712a.
@@ -377,27 +325,6 @@ func (_DioneOracle *DioneOracleSession) SubmitOracleRequest(_reqID *big.Int, _da
 // Solidity: function submitOracleRequest(uint256 _reqID, bytes _data) returns(bool)
 func (_DioneOracle *DioneOracleTransactorSession) SubmitOracleRequest(_reqID *big.Int, _data []byte) (*types.Transaction, error) {
 	return _DioneOracle.Contract.SubmitOracleRequest(&_DioneOracle.TransactOpts, _reqID, _data)
-}
-
-// TransferOwnership is a paid mutator transaction binding the contract method 0xf2fde38b.
-//
-// Solidity: function transferOwnership(address newOwner) returns()
-func (_DioneOracle *DioneOracleTransactor) TransferOwnership(opts *bind.TransactOpts, newOwner common.Address) (*types.Transaction, error) {
-	return _DioneOracle.contract.Transact(opts, "transferOwnership", newOwner)
-}
-
-// TransferOwnership is a paid mutator transaction binding the contract method 0xf2fde38b.
-//
-// Solidity: function transferOwnership(address newOwner) returns()
-func (_DioneOracle *DioneOracleSession) TransferOwnership(newOwner common.Address) (*types.Transaction, error) {
-	return _DioneOracle.Contract.TransferOwnership(&_DioneOracle.TransactOpts, newOwner)
-}
-
-// TransferOwnership is a paid mutator transaction binding the contract method 0xf2fde38b.
-//
-// Solidity: function transferOwnership(address newOwner) returns()
-func (_DioneOracle *DioneOracleTransactorSession) TransferOwnership(newOwner common.Address) (*types.Transaction, error) {
-	return _DioneOracle.Contract.TransferOwnership(&_DioneOracle.TransactOpts, newOwner)
 }
 
 // DioneOracleCancelOracleRequestIterator is returned from FilterCancelOracleRequest and is used to iterate over the raw logs and unpacked data for CancelOracleRequest events raised by the DioneOracle contract.
@@ -603,19 +530,17 @@ func (it *DioneOracleNewOracleRequestIterator) Close() error {
 
 // DioneOracleNewOracleRequest represents a NewOracleRequest event raised by the DioneOracle contract.
 type DioneOracleNewOracleRequest struct {
-	OriginChain      uint8
-	RequestType      string
-	RequestParams    string
-	CallbackAddress  common.Address
-	CallbackMethodID [4]byte
-	ReqID            *big.Int
-	Deadline         *big.Int
-	Raw              types.Log // Blockchain specific contextual infos
+	OriginChain   uint8
+	RequestType   string
+	RequestParams string
+	ReqID         *big.Int
+	Deadline      *big.Int
+	Raw           types.Log // Blockchain specific contextual infos
 }
 
-// FilterNewOracleRequest is a free log retrieval operation binding the contract event 0xef9801b1c3f147f0bb627cb55d33a9041af7356287b3a228398453318128b65d.
+// FilterNewOracleRequest is a free log retrieval operation binding the contract event 0xf2736922e09befc7bb0c19052cc9b530a5d9a696b3db44a29814ac8a4335aa08.
 //
-// Solidity: event NewOracleRequest(uint8 originChain, string requestType, string requestParams, address callbackAddress, bytes4 callbackMethodID, uint256 reqID, uint256 deadline)
+// Solidity: event NewOracleRequest(uint8 originChain, string requestType, string requestParams, uint256 reqID, uint256 deadline)
 func (_DioneOracle *DioneOracleFilterer) FilterNewOracleRequest(opts *bind.FilterOpts) (*DioneOracleNewOracleRequestIterator, error) {
 
 	logs, sub, err := _DioneOracle.contract.FilterLogs(opts, "NewOracleRequest")
@@ -625,9 +550,9 @@ func (_DioneOracle *DioneOracleFilterer) FilterNewOracleRequest(opts *bind.Filte
 	return &DioneOracleNewOracleRequestIterator{contract: _DioneOracle.contract, event: "NewOracleRequest", logs: logs, sub: sub}, nil
 }
 
-// WatchNewOracleRequest is a free log subscription operation binding the contract event 0xef9801b1c3f147f0bb627cb55d33a9041af7356287b3a228398453318128b65d.
+// WatchNewOracleRequest is a free log subscription operation binding the contract event 0xf2736922e09befc7bb0c19052cc9b530a5d9a696b3db44a29814ac8a4335aa08.
 //
-// Solidity: event NewOracleRequest(uint8 originChain, string requestType, string requestParams, address callbackAddress, bytes4 callbackMethodID, uint256 reqID, uint256 deadline)
+// Solidity: event NewOracleRequest(uint8 originChain, string requestType, string requestParams, uint256 reqID, uint256 deadline)
 func (_DioneOracle *DioneOracleFilterer) WatchNewOracleRequest(opts *bind.WatchOpts, sink chan<- *DioneOracleNewOracleRequest) (event.Subscription, error) {
 
 	logs, sub, err := _DioneOracle.contract.WatchLogs(opts, "NewOracleRequest")
@@ -662,165 +587,12 @@ func (_DioneOracle *DioneOracleFilterer) WatchNewOracleRequest(opts *bind.WatchO
 	}), nil
 }
 
-// ParseNewOracleRequest is a log parse operation binding the contract event 0xef9801b1c3f147f0bb627cb55d33a9041af7356287b3a228398453318128b65d.
+// ParseNewOracleRequest is a log parse operation binding the contract event 0xf2736922e09befc7bb0c19052cc9b530a5d9a696b3db44a29814ac8a4335aa08.
 //
-// Solidity: event NewOracleRequest(uint8 originChain, string requestType, string requestParams, address callbackAddress, bytes4 callbackMethodID, uint256 reqID, uint256 deadline)
+// Solidity: event NewOracleRequest(uint8 originChain, string requestType, string requestParams, uint256 reqID, uint256 deadline)
 func (_DioneOracle *DioneOracleFilterer) ParseNewOracleRequest(log types.Log) (*DioneOracleNewOracleRequest, error) {
 	event := new(DioneOracleNewOracleRequest)
 	if err := _DioneOracle.contract.UnpackLog(event, "NewOracleRequest", log); err != nil {
-		return nil, err
-	}
-	event.Raw = log
-	return event, nil
-}
-
-// DioneOracleOwnershipTransferredIterator is returned from FilterOwnershipTransferred and is used to iterate over the raw logs and unpacked data for OwnershipTransferred events raised by the DioneOracle contract.
-type DioneOracleOwnershipTransferredIterator struct {
-	Event *DioneOracleOwnershipTransferred // Event containing the contract specifics and raw log
-
-	contract *bind.BoundContract // Generic contract to use for unpacking event data
-	event    string              // Event name to use for unpacking event data
-
-	logs chan types.Log        // Log channel receiving the found contract events
-	sub  ethereum.Subscription // Subscription for errors, completion and termination
-	done bool                  // Whether the subscription completed delivering logs
-	fail error                 // Occurred error to stop iteration
-}
-
-// Next advances the iterator to the subsequent event, returning whether there
-// are any more events found. In case of a retrieval or parsing error, false is
-// returned and Error() can be queried for the exact failure.
-func (it *DioneOracleOwnershipTransferredIterator) Next() bool {
-	// If the iterator failed, stop iterating
-	if it.fail != nil {
-		return false
-	}
-	// If the iterator completed, deliver directly whatever's available
-	if it.done {
-		select {
-		case log := <-it.logs:
-			it.Event = new(DioneOracleOwnershipTransferred)
-			if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
-				it.fail = err
-				return false
-			}
-			it.Event.Raw = log
-			return true
-
-		default:
-			return false
-		}
-	}
-	// Iterator still in progress, wait for either a data or an error event
-	select {
-	case log := <-it.logs:
-		it.Event = new(DioneOracleOwnershipTransferred)
-		if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
-			it.fail = err
-			return false
-		}
-		it.Event.Raw = log
-		return true
-
-	case err := <-it.sub.Err():
-		it.done = true
-		it.fail = err
-		return it.Next()
-	}
-}
-
-// Error returns any retrieval or parsing error occurred during filtering.
-func (it *DioneOracleOwnershipTransferredIterator) Error() error {
-	return it.fail
-}
-
-// Close terminates the iteration process, releasing any pending underlying
-// resources.
-func (it *DioneOracleOwnershipTransferredIterator) Close() error {
-	it.sub.Unsubscribe()
-	return nil
-}
-
-// DioneOracleOwnershipTransferred represents a OwnershipTransferred event raised by the DioneOracle contract.
-type DioneOracleOwnershipTransferred struct {
-	PreviousOwner common.Address
-	NewOwner      common.Address
-	Raw           types.Log // Blockchain specific contextual infos
-}
-
-// FilterOwnershipTransferred is a free log retrieval operation binding the contract event 0x8be0079c531659141344cd1fd0a4f28419497f9722a3daafe3b4186f6b6457e0.
-//
-// Solidity: event OwnershipTransferred(address indexed previousOwner, address indexed newOwner)
-func (_DioneOracle *DioneOracleFilterer) FilterOwnershipTransferred(opts *bind.FilterOpts, previousOwner []common.Address, newOwner []common.Address) (*DioneOracleOwnershipTransferredIterator, error) {
-
-	var previousOwnerRule []interface{}
-	for _, previousOwnerItem := range previousOwner {
-		previousOwnerRule = append(previousOwnerRule, previousOwnerItem)
-	}
-	var newOwnerRule []interface{}
-	for _, newOwnerItem := range newOwner {
-		newOwnerRule = append(newOwnerRule, newOwnerItem)
-	}
-
-	logs, sub, err := _DioneOracle.contract.FilterLogs(opts, "OwnershipTransferred", previousOwnerRule, newOwnerRule)
-	if err != nil {
-		return nil, err
-	}
-	return &DioneOracleOwnershipTransferredIterator{contract: _DioneOracle.contract, event: "OwnershipTransferred", logs: logs, sub: sub}, nil
-}
-
-// WatchOwnershipTransferred is a free log subscription operation binding the contract event 0x8be0079c531659141344cd1fd0a4f28419497f9722a3daafe3b4186f6b6457e0.
-//
-// Solidity: event OwnershipTransferred(address indexed previousOwner, address indexed newOwner)
-func (_DioneOracle *DioneOracleFilterer) WatchOwnershipTransferred(opts *bind.WatchOpts, sink chan<- *DioneOracleOwnershipTransferred, previousOwner []common.Address, newOwner []common.Address) (event.Subscription, error) {
-
-	var previousOwnerRule []interface{}
-	for _, previousOwnerItem := range previousOwner {
-		previousOwnerRule = append(previousOwnerRule, previousOwnerItem)
-	}
-	var newOwnerRule []interface{}
-	for _, newOwnerItem := range newOwner {
-		newOwnerRule = append(newOwnerRule, newOwnerItem)
-	}
-
-	logs, sub, err := _DioneOracle.contract.WatchLogs(opts, "OwnershipTransferred", previousOwnerRule, newOwnerRule)
-	if err != nil {
-		return nil, err
-	}
-	return event.NewSubscription(func(quit <-chan struct{}) error {
-		defer sub.Unsubscribe()
-		for {
-			select {
-			case log := <-logs:
-				// New log arrived, parse the event and forward to the user
-				event := new(DioneOracleOwnershipTransferred)
-				if err := _DioneOracle.contract.UnpackLog(event, "OwnershipTransferred", log); err != nil {
-					return err
-				}
-				event.Raw = log
-
-				select {
-				case sink <- event:
-				case err := <-sub.Err():
-					return err
-				case <-quit:
-					return nil
-				}
-			case err := <-sub.Err():
-				return err
-			case <-quit:
-				return nil
-			}
-		}
-	}), nil
-}
-
-// ParseOwnershipTransferred is a log parse operation binding the contract event 0x8be0079c531659141344cd1fd0a4f28419497f9722a3daafe3b4186f6b6457e0.
-//
-// Solidity: event OwnershipTransferred(address indexed previousOwner, address indexed newOwner)
-func (_DioneOracle *DioneOracleFilterer) ParseOwnershipTransferred(log types.Log) (*DioneOracleOwnershipTransferred, error) {
-	event := new(DioneOracleOwnershipTransferred)
-	if err := _DioneOracle.contract.UnpackLog(event, "OwnershipTransferred", log); err != nil {
 		return nil, err
 	}
 	event.Raw = log

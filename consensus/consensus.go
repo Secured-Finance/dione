@@ -61,8 +61,6 @@ func (pcm *PBFTConsensusManager) Propose(task types2.DioneTask, requestEvent *di
 	prePrepareMsg, err := pcm.prePreparePool.CreatePrePrepare(
 		&task,
 		requestEvent.ReqID.String(),
-		requestEvent.CallbackAddress.Bytes(),
-		requestEvent.CallbackMethodID[:],
 		pcm.privKey,
 	)
 	if err != nil {

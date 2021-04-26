@@ -1,7 +1,6 @@
 package consensus
 
 import (
-	"bytes"
 	"fmt"
 	"sync"
 
@@ -34,14 +33,12 @@ func NewPrePreparePool(miner *Miner, evc cache.EventCache) *PrePreparePool {
 	}
 }
 
-func (pp *PrePreparePool) CreatePrePrepare(task *types.DioneTask, requestID string, callbackAddress, callbackMethodID, privateKey []byte) (*types2.Message, error) {
+func (pp *PrePreparePool) CreatePrePrepare(task *types.DioneTask, requestID string, privateKey []byte) (*types2.Message, error) {
 	var message types2.Message
 	message.Type = types2.MessageTypePrePrepare
 	var consensusMsg types2.ConsensusMessage
 	consensusMsg.Task.ConsensusID = requestID
 	consensusMsg.Task.RequestID = requestID
-	consensusMsg.Task.CallbackAddress = callbackAddress
-	consensusMsg.Task.CallbackMethodID = callbackMethodID
 	consensusMsg.Task = *task
 	cHash, err := hashstructure.Hash(task, hashstructure.FormatV2, nil)
 	if err != nil {
@@ -88,9 +85,7 @@ func (ppp *PrePreparePool) IsValidPrePrepare(prePrepare *types2.Message) bool {
 		logrus.Errorf("the incoming request task event doesn't exist in the EVC, or is broken: %v", err)
 		return false
 	}
-	if bytes.Compare(requestEvent.CallbackAddress.Bytes(), consensusMsg.Task.CallbackAddress) != 0 ||
-		bytes.Compare(requestEvent.CallbackMethodID[:], consensusMsg.Task.CallbackMethodID) != 0 ||
-		requestEvent.OriginChain != consensusMsg.Task.OriginChain ||
+	if requestEvent.OriginChain != consensusMsg.Task.OriginChain ||
 		requestEvent.RequestType != consensusMsg.Task.RequestType ||
 		requestEvent.RequestParams != consensusMsg.Task.RequestParams {
 
