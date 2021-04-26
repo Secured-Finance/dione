@@ -40,7 +40,7 @@ describe("DioneDispute", function () {
       .to.emit(dioneDispute, 'NewVote')
       .withArgs(dhash, addr3.address);
 
-    await delay(2000);
+    await ethers.provider.send("evm_increaseTime", [2]);
 
     await expect(dioneDispute.finishDispute(dhash))
       .to.emit(dioneDispute, 'DisputeFinished')
@@ -59,7 +59,3 @@ describe("DioneDispute", function () {
       .to.equal(ethers.constants.WeiPerEther.mul(12000));
   });
 });
-
-function delay(ms: number): Promise<void> {
-    return new Promise( resolve => setTimeout(resolve, ms) );
-}
