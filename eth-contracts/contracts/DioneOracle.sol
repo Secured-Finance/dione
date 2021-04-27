@@ -15,8 +15,6 @@ contract DioneOracle {
   uint256 constant public MAXIMUM_DELAY = 5 minutes;
   // Dione staking contract
   IDioneStaking public dioneStaking;
-  // Minimum amount of DIONE tokens required to vote against miner result
-  uint256 public minimumDisputeFee = 100**18;
 
   struct OracleRequest {
     address requestSender;
@@ -26,7 +24,7 @@ contract DioneOracle {
     address callbackAddress; // callback address for users request contract
     bytes4 callbackMethodID; // method for users request contract
     uint256 reqID; // request counter 
-    uint256 deadline;
+    int256 deadline;
     bytes data;
   }
 
@@ -70,7 +68,7 @@ contract DioneOracle {
       callbackAddress: _callbackAddress,
       callbackMethodID: _callbackMethodID,
       reqID: requestCounter,
-      deadline: requestDeadline,
+      deadline: int256(requestDeadline),
       data: new bytes(0)
     });
 
@@ -86,7 +84,7 @@ contract DioneOracle {
   }
 
   function submitOracleRequest(uint256 _reqID, bytes memory _data) public onlyPendingRequest(_reqID) returns (bool) {
-    require((pendingRequests[_reqID].deadline - block.timestamp) <= MAXIMUM_DELAY, "submission has exceeded the deadline");
+    require(pendingRequests[_reqID].deadline - int256(block.timestamp) >= 0, "submission has exceeded the deadline");
     delete pendingRequests[_reqID];
     dioneStaking.mine(msg.sender);
     (bool success, ) = pendingRequests[_reqID].callbackAddress.call(abi.encodeWithSelector(pendingRequests[_reqID].callbackMethodID, _reqID, _data));
