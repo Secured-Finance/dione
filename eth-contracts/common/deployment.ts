@@ -18,6 +18,7 @@ interface DeploymentOptions {
     actualStake: number; // of each node
     nodeCount: number;
     logging: boolean;
+    minStakeForDisputeVotes: number;
 }
 
 async function deploy(opts: DeploymentOptions): Promise<Environment> {
@@ -39,7 +40,7 @@ async function deploy(opts: DeploymentOptions): Promise<Environment> {
     await dioneStaking.deployed();
     logger.log("staking_contract_address = \"" + dioneStaking.address+ "\"");
 
-    const dioneDispute = await DioneDispute.deploy(dioneStaking.address, opts.voteWindowTime);
+    const dioneDispute = await DioneDispute.deploy(dioneStaking.address, opts.voteWindowTime, ethers.constants.WeiPerEther.mul(opts.minStakeForDisputeVotes));
     await dioneDispute.deployed();
     logger.log("dispute_contract_address = \"" + dioneDispute.address+ "\"");
 

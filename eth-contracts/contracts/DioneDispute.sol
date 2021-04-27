@@ -4,14 +4,15 @@ import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 import "./interfaces/IDioneStaking.sol";
 
 contract DioneDispute {
-    using SafeMath for uint256;
-
     IDioneStaking public dioneStaking;
     uint256 public voteWindowTime;
 
+    // Minimum amount of DIONE tokens required to vote to dispute
+    uint256 public minStake;
+
     struct Dispute {
         bytes32 dhash; // id of dispute - keccak256(_miner,_requestId,_timestamp)
-        uint256 sum; // vote measure (for/against this dispute)
+        int256 sum; // vote measure (for/against this dispute)
         bool finished; // dispute was finished (closed) or not
         bool disputeResult; // true - dispute had basis, false - dispute was false
         address miner; // the miner against whom the dispute
@@ -20,15 +21,21 @@ contract DioneDispute {
         address[] voted; // map of miners who vote for/against
     }
 
+    modifier onlyExistingDispute(bytes32 _dhash) {
+        require(disputes[_dhash].disputeInitiator != address(0), "dispute doesn't exist");
+        _;
+    } 
+
     mapping(bytes32 => Dispute) disputes;
 
     event NewDispute(bytes32 dhash, uint256 requestID, address indexed miner, address indexed disputeInitiator);
     event NewVote(bytes32 dhash, address indexed votedMiner);
     event DisputeFinished(bytes32 dhash, bool status);
 
-    constructor(IDioneStaking _dioneStaking, uint256 _voteWindowTime) {
+    constructor(IDioneStaking _dioneStaking, uint256 _voteWindowTime, uint256 _minStake) {
         dioneStaking = _dioneStaking;
         voteWindowTime = _voteWindowTime;
+        minStake = _minStake;
     }
 
     function beginDispute(address miner, uint256 requestID) public {
@@ -48,24 +55,24 @@ contract DioneDispute {
         emit NewDispute(dhash, requestID, miner, msg.sender);
     }
 
-    function vote(bytes32 dhash, bool voteStatus) public {
+    function vote(bytes32 dhash, bool voteStatus) public onlyExistingDispute(dhash) {
         Dispute memory dispute = disputes[dhash];
-        require(dispute.dhash.length != 0, "dispute doesn't exist");
         require(dispute.finished == false, "dispute already finished");
+        require(msg.sender != dispute.disputeInitiator, "dispute initiator isn't allowed to vote");
         require(dioneStaking.isMiner(msg.sender), "caller isn't dione miner");
+        require(dioneStaking.minerStake(msg.sender) >= minStake, "miner doesn't have minimum stake to vote");
         uint256 stake = dioneStaking.minerStake(msg.sender);
         if (voteStatus) {
-            disputes[dhash].sum = disputes[dhash].sum.add(stake);
+            disputes[dhash].sum = disputes[dhash].sum + int256(stake);
         } else {
-            disputes[dhash].sum = disputes[dhash].sum.sub(stake);
+            disputes[dhash].sum = disputes[dhash].sum - int256(stake);
         }
         disputes[dhash].voted.push(msg.sender);
 
         emit NewVote(dhash, msg.sender);
     }
 
-    function finishDispute(bytes32 dhash) public {
-        require(disputes[dhash].dhash.length != 0, "dispute doesn't exist");
+    function finishDispute(bytes32 dhash) public onlyExistingDispute(dhash) {
         Dispute memory dispute = disputes[dhash];
         require((block.timestamp - dispute.timestamp) >= voteWindowTime, "vote window hasn't passed yet");
         require(dispute.finished == false, "dispute already finished");
