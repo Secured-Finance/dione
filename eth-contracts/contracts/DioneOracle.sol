@@ -50,7 +50,7 @@ contract DioneOracle {
   );
 
   modifier onlyPendingRequest(uint256 _reqID) {
-    require(pendingRequests[_reqID].requestSender != address(0), "This request is not pending");
+    require(pendingRequests[_reqID].requestSender != address(0), "this request is not pending");
     _;
   }
 
@@ -86,6 +86,7 @@ contract DioneOracle {
   }
 
   function submitOracleRequest(uint256 _reqID, bytes memory _data) public onlyPendingRequest(_reqID) returns (bool) {
+    require((pendingRequests[_reqID].deadline - block.timestamp) <= MAXIMUM_DELAY, "submission has exceeded the deadline");
     delete pendingRequests[_reqID];
     dioneStaking.mine(msg.sender);
     (bool success, ) = pendingRequests[_reqID].callbackAddress.call(abi.encodeWithSelector(pendingRequests[_reqID].callbackMethodID, _reqID, _data));

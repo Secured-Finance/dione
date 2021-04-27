@@ -12,7 +12,8 @@ async function main() {
       randomizeStake: false,
       maxStake: 0, // don't use this deployment feature
       actualStake: 5000,
-      nodeCount: 4
+      nodeCount: 4,
+      logging: true
     });
   }
   

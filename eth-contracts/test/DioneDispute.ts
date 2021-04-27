@@ -16,7 +16,8 @@ describe("DioneDispute", function () {
       randomizeStake: false,
       maxStake: 0, // don't use this deployment feature
       actualStake: 9000,
-      nodeCount: 4
+      nodeCount: 4,
+      logging: false
     });
 
     dioneDispute = contracts.dioneDispute;
