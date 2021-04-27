@@ -59,6 +59,7 @@ contract DioneDispute {
         Dispute memory dispute = disputes[dhash];
         require(dispute.finished == false, "dispute already finished");
         require(msg.sender != dispute.disputeInitiator, "dispute initiator isn't allowed to vote");
+        require(msg.sender != dispute.miner, "the miner against whom dispute has beginned isn't allowed to vote");
         require(dioneStaking.isMiner(msg.sender), "caller isn't dione miner");
         require(dioneStaking.minerStake(msg.sender) >= minStake, "miner doesn't have minimum stake to vote");
         uint256 stake = dioneStaking.minerStake(msg.sender);
