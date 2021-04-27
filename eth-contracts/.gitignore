@@ -1,4 +1,6 @@
 node_modules
-artifacts/**
+artifacts
 cache
-dist/**
+dist
+coverage
+coverage.json
