@@ -58,7 +58,6 @@ contract DioneOracle {
 
   function requestOracles(uint8 _originChain, string memory _requestType, string memory _requestParams, address _callbackAddress, bytes4 _callbackMethodID) public returns (uint256) {
     requestCounter += 1;
-    require(pendingRequests[requestCounter].reqID == 0, "This counter is not unique");
     uint256 requestDeadline = block.timestamp.add(MAXIMUM_DELAY);
     pendingRequests[requestCounter] = OracleRequest({
       requestSender: msg.sender,
@@ -87,8 +86,7 @@ contract DioneOracle {
     require(pendingRequests[_reqID].deadline - int256(block.timestamp) >= 0, "submission has exceeded the deadline");
     delete pendingRequests[_reqID];
     dioneStaking.mine(msg.sender);
-    (bool success, ) = pendingRequests[_reqID].callbackAddress.call(abi.encodeWithSelector(pendingRequests[_reqID].callbackMethodID, _reqID, _data));
-    require(success == true, "cannot call callback method");
+    pendingRequests[_reqID].callbackAddress.call(abi.encodeWithSelector(pendingRequests[_reqID].callbackMethodID, _reqID, _data));
     emit SubmittedOracleRequest(_reqID, _data);
     return true;
   }

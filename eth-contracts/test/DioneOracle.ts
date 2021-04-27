@@ -27,7 +27,7 @@ describe("DioneOracle", function () {
     const timestamp = 1625097600;
     await ethers.provider.send("evm_setNextBlockTimestamp", [timestamp]);
     const requestDeadline = timestamp + 300;
-    await expect(dioneOracle.requestOracles(1, "getTransaction", "bafy2bzaceaaab3kkoaocal2dzh3okzy4gscqpdt42hzrov3df6vjumalngc3g", dioneOracle.address, BigNumber.from(0x8da5cb5b)))
+    await expect(dioneOracle.requestOracles(1, "getTransaction", "bafy2bzaceaaab3kkoaocal2dzh3okzy4gscqpdt42hzrov3df6vjumalngc3g", "0x0000000000000000000000000000000000000000", "0x00000000"))
       .to.emit(dioneOracle, 'NewOracleRequest')
       .withArgs(1, "getTransaction", "bafy2bzaceaaab3kkoaocal2dzh3okzy4gscqpdt42hzrov3df6vjumalngc3g", 1, requestDeadline);
 
@@ -43,7 +43,7 @@ describe("DioneOracle", function () {
   it("should create request and submit it", async function() {
     const [addr0] = await ethers.getSigners();
 
-    await dioneOracle.requestOracles(1, "getTransaction", "bafy2bzaceaaab3kkoaocal2dzh3okzy4gscqpdt42hzrov3df6vjumalngc3g", dioneOracle.address, BigNumber.from(0x8da5cb5b));
+    await dioneOracle.requestOracles(1, "getTransaction", "bafy2bzaceaaab3kkoaocal2dzh3okzy4gscqpdt42hzrov3df6vjumalngc3g", "0x0000000000000000000000000000000000000000", "0x00000000");
     const res = dioneOracle.submitOracleRequest(1, BigNumber.from(0x8da5cb5b));
     await expect(res)
       .to.emit(dioneOracle, "SubmittedOracleRequest")
@@ -55,7 +55,7 @@ describe("DioneOracle", function () {
   });
 
   it("should fail submission after request deadline", async function () {
-    await dioneOracle.requestOracles(1, "getTransaction", "bafy2bzaceaaab3kkoaocal2dzh3okzy4gscqpdt42hzrov3df6vjumalngc3g", dioneOracle.address, BigNumber.from(0x8da5cb5b));
+    await dioneOracle.requestOracles(1, "getTransaction", "bafy2bzaceaaab3kkoaocal2dzh3okzy4gscqpdt42hzrov3df6vjumalngc3g", "0x0000000000000000000000000000000000000000", "0x00000000");
 
     await ethers.provider.send("evm_increaseTime", [301]);
     await expect(dioneOracle.submitOracleRequest(1, BigNumber.from(0x8da5cb5b)))
@@ -70,5 +70,13 @@ describe("DioneOracle", function () {
   it("should fail cancel of request with invalid request id", async function () {
     await expect(dioneOracle.cancelOracleRequest(333))
       .to.be.revertedWith("this request is not pending");
+  });
+
+  it("should fail when canceling request as not request sender", async () => {
+    const [,addr1] = await ethers.getSigners();
+
+    await dioneOracle.requestOracles(1, "getTransaction", "bafy2bzaceaaab3kkoaocal2dzh3okzy4gscqpdt42hzrov3df6vjumalngc3g", "0x0000000000000000000000000000000000000000", "0x00000000");
+    await expect(dioneOracle.connect(addr1).cancelOracleRequest(1))
+      .to.be.revertedWith("you aren't request sender");
   });
 });
