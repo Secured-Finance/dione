@@ -121,6 +121,62 @@ describe("DioneDispute", function () {
       .to.be.revertedWith("the miner against whom dispute has beginned isn't allowed to vote");
   });
 
+  it("should fail when beginning dispute on the same miner", async () => {
+    const [, addr1 ] = await ethers.getSigners();
+
+    await dioneDispute.beginDispute(addr1.address, 1);
+    await expect(dioneDispute.beginDispute(addr1.address, 1))
+      .to.be.revertedWith("dispute already exists");
+  });
+
+  it("should fail when voting finished dispute", async () => {
+    const [, addr1, addr2 ] = await ethers.getSigners();
+
+    const dhash = soliditySha3(addr1.address, 1);
+    await dioneDispute.beginDispute(addr1.address, 1);
+    await ethers.provider.send("evm_increaseTime", [2]);
+    await dioneDispute.finishDispute(dhash);
+    
+    await expect(dioneDispute.connect(addr2).vote(dhash, true))
+      .to.be.revertedWith("dispute already finished");
+  });
+
+  it("should fail when dispute beginner isn't dione miner", async () => {
+    const [ ,addr1,,,addr4 ] = await ethers.getSigners();
+    await expect(dioneDispute.connect(addr4).beginDispute(addr1.address, 1))
+      .to.be.revertedWith("caller isn't dione miner");
+  });
+
+  it("should fail when voter isn't dione miner", async () => {
+    const [ ,addr1,,,addr4 ] = await ethers.getSigners();
+
+    const dhash = soliditySha3(addr1.address, 1);
+    await dioneDispute.beginDispute(addr1.address, 1);
+    await expect(dioneDispute.connect(addr4).vote(dhash, true))
+      .to.be.revertedWith("caller isn't dione miner");
+  });
+
+  it("should fail when finishing already finished dispute", async () => {
+    const [, addr1 ] = await ethers.getSigners();
+
+    const dhash = soliditySha3(addr1.address, 1);
+    await dioneDispute.beginDispute(addr1.address, 1);
+    await ethers.provider.send("evm_increaseTime", [2]);
+    await dioneDispute.finishDispute(dhash);
+    await expect(dioneDispute.finishDispute(dhash))
+      .to.be.revertedWith("dispute already finished");
+  });
+
+  it("should fail when finishing dispute as not dispute initiator", async () => {
+    const [, addr1 ] = await ethers.getSigners();
+
+    const dhash = soliditySha3(addr1.address, 1);
+    await dioneDispute.beginDispute(addr1.address, 1);
+    await ethers.provider.send("evm_increaseTime", [2]);
+    await expect(dioneDispute.connect(addr1).finishDispute(dhash))
+      .to.be.revertedWith("only dispute initiator can call this function");
+  });
+
   describe("DioneDispute - insufficient funds", () => {
     let dioneDispute: Contract;
     before(async () => {
