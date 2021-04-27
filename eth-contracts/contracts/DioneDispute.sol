@@ -41,6 +41,7 @@ contract DioneDispute {
     function beginDispute(address miner, uint256 requestID) public {
         bytes32 dhash = keccak256(abi.encodePacked(miner, requestID));
         require(disputes[dhash].miner == address(0), "dispute already exists");
+        require(dioneStaking.isMiner(msg.sender), "caller isn't dione miner");
         Dispute storage dispute = disputes[dhash];
         dispute.dhash = dhash;
         dispute.sum = 0;
