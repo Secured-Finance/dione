@@ -1,11 +1,11 @@
 import { ethers } from "hardhat";
 import { BigNumber, Contract, providers, utils } from "ethers";
 import { expect } from "chai";
-import { soliditySha3 } from "web3-utils";
 import deploy from "../common/deployment";
 
 describe("DioneOracle", function () {
   let dioneOracle: Contract;
+  let dioneToken: Contract;
 
   beforeEach(async function () {
     const contracts = await deploy({
@@ -16,9 +16,11 @@ describe("DioneOracle", function () {
       maxStake: 0, // don't use this deployment feature
       actualStake: 9000,
       nodeCount: 4,
-      logging: false
+      logging: false,
+      minStakeForDisputeVotes: 100
     });
     dioneOracle = contracts.dioneOracle;
+    dioneToken = contracts.dioneToken;
   });
 
   it("should create request and cancel it", async function () {
@@ -39,10 +41,17 @@ describe("DioneOracle", function () {
   });
 
   it("should create request and submit it", async function() {
+    const [addr0] = await ethers.getSigners();
+
     await dioneOracle.requestOracles(1, "getTransaction", "bafy2bzaceaaab3kkoaocal2dzh3okzy4gscqpdt42hzrov3df6vjumalngc3g", dioneOracle.address, BigNumber.from(0x8da5cb5b));
-    await expect(dioneOracle.submitOracleRequest(1, BigNumber.from(0x8da5cb5b)))
+    const res = dioneOracle.submitOracleRequest(1, BigNumber.from(0x8da5cb5b));
+    await expect(res)
       .to.emit(dioneOracle, "SubmittedOracleRequest")
       .withArgs(1, BigNumber.from(0x8da5cb5b));
+
+    // check if miner has received the reward
+    expect(await dioneToken.balanceOf(addr0.address))
+      .to.be.equal(ethers.constants.WeiPerEther.mul(100));
   });
 
   it("should fail submission after request deadline", async function () {
@@ -50,7 +59,7 @@ describe("DioneOracle", function () {
 
     await ethers.provider.send("evm_increaseTime", [301]);
     await expect(dioneOracle.submitOracleRequest(1, BigNumber.from(0x8da5cb5b)))
-      .to.be.reverted;
+      .to.be.revertedWith("submission has exceeded the deadline");
   });
 
   it("should fail submission on invalid request id", async function () {
