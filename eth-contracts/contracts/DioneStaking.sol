@@ -41,11 +41,8 @@ contract DioneStaking is Ownable, ReentrancyGuard {
     event Stake(address indexed miner, uint256 amount);
     event Withdraw(address indexed miner, uint256 amount);
     event Mine(address indexed miner, uint256 blockNumber);
-
-    modifier onlyMiner(address _minerAddr) {
-        require(isMiner(_minerAddr), "Exception: caller is not the miner");
-        _;
-    }
+    event RewardChanged(uint256 oldValue, uint256 newValue);
+    event MinimumStakeChanged(uint256 oldValue, uint256 newValue);
 
     constructor(
         DioneToken _dione,
@@ -63,7 +60,6 @@ contract DioneStaking is Ownable, ReentrancyGuard {
     function mine(address _minerAddr) public nonReentrant {
         require(msg.sender == dioneOracleAddress, "not oracle contract");
         MinerInfo storage miner = minerInfo[_minerAddr];
-        require(miner.amount >= minimumStake, "not enough stake");
         dione.mint(_minerAddr, minerReward);
         miner.lastRewardBlock = block.number;
         emit Mine(_minerAddr, block.number);
@@ -73,7 +69,6 @@ contract DioneStaking is Ownable, ReentrancyGuard {
     function mineAndStake(address _minerAddr) public nonReentrant {
         require(msg.sender == dioneOracleAddress, "not oracle contract");
         MinerInfo storage miner = minerInfo[_minerAddr];
-        require(miner.amount >= minimumStake);
         dione.mint(address(this), minerReward);
         _totalStake = _totalStake.add(minerReward);
         miner.amount = miner.amount.add(minerReward);
@@ -83,12 +78,13 @@ contract DioneStaking is Ownable, ReentrancyGuard {
 
     // Deposit DIONE tokens to mine on dione network
     function stake(uint256 _amount) public nonReentrant {
-        require(_amount > 0, "Cannot stake 0");
+        require(_amount > 0, "cannot stake zero");
+        require(_amount >= minimumStake, "actual stake amount is less than minimum stake amount");
         MinerInfo storage miner = minerInfo[msg.sender];
+        dione.transferFrom(address(msg.sender), address(this), _amount);
         _totalStake = _totalStake.add(_amount);
         miner.amount = miner.amount.add(_amount);
-        dione.transferFrom(address(msg.sender), address(this), _amount);
-        if (miner.firstStakeBlock == 0 && miner.amount >= minimumStake) {
+        if (miner.firstStakeBlock == 0) {
             miner.firstStakeBlock = block.number > startBlock ? block.number : startBlock;
         }
         emit Stake(msg.sender, _amount);
@@ -98,11 +94,10 @@ contract DioneStaking is Ownable, ReentrancyGuard {
     function withdraw(uint256 _amount) public nonReentrant {
         MinerInfo storage miner = minerInfo[msg.sender];
         require(miner.amount >= _amount, "withdraw: not enough tokens");
-        if(_amount > 0) {
-            _totalStake = _totalStake.sub(_amount);
-            miner.amount = miner.amount.sub(_amount);
-            dione.transfer(address(msg.sender), _amount);
-        }
+        require(_amount > 0, "cannot withdraw zero");
+        _totalStake = _totalStake.sub(_amount);
+        miner.amount = miner.amount.sub(_amount);
+        dione.transfer(address(msg.sender), _amount);
         emit Withdraw(msg.sender, _amount);
     }
 
@@ -117,8 +112,10 @@ contract DioneStaking is Ownable, ReentrancyGuard {
 
     // Update miner reward in DIONE tokens, only can be executed by owner of the contract
     function setMinerReward(uint256 _minerReward) public onlyOwner {
-        require(_minerReward > 0, "!minerReward-0");
+        require(_minerReward > 0, "reward must not be zero");
+        uint256 oldRewardValue = minerReward;
         minerReward = _minerReward;
+        emit RewardChanged(oldRewardValue, _minerReward);
     }
 
     function isMiner(address _minerAddr) public view returns (bool) {
@@ -127,24 +124,33 @@ contract DioneStaking is Ownable, ReentrancyGuard {
 
     // Update minimum stake in DIONE tokens for miners, only can be executed by owner of the contract
     function setMinimumStake(uint256 _minimumStake) public onlyOwner {
-        require(_minimumStake > 0, "!minerReward-0");
+        require(_minimumStake > 0, "minimum stake must not be zero");
+        uint256 oldValue = minimumStake;
         minimumStake = _minimumStake;
+        emit MinimumStakeChanged(oldValue, _minimumStake);
     }
 
     function setOracleContractAddress(address _addr) public onlyOwner {
+        require(_addr != address(0), "address must not be zero");
         dioneOracleAddress = _addr;
     }
 
     function setDisputeContractAddress(address _addr) public onlyOwner {
+        require(_addr != address(0), "address must not be zero");
         disputeContractAddr = _addr;
     }
 
     function slashMiner(address miner, address[] memory receipentMiners) public {
-        require(msg.sender == disputeContractAddr, "Exception: caller is not the dispute contract");
+        require(msg.sender == disputeContractAddr, "caller is not the dispute contract");
+        require(miner != address(0), "slashing address must not be zero");
+        require(isMiner(miner), "slashing address isn't dione miner");
         
         uint256 share = minerInfo[miner].amount.div(receipentMiners.length);
 
+
         for (uint8 i = 0; i < receipentMiners.length; i++) {
+            require(receipentMiners[i] != miner, "receipent address must not be slashing address");
+            require(isMiner(receipentMiners[i]), "receipent address isn't dione miner");
             minerInfo[miner].amount = minerInfo[miner].amount.sub(share);
             minerInfo[receipentMiners[i]].amount = minerInfo[receipentMiners[i]].amount.add(share);
         }
