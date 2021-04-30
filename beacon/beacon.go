@@ -135,7 +135,7 @@ func BeaconEntriesForTask(ctx context.Context, beaconNetworks BeaconNetworks) ([
 	}
 	out[1] = res.Entry
 
-	logrus.Debug("fetching beacon entries", "took", lib.Clock.Since(start), "numEntries", len(out))
+	logrus.Debugf("fetching beacon entries: took %v, count of entries: %v", lib.Clock.Since(start), len(out))
 	//reverse(out)
 	return out, nil
 }

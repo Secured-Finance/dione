@@ -26,7 +26,9 @@ import (
 	types "github.com/Secured-Finance/dione/types"
 )
 
-var log = logging.Logger("drand")
+var log = logrus.WithFields(logrus.Fields{
+	"subsystem": "drand",
+})
 
 // DrandResponse structure representing response from drand network
 type DrandResponse struct {
@@ -61,7 +63,7 @@ func NewDrandBeacon(genesisTs, interval uint64, ps *pubsub.PubSub) (*DrandBeacon
 	}
 
 	dlogger := dlog.NewKitLoggerFrom(kzap.NewZapSugarLogger(
-		log.SugaredLogger.Desugar(), zapcore.InfoLevel))
+		logging.Logger("drand").SugaredLogger.Desugar(), zapcore.InfoLevel))
 
 	var clients []client.Client
 	for _, url := range cfg.Servers {
@@ -82,7 +84,7 @@ func NewDrandBeacon(genesisTs, interval uint64, ps *pubsub.PubSub) (*DrandBeacon
 	if ps != nil {
 		opts = append(opts, libp2pClient.WithPubsub(ps))
 	} else {
-		logrus.Info("Initiated drand with PubSub")
+		log.Info("Initiated drand with PubSub")
 	}
 
 	drandClient, err := client.Wrap(clients, opts...)
@@ -117,7 +119,7 @@ func (db *DrandBeacon) Entry(ctx context.Context, round uint64) <-chan beacon.Be
 
 	go func() {
 		start := lib.Clock.Now()
-		logrus.Info("start fetching randomness", "round", round)
+		log.Infof("start fetching randomness: round %v", round)
 		resp, err := db.DrandClient.Get(ctx, round)
 
 		var br beacon.BeaconResult
@@ -127,7 +129,7 @@ func (db *DrandBeacon) Entry(ctx context.Context, round uint64) <-chan beacon.Be
 			br.Entry.Round = resp.Round()
 			br.Entry.Data = resp.Signature()
 		}
-		logrus.Info("done fetching randomness", "round", round, "took", lib.Clock.Since(start))
+		log.Infof("done fetching randomness: round %v, took %v", round, lib.Clock.Since(start))
 		out <- br
 		close(out)
 	}()
@@ -172,7 +174,7 @@ func (db *DrandBeacon) VerifyEntry(curr, prev types.BeaconEntry) error {
 func (db *DrandBeacon) LatestBeaconRound() uint64 {
 	latestDround, err := db.DrandClient.Get(context.TODO(), 0)
 	if err != nil {
-		logrus.Errorf("failed to get latest drand round: %w", err)
+		log.Errorf("failed to get latest drand round: %w", err)
 	}
 	return latestDround.Round()
 }

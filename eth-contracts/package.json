@@ -7,7 +7,7 @@
     "test": "TS_NODE_FILES=true npx hardhat test",
     "test:reportGas": "REPORT_GAS=1 TS_NODE_FILES=true npx hardhat test",
     "coverage": "TS_NODE_FILES=true npx hardhat coverage",
-    "deployLocal": "TS_NODE_FILES=true npx hardhat --network geth run scripts/deploy.ts"
+    "deploy:local": "TS_NODE_FILES=true npx hardhat --network geth run scripts/deploy.ts"
   },
   "author": "",
   "license": "ISC",

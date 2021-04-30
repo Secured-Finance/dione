@@ -6,8 +6,6 @@ import (
 
 	"github.com/Secured-Finance/dione/cache"
 
-	"github.com/Secured-Finance/dione/contracts/dioneOracle"
-
 	"github.com/Secured-Finance/dione/consensus/types"
 
 	"github.com/Secured-Finance/dione/ethclient"
@@ -21,9 +19,8 @@ type PBFTConsensusManager struct {
 	psb            *pubsub.PubSubRouter
 	minApprovals   int
 	privKey        []byte
-	prePreparePool *PrePreparePool
-	preparePool    *PreparePool
-	commitPool     *CommitPool
+	msgLog         *MessageLog
+	validator      *ConsensusValidator
 	consensusMap   map[string]*Consensus
 	ethereumClient *ethclient.EthereumClient
 	miner          *Miner
@@ -41,9 +38,8 @@ func NewPBFTConsensusManager(psb *pubsub.PubSubRouter, minApprovals int, privKey
 	pcm := &PBFTConsensusManager{}
 	pcm.psb = psb
 	pcm.miner = miner
-	pcm.prePreparePool = NewPrePreparePool(miner, evc)
-	pcm.preparePool = NewPreparePool()
-	pcm.commitPool = NewCommitPool()
+	pcm.validator = NewConsensusValidator(evc, miner)
+	pcm.msgLog = NewMessageLog()
 	pcm.minApprovals = minApprovals
 	pcm.privKey = privKey
 	pcm.ethereumClient = ethereumClient
@@ -55,14 +51,10 @@ func NewPBFTConsensusManager(psb *pubsub.PubSubRouter, minApprovals int, privKey
 	return pcm
 }
 
-func (pcm *PBFTConsensusManager) Propose(task types2.DioneTask, requestEvent *dioneOracle.DioneOracleNewOracleRequest) error {
+func (pcm *PBFTConsensusManager) Propose(task types2.DioneTask) error {
 	pcm.createConsensusInfo(&task, true)
 
-	prePrepareMsg, err := pcm.prePreparePool.CreatePrePrepare(
-		&task,
-		requestEvent.ReqID.String(),
-		pcm.privKey,
-	)
+	prePrepareMsg, err := CreatePrePrepareWithTaskSignature(&task, pcm.privKey)
 	if err != nil {
 		return err
 	}
@@ -74,66 +66,66 @@ func (pcm *PBFTConsensusManager) handlePrePrepare(message *types.Message) {
 	if message.Payload.Task.Miner == pcm.miner.address {
 		return
 	}
-	if pcm.prePreparePool.IsExistingPrePrepare(message) {
+	if pcm.msgLog.Exists(*message) {
 		return
 	}
-	if !pcm.prePreparePool.IsValidPrePrepare(message) {
+	if !pcm.validator.Valid(*message) {
 		logrus.Warn("received invalid pre_prepare msg, dropping...")
 		return
 	}
 
-	pcm.prePreparePool.AddPrePrepare(message)
+	pcm.msgLog.AddMessage(*message)
 	err := pcm.psb.BroadcastToServiceTopic(message)
 	if err != nil {
 		logrus.Errorf(err.Error())
 		return
 	}
 
-	prepareMsg, err := pcm.preparePool.CreatePrepare(message, pcm.privKey)
+	prepareMsg, err := NewMessage(message, types.MessageTypePrepare)
 	if err != nil {
 		logrus.Errorf("failed to create prepare message: %w", err)
 	}
 
 	pcm.createConsensusInfo(&message.Payload.Task, false)
 
-	pcm.psb.BroadcastToServiceTopic(prepareMsg)
+	pcm.psb.BroadcastToServiceTopic(&prepareMsg)
 }
 
 func (pcm *PBFTConsensusManager) handlePrepare(message *types.Message) {
-	if pcm.preparePool.IsExistingPrepare(message) {
+	if pcm.msgLog.Exists(*message) {
 		return
 	}
-	if !pcm.preparePool.IsValidPrepare(message) {
+	if !pcm.validator.Valid(*message) {
 		logrus.Warn("received invalid prepare msg, dropping...")
 		return
 	}
 
-	pcm.preparePool.AddPrepare(message)
+	pcm.msgLog.AddMessage(*message)
 	err := pcm.psb.BroadcastToServiceTopic(message)
 	if err != nil {
 		logrus.Errorf(err.Error())
 		return
 	}
 
-	if pcm.preparePool.PreparePoolSize(message.Payload.Task.ConsensusID) >= pcm.minApprovals {
-		commitMsg, err := pcm.commitPool.CreateCommit(message, pcm.privKey)
+	if len(pcm.msgLog.GetMessagesByTypeAndConsensusID(types.MessageTypePrepare, message.Payload.Task.ConsensusID)) >= pcm.minApprovals {
+		commitMsg, err := NewMessage(message, types.MessageTypeCommit)
 		if err != nil {
 			logrus.Errorf("failed to create commit message: %w", err)
 		}
-		pcm.psb.BroadcastToServiceTopic(commitMsg)
+		pcm.psb.BroadcastToServiceTopic(&commitMsg)
 	}
 }
 
 func (pcm *PBFTConsensusManager) handleCommit(message *types.Message) {
-	if pcm.commitPool.IsExistingCommit(message) {
+	if pcm.msgLog.Exists(*message) {
 		return
 	}
-	if !pcm.commitPool.IsValidCommit(message) {
+	if !pcm.validator.Valid(*message) {
 		logrus.Warn("received invalid commit msg, dropping...")
 		return
 	}
 
-	pcm.commitPool.AddCommit(message)
+	pcm.msgLog.AddMessage(*message)
 	err := pcm.psb.BroadcastToServiceTopic(message)
 	if err != nil {
 		logrus.Errorf(err.Error())
@@ -141,7 +133,7 @@ func (pcm *PBFTConsensusManager) handleCommit(message *types.Message) {
 	}
 
 	consensusMsg := message.Payload
-	if pcm.commitPool.CommitSize(consensusMsg.Task.ConsensusID) >= pcm.minApprovals {
+	if len(pcm.msgLog.GetMessagesByTypeAndConsensusID(types.MessageTypeCommit, message.Payload.Task.ConsensusID)) >= pcm.minApprovals {
 		info := pcm.GetConsensusInfo(consensusMsg.Task.ConsensusID)
 		if info == nil {
 			logrus.Debugf("consensus doesn't exist in our consensus map - skipping...")

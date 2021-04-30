@@ -121,6 +121,6 @@ class LogWrapper {
     }
 
     public log(message?: any, ...optionalParams: any[]): void {
-        if(this.enabled) console.log(message, optionalParams);
+        if(this.enabled) console.log(message, ...optionalParams);
     }
 }

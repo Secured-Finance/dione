@@ -235,13 +235,13 @@ func (n *Node) subscribeOnEthContractsAsync(ctx context.Context) {
 
 					task, err := n.Miner.MineTask(context.TODO(), event)
 					if err != nil {
-						logrus.Fatal("Failed to mine task, exiting... ", err)
+						logrus.Errorf("Failed to mine task: %v", err)
 					}
 					if task == nil {
 						continue
 					}
 					logrus.Infof("Proposed new Dione task with ID: %s", event.ReqID.String())
-					err = n.ConsensusManager.Propose(*task, event)
+					err = n.ConsensusManager.Propose(*task)
 					if err != nil {
 						logrus.Errorf("Failed to propose task: %w", err)
 					}
