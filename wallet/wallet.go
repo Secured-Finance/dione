@@ -50,7 +50,7 @@ func KeyWallet(keys ...*Key) *LocalWallet {
 	}
 }
 
-func (w *LocalWallet) WalletSign(ctx context.Context, addr peer.ID, msg []byte) (*types.Signature, error) {
+func (w *LocalWallet) Sign(addr peer.ID, msg []byte) (*types.Signature, error) {
 	ki, err := w.findKey(addr)
 	if err != nil {
 		return nil, err
@@ -143,7 +143,7 @@ func (w *LocalWallet) GetDefault() (peer.ID, error) {
 	return k.Address, nil
 }
 
-func (w *LocalWallet) WalletNew(ctx context.Context, typ types.KeyType) (peer.ID, error) {
+func (w *LocalWallet) NewKey(typ types.KeyType) (peer.ID, error) {
 	w.lk.Lock()
 	defer w.lk.Unlock()
 
