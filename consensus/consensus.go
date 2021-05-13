@@ -24,7 +24,7 @@ type PBFTConsensusManager struct {
 	consensusMap   map[string]*Consensus
 	ethereumClient *ethclient.EthereumClient
 	miner          *Miner
-	eventCache     cache.EventCache
+	cache          cache.Cache
 }
 
 type Consensus struct {
@@ -34,7 +34,7 @@ type Consensus struct {
 	Task                 *types2.DioneTask
 }
 
-func NewPBFTConsensusManager(psb *pubsub.PubSubRouter, minApprovals int, privKey []byte, ethereumClient *ethclient.EthereumClient, miner *Miner, evc cache.EventCache) *PBFTConsensusManager {
+func NewPBFTConsensusManager(psb *pubsub.PubSubRouter, minApprovals int, privKey []byte, ethereumClient *ethclient.EthereumClient, miner *Miner, evc cache.Cache) *PBFTConsensusManager {
 	pcm := &PBFTConsensusManager{}
 	pcm.psb = psb
 	pcm.miner = miner
@@ -43,7 +43,7 @@ func NewPBFTConsensusManager(psb *pubsub.PubSubRouter, minApprovals int, privKey
 	pcm.minApprovals = minApprovals
 	pcm.privKey = privKey
 	pcm.ethereumClient = ethereumClient
-	pcm.eventCache = evc
+	pcm.cache = evc
 	pcm.consensusMap = map[string]*Consensus{}
 	pcm.psb.Hook(types.MessageTypePrePrepare, pcm.handlePrePrepare)
 	pcm.psb.Hook(types.MessageTypePrepare, pcm.handlePrepare)

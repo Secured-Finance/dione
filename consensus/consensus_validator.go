@@ -4,6 +4,7 @@ import (
 	"github.com/Secured-Finance/dione/cache"
 	types2 "github.com/Secured-Finance/dione/consensus/types"
 	"github.com/Secured-Finance/dione/consensus/validation"
+	"github.com/Secured-Finance/dione/contracts/dioneOracle"
 	"github.com/Secured-Finance/dione/types"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/filecoin-project/go-state-types/crypto"
@@ -12,14 +13,14 @@ import (
 
 type ConsensusValidator struct {
 	validationFuncMap map[types2.MessageType]func(msg types2.Message) bool
-	eventCache        cache.EventCache
+	cache             cache.Cache
 	miner             *Miner
 }
 
-func NewConsensusValidator(ec cache.EventCache, miner *Miner) *ConsensusValidator {
+func NewConsensusValidator(ec cache.Cache, miner *Miner) *ConsensusValidator {
 	cv := &ConsensusValidator{
-		eventCache: ec,
-		miner:      miner,
+		cache: ec,
+		miner: miner,
 	}
 
 	cv.validationFuncMap = map[types2.MessageType]func(msg types2.Message) bool{
@@ -35,17 +36,19 @@ func NewConsensusValidator(ec cache.EventCache, miner *Miner) *ConsensusValidato
 			}
 			/////////////////////////////////
 
-			// === verify if request exists in event log cache ===
-			requestEvent, err := cv.eventCache.GetOracleRequestEvent("request_" + consensusMsg.Task.RequestID)
+			// === verify if request exists in cache ===
+			var requestEvent *dioneOracle.DioneOracleNewOracleRequest
+			err = cv.cache.Get("request_"+consensusMsg.Task.RequestID, &requestEvent)
 			if err != nil {
-				logrus.Errorf("the incoming request task event doesn't exist in the EVC, or is broken: %v", err)
+				logrus.Errorf("the request doesn't exist in the cache or has been failed to decode: %v", err)
 				return false
 			}
+
 			if requestEvent.OriginChain != consensusMsg.Task.OriginChain ||
 				requestEvent.RequestType != consensusMsg.Task.RequestType ||
 				requestEvent.RequestParams != consensusMsg.Task.RequestParams {
 
-				logrus.Errorf("the incoming task and cached request event don't match!")
+				logrus.Errorf("the incoming task and cached request requestEvent don't match!")
 				return false
 			}
 			/////////////////////////////////

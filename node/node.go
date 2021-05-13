@@ -64,7 +64,7 @@ type Node struct {
 	Miner            *consensus.Miner
 	Beacon           beacon.BeaconNetworks
 	Wallet           *wallet.LocalWallet
-	EventCache       cache.EventCache
+	Cache            cache.Cache
 	DisputeManager   *consensus.DisputeManager
 }
 
@@ -130,7 +130,7 @@ func NewNode(config *config.Config, prvKey crypto.PrivKey, pexDiscoveryUpdateTim
 
 	// initialize event log cache subsystem
 	eventCache := provideEventCache(config)
-	n.EventCache = eventCache
+	n.Cache = eventCache
 	logrus.Info("Event cache subsystem has initialized!")
 
 	// initialize consensus subsystem
@@ -225,7 +225,7 @@ func (n *Node) subscribeOnEthContractsAsync(ctx context.Context) {
 			select {
 			case event := <-eventChan:
 				{
-					err := n.EventCache.Store("request_"+event.ReqID.String(), event)
+					err := n.Cache.Store("request_"+event.ReqID.String(), event)
 					if err != nil {
 						logrus.Errorf("Failed to store new request event to event log cache: %v", err)
 					}
@@ -255,15 +255,15 @@ func (n *Node) subscribeOnEthContractsAsync(ctx context.Context) {
 	}()
 }
 
-func provideEventCache(config *config.Config) cache.EventCache {
-	var backend cache.EventCache
+func provideEventCache(config *config.Config) cache.Cache {
+	var backend cache.Cache
 	switch config.CacheType {
 	case "in-memory":
-		backend = cache.NewEventLogCache()
+		backend = cache.NewInMemoryCache()
 	case "redis":
-		backend = cache.NewEventRedisCache(config)
+		backend = cache.NewRedisCache(config)
 	default:
-		backend = cache.NewEventLogCache()
+		backend = cache.NewInMemoryCache()
 	}
 	return backend
 }
@@ -332,7 +332,7 @@ func providePubsubRouter(lhost host.Host, config *config.Config) *pubsub2.PubSub
 	return pubsub2.NewPubSubRouter(lhost, config.PubSub.ServiceTopicName, config.IsBootstrap)
 }
 
-func provideConsensusManager(psb *pubsub2.PubSubRouter, miner *consensus.Miner, ethClient *ethclient.EthereumClient, privateKey []byte, minApprovals int, evc cache.EventCache) *consensus.PBFTConsensusManager {
+func provideConsensusManager(psb *pubsub2.PubSubRouter, miner *consensus.Miner, ethClient *ethclient.EthereumClient, privateKey []byte, minApprovals int, evc cache.Cache) *consensus.PBFTConsensusManager {
 	return consensus.NewPBFTConsensusManager(psb, minApprovals, privateKey, ethClient, miner, evc)
 }
 
