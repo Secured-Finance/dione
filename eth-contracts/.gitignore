@@ -4,3 +4,4 @@ cache
 dist
 coverage
 coverage.json
+scripts/private
