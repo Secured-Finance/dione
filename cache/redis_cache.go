@@ -2,6 +2,7 @@ package cache
 
 import (
 	"context"
+	"time"
 
 	"github.com/Secured-Finance/dione/config"
 	"github.com/fxamacker/cbor/v2"
@@ -33,6 +34,17 @@ func (rc *RedisCache) Store(key string, value interface{}) error {
 	}
 
 	rc.Client.Set(rc.ctx, key, mRes, 0)
+
+	return nil
+}
+
+func (rc *RedisCache) StoreWithTTL(key string, value interface{}, ttl time.Duration) error {
+	mRes, err := cbor.Marshal(value)
+	if err != nil {
+		return err
+	}
+
+	rc.Client.Set(rc.ctx, key, mRes, ttl)
 
 	return nil
 }

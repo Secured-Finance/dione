@@ -1,6 +1,8 @@
 package cache
 
 import (
+	"time"
+
 	"github.com/VictoriaMetrics/fastcache"
 	"github.com/fxamacker/cbor/v2"
 )
@@ -29,6 +31,10 @@ func (imc *InMemoryCache) Store(key string, value interface{}) error {
 	imc.cache.SetBig([]byte(key), mRes)
 
 	return nil
+}
+
+func (imc *InMemoryCache) StoreWithTTL(key string, value interface{}, ttl time.Duration) error {
+	return imc.Store(key, value) // fastcache doesn't support ttl for values
 }
 
 func (imc *InMemoryCache) Get(key string, v interface{}) error {
