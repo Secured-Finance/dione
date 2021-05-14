@@ -10,12 +10,12 @@ import (
 
 type Transaction struct {
 	Hash      []byte
-	Timestamp int64
+	Timestamp time.Time
 	Data      []byte
 }
 
 func CreateTransaction(data []byte) *Transaction {
-	timestamp := time.Now().Unix()
+	timestamp := time.Now()
 	encodedData := hex.EncodeToString(data)
 	hash := crypto.Keccak256([]byte(fmt.Sprintf("%d_%s", timestamp, encodedData)))
 	return &Transaction{
