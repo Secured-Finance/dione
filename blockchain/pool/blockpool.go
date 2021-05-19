@@ -13,6 +13,7 @@ import (
 const (
 	DefaultBlockPrefix       = "block_"
 	DefaultBlockHeaderPrefix = "header_"
+	LatestBlockKey           = "latest_block"
 )
 
 var (
@@ -57,6 +58,28 @@ func NewBlockPool(path string) (*BlockPool, error) {
 	pool.db = dbi
 
 	return pool, nil
+}
+
+func (bp *BlockPool) SetLatestBlock(hash []byte) error {
+	return bp.dbEnv.Update(func(txn *lmdb.Txn) error {
+		return txn.Put(bp.db, []byte(LatestBlockKey), hash, 0)
+	})
+}
+
+func (bp *BlockPool) GetLatestBlock() ([]byte, error) {
+	var hash []byte
+	err := bp.dbEnv.View(func(txn *lmdb.Txn) error {
+		data, err := txn.Get(bp.db, []byte(LatestBlockKey))
+		if err != nil {
+			if lmdb.IsNotFound(err) {
+				return nil
+			}
+			return err
+		}
+		hash = data
+		return nil
+	})
+	return hash, err
 }
 
 func (bp *BlockPool) StoreBlock(block *types2.Block) error {
