@@ -17,7 +17,7 @@ type Transaction struct {
 func CreateTransaction(data []byte) *Transaction {
 	timestamp := time.Now()
 	encodedData := hex.EncodeToString(data)
-	hash := crypto.Keccak256([]byte(fmt.Sprintf("%d_%s", timestamp, encodedData)))
+	hash := crypto.Keccak256([]byte(fmt.Sprintf("%d_%s", timestamp.Unix(), encodedData)))
 	return &Transaction{
 		Hash:      hash,
 		Timestamp: timestamp,

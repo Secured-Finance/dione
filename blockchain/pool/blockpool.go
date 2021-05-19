@@ -4,8 +4,9 @@ import (
 	"encoding/hex"
 	"errors"
 
-	"github.com/Secured-Finance/dione/types"
+	types2 "github.com/Secured-Finance/dione/blockchain/types"
 	"github.com/fxamacker/cbor/v2"
+
 	"github.com/ledgerwatch/lmdb-go/lmdb"
 )
 
@@ -58,7 +59,7 @@ func NewBlockPool(path string) (*BlockPool, error) {
 	return pool, nil
 }
 
-func (bp *BlockPool) StoreBlock(block *types.Block) error {
+func (bp *BlockPool) StoreBlock(block *types2.Block) error {
 	return bp.dbEnv.Update(func(txn *lmdb.Txn) error {
 		data, err := cbor.Marshal(block)
 		if err != nil {
@@ -98,8 +99,8 @@ func (bp *BlockPool) HasBlock(blockHash string) (bool, error) {
 	return blockExists, nil
 }
 
-func (bp *BlockPool) FetchBlock(blockHash string) (*types.Block, error) {
-	var block types.Block
+func (bp *BlockPool) FetchBlock(blockHash string) (*types2.Block, error) {
+	var block types2.Block
 	err := bp.dbEnv.View(func(txn *lmdb.Txn) error {
 		data, err := txn.Get(bp.db, []byte(DefaultBlockPrefix+blockHash))
 		if err != nil {
@@ -117,8 +118,8 @@ func (bp *BlockPool) FetchBlock(blockHash string) (*types.Block, error) {
 	return &block, nil
 }
 
-func (bp *BlockPool) FetchBlockHeader(blockHash string) (*types.BlockHeader, error) {
-	var blockHeader types.BlockHeader
+func (bp *BlockPool) FetchBlockHeader(blockHash string) (*types2.BlockHeader, error) {
+	var blockHeader types2.BlockHeader
 	err := bp.dbEnv.View(func(txn *lmdb.Txn) error {
 		data, err := txn.Get(bp.db, []byte(DefaultBlockHeaderPrefix+blockHash))
 		if err != nil {

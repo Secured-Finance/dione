@@ -6,9 +6,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/Secured-Finance/dione/consensus/policy"
+	types2 "github.com/Secured-Finance/dione/blockchain/types"
 
-	"github.com/Secured-Finance/dione/types"
+	"github.com/Secured-Finance/dione/consensus/policy"
 
 	"github.com/Secured-Finance/dione/cache"
 )
@@ -39,7 +39,7 @@ func NewMempool(c cache.Cache) (*Mempool, error) {
 	return mp, nil
 }
 
-func (mp *Mempool) StoreTx(tx *types.Transaction) error {
+func (mp *Mempool) StoreTx(tx *types2.Transaction) error {
 	mp.m.Lock()
 	defer mp.m.Unlock()
 
@@ -50,15 +50,15 @@ func (mp *Mempool) StoreTx(tx *types.Transaction) error {
 	return err
 }
 
-func (mp *Mempool) GetTxsForNewBlock() []*types.Transaction {
+func (mp *Mempool) GetTxsForNewBlock() []*types2.Transaction {
 	mp.m.Lock()
 	defer mp.m.Unlock()
 
-	var txForBlock []*types.Transaction
-	var allTxs []*types.Transaction
+	var txForBlock []*types2.Transaction
+	var allTxs []*types2.Transaction
 
 	for i, v := range mp.txDescriptors {
-		var tx types.Transaction
+		var tx types2.Transaction
 		err := mp.cache.Get(DefaultTxPrefix+v, &tx)
 		if err != nil {
 			if err == cache.ErrNilValue {
