@@ -1,6 +1,7 @@
 package pool
 
 import (
+	"encoding/binary"
 	"encoding/hex"
 	"errors"
 
@@ -11,18 +12,22 @@ import (
 )
 
 const (
-	DefaultBlockPrefix       = "block_"
+	DefaultBlockDataPrefix   = "blockdata_"
 	DefaultBlockHeaderPrefix = "header_"
-	LatestBlockKey           = "latest_block"
+	DefaultMetadataIndexName = "metadata"
+	LatestBlockHeightKey     = "latest_block_height"
 )
 
 var (
-	ErrBlockNotFound = errors.New("block isn't found")
+	ErrBlockNotFound   = errors.New("block isn't found")
+	ErrLatestHeightNil = errors.New("latest block height is nil")
 )
 
 type BlockPool struct {
-	dbEnv *lmdb.Env
-	db    lmdb.DBI
+	dbEnv         *lmdb.Env
+	db            lmdb.DBI
+	metadataIndex *Index
+	heightIndex   *Index
 }
 
 func NewBlockPool(path string) (*BlockPool, error) {
@@ -57,34 +62,33 @@ func NewBlockPool(path string) (*BlockPool, error) {
 
 	pool.db = dbi
 
+	// create index instances
+	metadataIndex := NewIndex(DefaultMetadataIndexName, env, dbi)
+	heightIndex := NewIndex("height", env, dbi)
+	pool.metadataIndex = metadataIndex
+	pool.heightIndex = heightIndex
+
 	return pool, nil
 }
 
-func (bp *BlockPool) SetLatestBlock(hash []byte) error {
-	return bp.dbEnv.Update(func(txn *lmdb.Txn) error {
-		return txn.Put(bp.db, []byte(LatestBlockKey), hash, 0)
-	})
+func (bp *BlockPool) SetLatestBlockHeight(height uint64) error {
+	return bp.metadataIndex.PutUint64([]byte(LatestBlockHeightKey), height)
 }
 
-func (bp *BlockPool) GetLatestBlock() ([]byte, error) {
-	var hash []byte
-	err := bp.dbEnv.View(func(txn *lmdb.Txn) error {
-		data, err := txn.Get(bp.db, []byte(LatestBlockKey))
-		if err != nil {
-			if lmdb.IsNotFound(err) {
-				return nil
-			}
-			return err
+func (bp *BlockPool) GetLatestBlockHeight() (uint64, error) {
+	height, err := bp.metadataIndex.GetUint64([]byte(LatestBlockHeightKey))
+	if err != nil {
+		if err == ErrIndexKeyNotFound {
+			return 0, ErrLatestHeightNil
 		}
-		hash = data
-		return nil
-	})
-	return hash, err
+		return 0, err
+	}
+	return height, nil
 }
 
 func (bp *BlockPool) StoreBlock(block *types2.Block) error {
-	return bp.dbEnv.Update(func(txn *lmdb.Txn) error {
-		data, err := cbor.Marshal(block)
+	err := bp.dbEnv.Update(func(txn *lmdb.Txn) error {
+		data, err := cbor.Marshal(block.Data)
 		if err != nil {
 			return err
 		}
@@ -93,19 +97,50 @@ func (bp *BlockPool) StoreBlock(block *types2.Block) error {
 			return err
 		}
 		blockHash := hex.EncodeToString(block.Header.Hash)
-		err = txn.Put(bp.db, []byte(DefaultBlockPrefix+blockHash), data, 0)
+		err = txn.Put(bp.db, []byte(DefaultBlockDataPrefix+blockHash), data, 0)
 		if err != nil {
 			return err
 		}
 		err = txn.Put(bp.db, []byte(DefaultBlockHeaderPrefix+blockHash), headerData, 0) // store header separately for easy fetching
 		return err
 	})
+	if err != nil {
+		return err
+	}
+
+	// update index "height -> block hash"
+	var heightBytes []byte
+	binary.LittleEndian.PutUint64(heightBytes, block.Header.Height)
+	err = bp.heightIndex.PutBytes(heightBytes, block.Header.Hash)
+	if err != nil {
+		return err
+	}
+
+	// update latest block height
+	height, err := bp.GetLatestBlockHeight()
+	if err != nil && err != ErrLatestHeightNil {
+		return err
+	}
+
+	if err == ErrLatestHeightNil {
+		if err = bp.SetLatestBlockHeight(block.Header.Height); err != nil {
+			return err
+		}
+	} else {
+		if block.Header.Height > height {
+			if err = bp.SetLatestBlockHeight(block.Header.Height); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
 }
 
-func (bp *BlockPool) HasBlock(blockHash string) (bool, error) {
+func (bp *BlockPool) HasBlock(blockHash []byte) (bool, error) {
 	var blockExists bool
 	err := bp.dbEnv.View(func(txn *lmdb.Txn) error {
-		_, err := txn.Get(bp.db, []byte(DefaultBlockPrefix+blockHash)) // try to fetch block header
+		h := hex.EncodeToString(blockHash)
+		_, err := txn.Get(bp.db, []byte(DefaultBlockHeaderPrefix+h)) // try to fetch block header
 		if err != nil {
 			if lmdb.IsNotFound(err) {
 				blockExists = false
@@ -122,29 +157,31 @@ func (bp *BlockPool) HasBlock(blockHash string) (bool, error) {
 	return blockExists, nil
 }
 
-func (bp *BlockPool) FetchBlock(blockHash string) (*types2.Block, error) {
-	var block types2.Block
+func (bp *BlockPool) FetchBlockData(blockHash []byte) ([]*types2.Transaction, error) {
+	var data []*types2.Transaction
 	err := bp.dbEnv.View(func(txn *lmdb.Txn) error {
-		data, err := txn.Get(bp.db, []byte(DefaultBlockPrefix+blockHash))
+		h := hex.EncodeToString(blockHash)
+		blockData, err := txn.Get(bp.db, []byte(DefaultBlockDataPrefix+h))
 		if err != nil {
 			if lmdb.IsNotFound(err) {
 				return ErrBlockNotFound
 			}
 			return err
 		}
-		err = cbor.Unmarshal(data, &block)
+		err = cbor.Unmarshal(blockData, data)
 		return err
 	})
 	if err != nil {
 		return nil, err
 	}
-	return &block, nil
+	return data, nil
 }
 
-func (bp *BlockPool) FetchBlockHeader(blockHash string) (*types2.BlockHeader, error) {
+func (bp *BlockPool) FetchBlockHeader(blockHash []byte) (*types2.BlockHeader, error) {
 	var blockHeader types2.BlockHeader
 	err := bp.dbEnv.View(func(txn *lmdb.Txn) error {
-		data, err := txn.Get(bp.db, []byte(DefaultBlockHeaderPrefix+blockHash))
+		h := hex.EncodeToString(blockHash)
+		data, err := txn.Get(bp.db, []byte(DefaultBlockHeaderPrefix+h))
 		if err != nil {
 			if lmdb.IsNotFound(err) {
 				return ErrBlockNotFound
@@ -158,4 +195,37 @@ func (bp *BlockPool) FetchBlockHeader(blockHash string) (*types2.BlockHeader, er
 		return nil, err
 	}
 	return &blockHeader, nil
+}
+
+func (bp *BlockPool) FetchBlock(blockHash []byte) (*types2.Block, error) {
+	var block types2.Block
+	header, err := bp.FetchBlockHeader(blockHash)
+	if err != nil {
+		return nil, err
+	}
+	block.Header = header
+
+	data, err := bp.FetchBlockData(blockHash)
+	if err != nil {
+		return nil, err
+	}
+	block.Data = data
+
+	return &block, nil
+}
+
+func (bp *BlockPool) FetchBlockByHeight(height uint64) (*types2.Block, error) {
+	var heightBytes []byte
+	binary.LittleEndian.PutUint64(heightBytes, height)
+	blockHash, err := bp.heightIndex.GetBytes(heightBytes)
+	if err != nil {
+		if err == ErrIndexKeyNotFound {
+			return nil, ErrBlockNotFound
+		}
+	}
+	block, err := bp.FetchBlock(blockHash)
+	if err != nil {
+		return nil, err
+	}
+	return block, nil
 }

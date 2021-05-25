@@ -17,7 +17,7 @@ type Block struct {
 
 type BlockHeader struct {
 	Timestamp int64
-	SeqNum    uint64
+	Height    uint64
 	Hash      []byte
 	LastHash  []byte
 	Proposer  peer.ID
@@ -28,7 +28,7 @@ func GenesisBlock() *Block {
 	return &Block{
 		Header: &BlockHeader{
 			Timestamp: 1620845070,
-			SeqNum:    0,
+			Height:    0,
 			Hash:      []byte("DIMICANDUM"),
 		},
 		Data: []*Transaction{},
@@ -66,7 +66,7 @@ func CreateBlock(lastBlockHeader *BlockHeader, txs []*Transaction, wallet *walle
 	block := &Block{
 		Header: &BlockHeader{
 			Timestamp: timestamp,
-			SeqNum:    lastBlockHeader.SeqNum + 1,
+			Height:    lastBlockHeader.Height + 1,
 			Proposer:  proposer,
 			Signature: s.Data,
 			Hash:      blockHash,
