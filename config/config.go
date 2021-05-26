@@ -7,18 +7,19 @@ import (
 )
 
 type Config struct {
-	ListenPort            int            `mapstructure:"listen_port"`
-	ListenAddr            string         `mapstructure:"listen_addr"`
-	IsBootstrap           bool           `mapstructure:"is_bootstrap"`
-	BootstrapNodes        []string       `mapstructure:"bootstrap_node_multiaddr"`
-	Rendezvous            string         `mapstructure:"rendezvous"`
-	Ethereum              EthereumConfig `mapstructure:"ethereum"`
-	Filecoin              FilecoinConfig `mapstructure:"filecoin"`
-	PubSub                PubSubConfig   `mapstructure:"pubSub"`
-	Store                 StoreConfig    `mapstructure:"store"`
-	ConsensusMinApprovals int            `mapstructure:"consensus_min_approvals"`
-	Redis                 RedisConfig    `mapstructure:"redis"`
-	CacheType             string         `mapstructure:"cache_type"`
+	ListenPort            int              `mapstructure:"listen_port"`
+	ListenAddr            string           `mapstructure:"listen_addr"`
+	IsBootstrap           bool             `mapstructure:"is_bootstrap"`
+	BootstrapNodes        []string         `mapstructure:"bootstrap_node_multiaddr"`
+	Rendezvous            string           `mapstructure:"rendezvous"`
+	Ethereum              EthereumConfig   `mapstructure:"ethereum"`
+	Filecoin              FilecoinConfig   `mapstructure:"filecoin"`
+	PubSub                PubSubConfig     `mapstructure:"pubsub"`
+	Store                 StoreConfig      `mapstructure:"store"`
+	ConsensusMinApprovals int              `mapstructure:"consensus_min_approvals"`
+	Redis                 RedisConfig      `mapstructure:"redis"`
+	CacheType             string           `mapstructure:"cache_type"`
+	Blockchain            BlockchainConfig `mapstructure:"blockchain"`
 }
 
 type EthereumConfig struct {
@@ -39,8 +40,7 @@ type FilecoinConfig struct {
 }
 
 type PubSubConfig struct {
-	ProtocolID       string `mapstructure:"protocolID"`
-	ServiceTopicName string `mapstructure:"serviceTopicName"`
+	ServiceTopicName string `mapstructure:"service_topic_name"`
 }
 
 type StoreConfig struct {
@@ -51,6 +51,10 @@ type RedisConfig struct {
 	Addr     string `mapstructure:"redis_addr"`
 	Password string `mapstructure:"redis_password"`
 	DB       int    `mapstructure:"redis_db"`
+}
+
+type BlockchainConfig struct {
+	DatabasePath string `mapstructure:"database_path"`
 }
 
 // NewConfig creates a new config based on default values or provided .env file
@@ -64,12 +68,12 @@ func NewConfig(configPath string) (*Config, error) {
 		ListenAddr:     "localhost",
 		ListenPort:     8000,
 		BootstrapNodes: []string{"/ip4/127.0.0.1/tcp/0"},
-		Rendezvous:     "filecoin-p2p-oracle",
+		Rendezvous:     "dione",
 		Ethereum: EthereumConfig{
 			PrivateKey: "",
 		},
 		PubSub: PubSubConfig{
-			ProtocolID: "p2p-oracle",
+			ServiceTopicName: "dione",
 		},
 		Store: StoreConfig{
 			DatabaseURL: dbURL,
