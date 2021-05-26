@@ -9,17 +9,15 @@ import (
 	"os"
 	"time"
 
-	pex "github.com/Secured-Finance/go-libp2p-pex"
+	gorpc "github.com/libp2p/go-libp2p-gorpc"
+
+	"github.com/Secured-Finance/dione/blockchain/pool"
+
+	"github.com/Secured-Finance/dione/blockchain/sync"
 
 	"github.com/Secured-Finance/dione/cache"
 	"github.com/Secured-Finance/dione/consensus"
-
-	pubsub "github.com/libp2p/go-libp2p-pubsub"
-
-	"github.com/Secured-Finance/dione/drand"
-
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/libp2p/go-libp2p-core/peer"
+	pubsub2 "github.com/Secured-Finance/dione/pubsub"
 
 	"github.com/libp2p/go-libp2p-core/discovery"
 
@@ -30,8 +28,6 @@ import (
 
 	"github.com/Secured-Finance/dione/rpc/filecoin"
 
-	"github.com/Secured-Finance/dione/types"
-
 	"github.com/Secured-Finance/dione/wallet"
 
 	"golang.org/x/xerrors"
@@ -40,11 +36,8 @@ import (
 
 	"github.com/Secured-Finance/dione/config"
 	"github.com/Secured-Finance/dione/ethclient"
-	pubsub2 "github.com/Secured-Finance/dione/pubsub"
-	"github.com/libp2p/go-libp2p"
-	crypto "github.com/libp2p/go-libp2p-core/crypto"
+	"github.com/libp2p/go-libp2p-core/crypto"
 	"github.com/libp2p/go-libp2p-core/host"
-	"github.com/multiformats/go-multiaddr"
 	"github.com/sirupsen/logrus"
 )
 
@@ -66,6 +59,11 @@ type Node struct {
 	Wallet           *wallet.LocalWallet
 	Cache            cache.Cache
 	DisputeManager   *consensus.DisputeManager
+	BlockPool        *pool.BlockPool
+	MemPool          *pool.Mempool
+	SyncManager      sync.SyncManager
+	NetworkService   *NetworkService
+	NetworkRPCHost   *gorpc.Server
 }
 
 func NewNode(config *config.Config, prvKey crypto.PrivKey, pexDiscoveryUpdateTime time.Duration) (*Node, error) {
@@ -74,12 +72,12 @@ func NewNode(config *config.Config, prvKey crypto.PrivKey, pexDiscoveryUpdateTim
 	}
 
 	// initialize libp2p host
-	lhost, err := provideLibp2pHost(n.Config, prvKey, pexDiscoveryUpdateTime)
+	lhost, err := provideLibp2pHost(n.Config, prvKey)
 	if err != nil {
 		logrus.Fatal(err)
 	}
 	n.Host = lhost
-	logrus.Info("Started up Libp2p host!")
+	logrus.Info("Libp2p host has been successfully initialized!")
 
 	// initialize ethereum client
 	ethClient, err := provideEthereumClient(n.Config)
@@ -87,27 +85,33 @@ func NewNode(config *config.Config, prvKey crypto.PrivKey, pexDiscoveryUpdateTim
 		logrus.Fatal(err)
 	}
 	n.Ethereum = ethClient
-	logrus.Info("Started up Ethereum client!")
+	logrus.Info("Ethereum client has been successfully initialized!")
 
 	// initialize blockchain rpc clients
 	err = n.setupRPCClients()
 	if err != nil {
 		logrus.Fatal(err)
 	}
-	logrus.Info("RPC clients has successfully configured!")
+	logrus.Info("RPC clients has been successfully configured!")
 
 	// initialize pubsub subsystem
 	psb := providePubsubRouter(lhost, n.Config)
 	n.PubSubRouter = psb
-	logrus.Info("PubSub subsystem has initialized!")
+	logrus.Info("PubSub subsystem has been initialized!")
+
+	// get list of bootstrap multiaddresses
+	baddrs, err := provideBootstrapAddrs(n.Config)
+	if err != nil {
+		logrus.Fatal(err)
+	}
 
 	// initialize peer discovery
-	peerDiscovery, err := providePeerDiscovery(n.Config, lhost, pexDiscoveryUpdateTime)
+	peerDiscovery, err := providePeerDiscovery(baddrs, lhost, pexDiscoveryUpdateTime)
 	if err != nil {
 		logrus.Fatal(err)
 	}
 	n.PeerDiscovery = peerDiscovery
-	logrus.Info("Peer discovery subsystem has initialized!")
+	logrus.Info("Peer discovery subsystem has been initialized!")
 
 	// get private key of libp2p host
 	rawPrivKey, err := prvKey.Raw()
@@ -121,20 +125,58 @@ func NewNode(config *config.Config, prvKey crypto.PrivKey, pexDiscoveryUpdateTim
 		logrus.Fatal(err)
 	}
 	n.Beacon = randomBeaconNetwork
-	logrus.Info("Random beacon subsystem has initialized!")
+	logrus.Info("Random beacon subsystem has been initialized!")
+
+	// initialize event log cache subsystem
+	c := provideCache(config)
+	n.Cache = c
+	logrus.Info("Event cache subsystem has initialized!")
+
+	// == initialize blockchain modules
+
+	// initialize blockpool database
+	bp, err := provideBlockPool(n.Config)
+	if err != nil {
+		logrus.Fatalf("Failed to initialize blockpool: %s", err.Error())
+	}
+	n.BlockPool = bp
+	logrus.Info("Block pool database has been successfully initialized!")
+
+	// initialize mempool
+	mp, err := provideMemPool(c)
+	if err != nil {
+		logrus.Fatalf("Failed to initialize mempool: %s", err.Error())
+	}
+	n.MemPool = mp
+	logrus.Info("Mempool has been successfully initialized!")
+
+	ns := provideNetworkService(bp)
+	n.NetworkService = ns
+	rpcHost := provideNetworkRPCHost(lhost)
+	err = rpcHost.Register(ns)
+	if err != nil {
+		logrus.Fatal(err)
+	}
+	logrus.Info("Node p2p RPC network service has been successfully initialized!")
+
+	// initialize libp2p-gorpc client
+	r := provideP2PRPCClient(lhost)
+
+	// initialize sync manager
+	sm, err := provideSyncManager(bp, r, baddrs[0]) // FIXME here we just pick up first bootstrap in list
+	if err != nil {
+		logrus.Fatal(err)
+	}
+	n.SyncManager = sm
+	logrus.Info("Blockchain synchronization subsystem has been successfully initialized!")
 
 	// initialize mining subsystem
 	miner := provideMiner(n.Host.ID(), *n.Ethereum.GetEthAddress(), n.Beacon, n.Ethereum, rawPrivKey)
 	n.Miner = miner
 	logrus.Info("Mining subsystem has initialized!")
 
-	// initialize event log cache subsystem
-	eventCache := provideEventCache(config)
-	n.Cache = eventCache
-	logrus.Info("Event cache subsystem has initialized!")
-
 	// initialize consensus subsystem
-	cManager := provideConsensusManager(psb, miner, ethClient, rawPrivKey, n.Config.ConsensusMinApprovals, eventCache)
+	cManager := provideConsensusManager(psb, miner, ethClient, rawPrivKey, n.Config.ConsensusMinApprovals, c)
 	n.ConsensusManager = cManager
 	logrus.Info("Consensus subsystem has initialized!")
 
@@ -147,17 +189,20 @@ func NewNode(config *config.Config, prvKey crypto.PrivKey, pexDiscoveryUpdateTim
 	logrus.Info("Dispute subsystem has initialized!")
 
 	// initialize internal eth wallet
-	wallet, err := provideWallet(n.Host.ID(), rawPrivKey)
+	w, err := provideWallet(n.Host.ID(), rawPrivKey)
 	if err != nil {
 		logrus.Fatal(err)
 	}
-	n.Wallet = wallet
+	n.Wallet = w
 
 	return n, nil
 }
 
 func (n *Node) Run(ctx context.Context) error {
-	n.runLibp2pAsync(ctx)
+	err := n.runLibp2pAsync(ctx)
+	if err != nil {
+		return err
+	}
 	n.subscribeOnEthContractsAsync(ctx)
 
 	for {
@@ -166,8 +211,6 @@ func (n *Node) Run(ctx context.Context) error {
 			return nil
 		}
 	}
-
-	// return nil
 }
 
 func (n *Node) runLibp2pAsync(ctx context.Context) error {
@@ -243,7 +286,7 @@ func (n *Node) subscribeOnEthContractsAsync(ctx context.Context) {
 					logrus.Infof("Proposed new Dione task with ID: %s", event.ReqID.String())
 					err = n.ConsensusManager.Propose(*task)
 					if err != nil {
-						logrus.Errorf("Failed to propose task: %w", err)
+						logrus.Errorf("Failed to propose task: %v", err)
 					}
 				}
 			case <-ctx.Done():
@@ -253,64 +296,6 @@ func (n *Node) subscribeOnEthContractsAsync(ctx context.Context) {
 			}
 		}
 	}()
-}
-
-func provideEventCache(config *config.Config) cache.Cache {
-	var backend cache.Cache
-	switch config.CacheType {
-	case "in-memory":
-		backend = cache.NewInMemoryCache()
-	case "redis":
-		backend = cache.NewRedisCache(config)
-	default:
-		backend = cache.NewInMemoryCache()
-	}
-	return backend
-}
-
-func provideDisputeManager(ctx context.Context, ethClient *ethclient.EthereumClient, pcm *consensus.PBFTConsensusManager, cfg *config.Config) (*consensus.DisputeManager, error) {
-	return consensus.NewDisputeManager(ctx, ethClient, pcm, cfg.Ethereum.DisputeVoteWindow)
-}
-
-func provideMiner(peerID peer.ID, ethAddress common.Address, beacon beacon.BeaconNetworks, ethClient *ethclient.EthereumClient, privateKey []byte) *consensus.Miner {
-	return consensus.NewMiner(peerID, ethAddress, beacon, ethClient, privateKey)
-}
-
-func provideBeacon(ps *pubsub.PubSub) (beacon.BeaconNetworks, error) {
-	networks := beacon.BeaconNetworks{}
-	bc, err := drand.NewDrandBeacon(config.ChainGenesis, config.TaskEpochInterval, ps)
-	if err != nil {
-		return nil, fmt.Errorf("failed to setup drand beacon: %w", err)
-	}
-	networks = append(networks, beacon.BeaconNetwork{Start: types.DrandRound(config.ChainGenesis), Beacon: bc})
-	// NOTE: currently we use only one network
-	return networks, nil
-}
-
-// FIXME: do we really need this?
-func provideWallet(peerID peer.ID, privKey []byte) (*wallet.LocalWallet, error) {
-	// TODO make persistent keystore
-	kstore := wallet.NewMemKeyStore()
-	keyInfo := types.KeyInfo{
-		Type:       types.KTEd25519,
-		PrivateKey: privKey,
-	}
-
-	kstore.Put(wallet.KNamePrefix+peerID.String(), keyInfo)
-	w, err := wallet.NewWallet(kstore)
-	if err != nil {
-		return nil, xerrors.Errorf("failed to setup wallet: %w", err)
-	}
-	return w, nil
-}
-
-func provideEthereumClient(config *config.Config) (*ethclient.EthereumClient, error) {
-	ethereum := ethclient.NewEthereumClient()
-	err := ethereum.Initialize(&config.Ethereum)
-	if err != nil {
-		return nil, xerrors.Errorf("failed to initialize ethereum client: %v", err)
-	}
-	return ethereum, nil
 }
 
 func (n *Node) setupRPCClients() error {
@@ -326,53 +311,6 @@ func (n *Node) setupRPCClients() error {
 	})
 
 	return nil
-}
-
-func providePubsubRouter(lhost host.Host, config *config.Config) *pubsub2.PubSubRouter {
-	return pubsub2.NewPubSubRouter(lhost, config.PubSub.ServiceTopicName, config.IsBootstrap)
-}
-
-func provideConsensusManager(psb *pubsub2.PubSubRouter, miner *consensus.Miner, ethClient *ethclient.EthereumClient, privateKey []byte, minApprovals int, evc cache.Cache) *consensus.PBFTConsensusManager {
-	return consensus.NewPBFTConsensusManager(psb, minApprovals, privateKey, ethClient, miner, evc)
-}
-
-func provideLibp2pHost(config *config.Config, privateKey crypto.PrivKey, pexDiscoveryUpdateTime time.Duration) (host.Host, error) {
-	listenMultiAddr, err := multiaddr.NewMultiaddr(fmt.Sprintf("/ip4/%s/tcp/%d", config.ListenAddr, config.ListenPort))
-	if err != nil {
-		return nil, xerrors.Errorf("failed to parse multiaddress: %v", err)
-	}
-	host, err := libp2p.New(
-		context.TODO(),
-		libp2p.ListenAddrs(listenMultiAddr),
-		libp2p.Identity(privateKey),
-	)
-	if err != nil {
-		return nil, xerrors.Errorf("failed to setup libp2p host: %v", err)
-	}
-
-	return host, nil
-}
-
-func providePeerDiscovery(config *config.Config, h host.Host, pexDiscoveryUpdateTime time.Duration) (discovery.Discovery, error) {
-	var bootstrapMaddrs []multiaddr.Multiaddr
-	for _, a := range config.BootstrapNodes {
-		maddr, err := multiaddr.NewMultiaddr(a)
-		if err != nil {
-			return nil, xerrors.Errorf("invalid multiaddress of bootstrap node: %v", err)
-		}
-		bootstrapMaddrs = append(bootstrapMaddrs, maddr)
-	}
-
-	if config.IsBootstrap {
-		bootstrapMaddrs = nil
-	}
-
-	pexDiscovery, err := pex.NewPEXDiscovery(h, bootstrapMaddrs, pexDiscoveryUpdateTime)
-	if err != nil {
-		return nil, xerrors.Errorf("failed to setup pex pexDiscovery: %v", err)
-	}
-
-	return pexDiscovery, nil
 }
 
 func Start() {
@@ -391,6 +329,7 @@ func Start() {
 	var privateKey crypto.PrivKey
 
 	if cfg.IsBootstrap {
+		// FIXME just a little hack
 		if _, err := os.Stat(".bootstrap_privkey"); os.IsNotExist(err) {
 			privateKey, err = generatePrivateKey()
 			if err != nil {
@@ -399,7 +338,10 @@ func Start() {
 
 			f, _ := os.Create(".bootstrap_privkey")
 			r, _ := privateKey.Raw()
-			f.Write(r)
+			_, err = f.Write(r)
+			if err != nil {
+				logrus.Fatal(err)
+			}
 		} else {
 			pkey, _ := ioutil.ReadFile(".bootstrap_privkey")
 			privateKey, _ = crypto.UnmarshalEd25519PrivateKey(pkey)
