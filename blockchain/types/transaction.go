@@ -5,13 +5,16 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/wealdtech/go-merkletree"
+
 	"github.com/ethereum/go-ethereum/crypto"
 )
 
 type Transaction struct {
-	Hash      []byte
-	Timestamp time.Time
-	Data      []byte
+	Hash        []byte
+	MerkleProof *merkletree.Proof // sets when transaction is added to block
+	Timestamp   time.Time
+	Data        []byte
 }
 
 func CreateTransaction(data []byte) *Transaction {

@@ -16,12 +16,13 @@ type Block struct {
 }
 
 type BlockHeader struct {
-	Timestamp int64
-	Height    uint64
-	Hash      []byte
-	LastHash  []byte
-	Proposer  peer.ID
-	Signature []byte
+	Timestamp     int64
+	Height        uint64
+	Hash          []byte
+	LastHash      []byte
+	LastHashProof *merkletree.Proof
+	Proposer      peer.ID
+	Signature     []byte
 }
 
 func GenesisBlock() *Block {
@@ -63,14 +64,20 @@ func CreateBlock(lastBlockHeader *BlockHeader, txs []*Transaction, wallet *walle
 		return nil, err
 	}
 
+	lastHashProof, err := tree.GenerateProof(lastBlockHeader.Hash, 0)
+	if err != nil {
+		return nil, err
+	}
+
 	block := &Block{
 		Header: &BlockHeader{
-			Timestamp: timestamp,
-			Height:    lastBlockHeader.Height + 1,
-			Proposer:  proposer,
-			Signature: s.Data,
-			Hash:      blockHash,
-			LastHash:  lastBlockHeader.Hash,
+			Timestamp:     timestamp,
+			Height:        lastBlockHeader.Height + 1,
+			Proposer:      proposer,
+			Signature:     s.Data,
+			Hash:          blockHash,
+			LastHash:      lastBlockHeader.Hash,
+			LastHashProof: lastHashProof,
 		},
 		Data: txs,
 	}
