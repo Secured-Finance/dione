@@ -158,6 +158,9 @@ func (sm *syncManager) processReceivedBlock(block types2.Block) error {
 		if !txProofVerified {
 			return fmt.Errorf("transaction doesn't present in block hash merkle tree")
 		}
+		if !tx.ValidateHash() {
+			return fmt.Errorf("transaction hash is invalid")
+		}
 	}
 
 	err = sm.blockPool.StoreBlock(&block)

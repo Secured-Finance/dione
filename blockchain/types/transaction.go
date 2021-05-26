@@ -1,6 +1,7 @@
 package types
 
 import (
+	"bytes"
 	"encoding/hex"
 	"fmt"
 	"time"
@@ -26,4 +27,12 @@ func CreateTransaction(data []byte) *Transaction {
 		Timestamp: timestamp,
 		Data:      data,
 	}
+}
+
+func (tx *Transaction) ValidateHash() bool {
+	h := crypto.Keccak256([]byte(fmt.Sprintf("%d_%s", tx.Timestamp.Unix(), tx.Hash)))
+	if bytes.Compare(h, tx.Hash) != 0 {
+		return false
+	}
+	return true
 }
