@@ -71,7 +71,7 @@ func NewBlockPool(path string) (*BlockPool, error) {
 	return pool, nil
 }
 
-func (bp *BlockPool) SetLatestBlockHeight(height uint64) error {
+func (bp *BlockPool) setLatestBlockHeight(height uint64) error {
 	return bp.metadataIndex.PutUint64([]byte(LatestBlockHeightKey), height)
 }
 
@@ -123,12 +123,12 @@ func (bp *BlockPool) StoreBlock(block *types2.Block) error {
 	}
 
 	if err == ErrLatestHeightNil {
-		if err = bp.SetLatestBlockHeight(block.Header.Height); err != nil {
+		if err = bp.setLatestBlockHeight(block.Header.Height); err != nil {
 			return err
 		}
 	} else {
 		if block.Header.Height > height {
-			if err = bp.SetLatestBlockHeight(block.Header.Height); err != nil {
+			if err = bp.setLatestBlockHeight(block.Header.Height); err != nil {
 				return err
 			}
 		}
@@ -228,4 +228,20 @@ func (bp *BlockPool) FetchBlockByHeight(height uint64) (*types2.Block, error) {
 		return nil, err
 	}
 	return block, nil
+}
+
+func (bp *BlockPool) FetchBlockHeaderByHeight(height uint64) (*types2.BlockHeader, error) {
+	var heightBytes []byte
+	binary.LittleEndian.PutUint64(heightBytes, height)
+	blockHash, err := bp.heightIndex.GetBytes(heightBytes)
+	if err != nil {
+		if err == ErrIndexKeyNotFound {
+			return nil, ErrBlockNotFound
+		}
+	}
+	blockHeader, err := bp.FetchBlockHeader(blockHash)
+	if err != nil {
+		return nil, err
+	}
+	return blockHeader, nil
 }
