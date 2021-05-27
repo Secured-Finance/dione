@@ -5,7 +5,7 @@ import (
 	"time"
 )
 
-var ErrNilValue = errors.New("value is empty")
+var ErrNotFound = errors.New("key doesn't exist in cache")
 
 type Cache interface {
 	Store(key string, value interface{}) error

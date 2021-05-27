@@ -35,7 +35,7 @@ func (imc *InMemoryCache) StoreWithTTL(key string, value interface{}, ttl time.D
 func (imc *InMemoryCache) Get(key string, value interface{}) error {
 	v, exists := imc.cache.Get(key)
 	if !exists {
-		return ErrNilValue
+		return ErrNotFound
 	}
 	value = v
 
