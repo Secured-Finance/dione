@@ -5,7 +5,6 @@ go 1.14
 require (
 	github.com/Secured-Finance/go-libp2p-pex v1.1.0
 	github.com/Secured-Finance/golang-set v1.8.0
-	github.com/VictoriaMetrics/fastcache v1.5.7
 	github.com/aristanetworks/goarista v0.0.0-20210308203447-b196d8410f1d // indirect
 	github.com/asaskevich/govalidator v0.0.0-20200907205600-7a23bdc65eef // indirect
 	github.com/cespare/cp v1.1.1 // indirect
@@ -46,6 +45,7 @@ require (
 	github.com/multiformats/go-multiaddr v0.3.1
 	github.com/multiformats/go-multihash v0.0.15 // indirect
 	github.com/olekukonko/tablewriter v0.0.4 // indirect
+	github.com/patrickmn/go-cache v2.1.0+incompatible
 	github.com/raulk/clock v1.1.0
 	github.com/rjeczalik/notify v0.9.2 // indirect
 	github.com/rs/cors v1.7.0 // indirect

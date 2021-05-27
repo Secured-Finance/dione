@@ -3,54 +3,45 @@ package cache
 import (
 	"time"
 
-	"github.com/VictoriaMetrics/fastcache"
-	"github.com/fxamacker/cbor/v2"
+	"github.com/patrickmn/go-cache"
 )
 
 const (
-	// DefaultInMemoryCacheCapacity is maximal in-memory cache size in bytes
-	DefaultInMemoryCacheCapacity = 32000000
+	DefaultCacheExpiration = 5 * time.Minute
+	DefaultGCInterval      = 10 * time.Minute
 )
 
 type InMemoryCache struct {
-	cache *fastcache.Cache
+	cache *cache.Cache
 }
 
 func NewInMemoryCache() *InMemoryCache {
 	return &InMemoryCache{
-		cache: fastcache.New(DefaultInMemoryCacheCapacity),
+		cache: cache.New(DefaultCacheExpiration, DefaultGCInterval),
 	}
 }
 
 func (imc *InMemoryCache) Store(key string, value interface{}) error {
-	mRes, err := cbor.Marshal(value)
-	if err != nil {
-		return err
-	}
-
-	imc.cache.SetBig([]byte(key), mRes)
+	imc.cache.Set(key, value, cache.NoExpiration)
 
 	return nil
 }
 
 func (imc *InMemoryCache) StoreWithTTL(key string, value interface{}, ttl time.Duration) error {
-	return imc.Store(key, value) // fastcache doesn't support ttl for values
+	imc.cache.Set(key, value, ttl)
+	return nil
 }
 
-func (imc *InMemoryCache) Get(key string, v interface{}) error {
-	data := make([]byte, 0)
-	imc.cache.GetBig(data, []byte(key))
-	if len(data) == 0 {
+func (imc *InMemoryCache) Get(key string, value interface{}) error {
+	v, exists := imc.cache.Get(key)
+	if !exists {
 		return ErrNilValue
 	}
-	err := cbor.Unmarshal(data, v)
-	if err != nil {
-		return err
-	}
+	value = v
 
 	return nil
 }
 
 func (imc *InMemoryCache) Delete(key string) {
-	imc.cache.Del([]byte(key))
+	imc.cache.Delete(key)
 }
