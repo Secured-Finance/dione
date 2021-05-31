@@ -15,7 +15,7 @@ type InMemoryCache struct {
 	cache *cache.Cache
 }
 
-func NewInMemoryCache() *InMemoryCache {
+func NewInMemoryCache() Cache {
 	return &InMemoryCache{
 		cache: cache.New(DefaultCacheExpiration, DefaultGCInterval),
 	}
@@ -44,4 +44,12 @@ func (imc *InMemoryCache) Get(key string, value interface{}) error {
 
 func (imc *InMemoryCache) Delete(key string) {
 	imc.cache.Delete(key)
+}
+
+func (imc *InMemoryCache) Items() map[string]interface{} {
+	m := make(map[string]interface{})
+	for k, v := range imc.cache.Items() {
+		m[k] = v.Object
+	}
+	return m
 }

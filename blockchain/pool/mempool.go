@@ -3,7 +3,6 @@ package pool
 import (
 	"encoding/hex"
 	"sort"
-	"sync"
 	"time"
 
 	types2 "github.com/Secured-Finance/dione/blockchain/types"
@@ -19,58 +18,26 @@ const (
 )
 
 type Mempool struct {
-	m             sync.RWMutex
-	cache         cache.Cache
-	txDescriptors []string // list of txs in cache
+	cache cache.Cache
 }
 
-func NewMempool(c cache.Cache) (*Mempool, error) {
+func NewMempool() (*Mempool, error) {
 	mp := &Mempool{
-		cache: c,
+		cache: cache.NewInMemoryCache(), // here we need to use separate cache
 	}
-
-	var txDesc []string
-	err := c.Get("tx_list", &txDesc)
-	if err != nil || err != cache.ErrNilValue {
-		return nil, err
-	}
-	mp.txDescriptors = txDesc
 
 	return mp, nil
 }
 
 func (mp *Mempool) StoreTx(tx *types2.Transaction) error {
-	mp.m.Lock()
-	defer mp.m.Unlock()
-
 	hashStr := hex.EncodeToString(tx.Hash)
 	err := mp.cache.StoreWithTTL(DefaultTxPrefix+hashStr, tx, DefaultTxTTL)
-	mp.txDescriptors = append(mp.txDescriptors, hashStr)
-	mp.cache.Store("tx_list", mp.txDescriptors) // update tx list in cache
 	return err
 }
 
 func (mp *Mempool) GetTxsForNewBlock() []*types2.Transaction {
-	mp.m.Lock()
-	defer mp.m.Unlock()
-
 	var txForBlock []*types2.Transaction
-	var allTxs []*types2.Transaction
-
-	for i, v := range mp.txDescriptors {
-		var tx types2.Transaction
-		err := mp.cache.Get(DefaultTxPrefix+v, &tx)
-		if err != nil {
-			if err == cache.ErrNilValue {
-				// descriptor is broken
-				// delete it and update list
-				mp.txDescriptors = removeItemFromStringSlice(mp.txDescriptors, i)
-				mp.cache.Store("tx_list", mp.txDescriptors) // update tx list in cache
-			}
-			continue
-		}
-		allTxs = append(allTxs, &tx)
-	}
+	allTxs := mp.GetAllTxs()
 	sort.Slice(allTxs, func(i, j int) bool {
 		return allTxs[i].Timestamp.Before(allTxs[j].Timestamp)
 	})
@@ -85,6 +52,16 @@ func (mp *Mempool) GetTxsForNewBlock() []*types2.Transaction {
 	}
 
 	return txForBlock
+}
+
+func (mp *Mempool) GetAllTxs() []*types2.Transaction {
+	var allTxs []*types2.Transaction
+
+	for _, v := range mp.cache.Items() {
+		tx := v.(types2.Transaction)
+		allTxs = append(allTxs, &tx)
+	}
+	return allTxs
 }
 
 func removeItemFromStringSlice(s []string, i int) []string {

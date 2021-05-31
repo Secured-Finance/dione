@@ -12,4 +12,5 @@ type Cache interface {
 	StoreWithTTL(key string, value interface{}, ttl time.Duration) error
 	Get(key string, value interface{}) error
 	Delete(key string)
+	Items() map[string]interface{}
 }

@@ -81,3 +81,7 @@ func (rc *RedisCache) Get(key string, value interface{}) error {
 func (rc *RedisCache) Delete(key string) {
 	rc.Client.Del(rc.ctx, key)
 }
+
+func (rc *RedisCache) Items() map[string]interface{} {
+	return nil // TODO
+}
