@@ -167,7 +167,7 @@ func NewNode(config *config.Config, prvKey crypto.PrivKey, pexDiscoveryUpdateTim
 	r := provideP2PRPCClient(lhost)
 
 	// initialize sync manager
-	sm, err := provideSyncManager(bp, mp, r, baddrs[0]) // FIXME here we just pick up first bootstrap in list
+	sm, err := provideSyncManager(bp, mp, r, baddrs[0], psb) // FIXME here we just pick up first bootstrap in list
 	if err != nil {
 		logrus.Fatal(err)
 	}

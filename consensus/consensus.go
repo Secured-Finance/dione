@@ -4,6 +4,8 @@ import (
 	"math/big"
 	"sync"
 
+	"github.com/fxamacker/cbor/v2"
+
 	"github.com/Secured-Finance/dione/cache"
 
 	"github.com/Secured-Finance/dione/consensus/types"
@@ -45,9 +47,9 @@ func NewPBFTConsensusManager(psb *pubsub.PubSubRouter, minApprovals int, privKey
 	pcm.ethereumClient = ethereumClient
 	pcm.cache = evc
 	pcm.consensusMap = map[string]*Consensus{}
-	pcm.psb.Hook(types.MessageTypePrePrepare, pcm.handlePrePrepare)
-	pcm.psb.Hook(types.MessageTypePrepare, pcm.handlePrepare)
-	pcm.psb.Hook(types.MessageTypeCommit, pcm.handleCommit)
+	pcm.psb.Hook(pubsub.PrePrepareMessageType, pcm.handlePrePrepare)
+	pcm.psb.Hook(pubsub.PrepareMessageType, pcm.handlePrepare)
+	pcm.psb.Hook(pubsub.CommitMessageType, pcm.handleCommit)
 	return pcm
 }
 
@@ -62,44 +64,54 @@ func (pcm *PBFTConsensusManager) Propose(task types2.DioneTask) error {
 	return nil
 }
 
-func (pcm *PBFTConsensusManager) handlePrePrepare(message *types.Message) {
-	if message.Payload.Task.Miner == pcm.miner.address {
+func (pcm *PBFTConsensusManager) handlePrePrepare(message *pubsub.PubSubMessage) {
+	cmsg, err := unmarshalPayload(message)
+	if err != nil {
 		return
 	}
-	if pcm.msgLog.Exists(*message) {
+
+	if cmsg.Task.Miner == pcm.miner.address {
+		return
+	}
+	if pcm.msgLog.Exists(cmsg) {
 		logrus.Debugf("received existing pre_prepare msg, dropping...")
 		return
 	}
-	if !pcm.validator.Valid(*message) {
+	if !pcm.validator.Valid(cmsg) {
 		logrus.Warn("received invalid pre_prepare msg, dropping...")
 		return
 	}
 
-	pcm.msgLog.AddMessage(*message)
+	pcm.msgLog.AddMessage(cmsg)
 
-	prepareMsg, err := NewMessage(message, types.MessageTypePrepare)
+	prepareMsg, err := NewMessage(message, pubsub.PrepareMessageType)
 	if err != nil {
 		logrus.Errorf("failed to create prepare message: %v", err)
 	}
 
-	pcm.createConsensusInfo(&message.Payload.Task, false)
+	pcm.createConsensusInfo(&cmsg.Task, false)
 
 	pcm.psb.BroadcastToServiceTopic(&prepareMsg)
 }
 
-func (pcm *PBFTConsensusManager) handlePrepare(message *types.Message) {
-	if pcm.msgLog.Exists(*message) {
+func (pcm *PBFTConsensusManager) handlePrepare(message *pubsub.PubSubMessage) {
+	cmsg, err := unmarshalPayload(message)
+	if err != nil {
+		return
+	}
+
+	if pcm.msgLog.Exists(cmsg) {
 		logrus.Debugf("received existing prepare msg, dropping...")
 		return
 	}
-	if !pcm.validator.Valid(*message) {
+	if !pcm.validator.Valid(cmsg) {
 		logrus.Warn("received invalid prepare msg, dropping...")
 		return
 	}
 
-	pcm.msgLog.AddMessage(*message)
+	pcm.msgLog.AddMessage(cmsg)
 
-	if len(pcm.msgLog.GetMessagesByTypeAndConsensusID(types.MessageTypePrepare, message.Payload.Task.ConsensusID)) >= pcm.minApprovals {
+	if len(pcm.msgLog.Get(types.MessageTypePrepare, cmsg.Task.ConsensusID)) >= pcm.minApprovals {
 		commitMsg, err := NewMessage(message, types.MessageTypeCommit)
 		if err != nil {
 			logrus.Errorf("failed to create commit message: %w", err)
@@ -108,21 +120,25 @@ func (pcm *PBFTConsensusManager) handlePrepare(message *types.Message) {
 	}
 }
 
-func (pcm *PBFTConsensusManager) handleCommit(message *types.Message) {
-	if pcm.msgLog.Exists(*message) {
+func (pcm *PBFTConsensusManager) handleCommit(message *pubsub.PubSubMessage) {
+	cmsg, err := unmarshalPayload(message)
+	if err != nil {
+		return
+	}
+
+	if pcm.msgLog.Exists(cmsg) {
 		logrus.Debugf("received existing commit msg, dropping...")
 		return
 	}
-	if !pcm.validator.Valid(*message) {
+	if !pcm.validator.Valid(cmsg) {
 		logrus.Warn("received invalid commit msg, dropping...")
 		return
 	}
 
-	pcm.msgLog.AddMessage(*message)
+	pcm.msgLog.AddMessage(cmsg)
 
-	consensusMsg := message.Payload
-	if len(pcm.msgLog.GetMessagesByTypeAndConsensusID(types.MessageTypeCommit, message.Payload.Task.ConsensusID)) >= pcm.minApprovals {
-		info := pcm.GetConsensusInfo(consensusMsg.Task.ConsensusID)
+	if len(pcm.msgLog.Get(types.MessageTypeCommit, cmsg.Task.ConsensusID)) >= pcm.minApprovals {
+		info := pcm.GetConsensusInfo(cmsg.Task.ConsensusID)
 		if info == nil {
 			logrus.Debugf("consensus doesn't exist in our consensus map - skipping...")
 			return
@@ -133,13 +149,13 @@ func (pcm *PBFTConsensusManager) handleCommit(message *types.Message) {
 			return
 		}
 		if info.IsCurrentMinerLeader {
-			logrus.Infof("Submitting on-chain result for consensus ID: %s", consensusMsg.Task.ConsensusID)
-			reqID, ok := new(big.Int).SetString(consensusMsg.Task.RequestID, 10)
+			logrus.Infof("Submitting on-chain result for consensus ID: %s", cmsg.Task.ConsensusID)
+			reqID, ok := new(big.Int).SetString(cmsg.Task.RequestID, 10)
 			if !ok {
-				logrus.Errorf("Failed to parse request ID: %v", consensusMsg.Task.RequestID)
+				logrus.Errorf("Failed to parse request ID: %v", cmsg.Task.RequestID)
 			}
 
-			err := pcm.ethereumClient.SubmitRequestAnswer(reqID, consensusMsg.Task.Payload)
+			err := pcm.ethereumClient.SubmitRequestAnswer(reqID, cmsg.Task.Payload)
 			if err != nil {
 				logrus.Errorf("Failed to submit on-chain result: %v", err)
 			}
@@ -166,4 +182,37 @@ func (pcm *PBFTConsensusManager) GetConsensusInfo(consensusID string) *Consensus
 	}
 
 	return c
+}
+
+func unmarshalPayload(msg *pubsub.PubSubMessage) (types.ConsensusMessage, error) {
+	var task types2.DioneTask
+	err := cbor.Unmarshal(msg.Payload, &task)
+	if err != nil {
+		logrus.Debug(err)
+		return types.ConsensusMessage{}, err
+	}
+	var consensusMessageType types.MessageType
+	switch msg.Type {
+	case pubsub.PrePrepareMessageType:
+		{
+			consensusMessageType = types.MessageTypePrePrepare
+			break
+		}
+	case pubsub.PrepareMessageType:
+		{
+			consensusMessageType = types.MessageTypePrepare
+			break
+		}
+	case pubsub.CommitMessageType:
+		{
+			consensusMessageType = types.MessageTypeCommit
+			break
+		}
+	}
+	cmsg := types.ConsensusMessage{
+		Type: consensusMessageType,
+		From: msg.From,
+		Task: task,
+	}
+	return cmsg, nil
 }

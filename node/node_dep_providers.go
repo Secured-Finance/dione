@@ -159,12 +159,12 @@ func provideMemPool() (*pool.Mempool, error) {
 	return pool.NewMempool()
 }
 
-func provideSyncManager(bp *pool.BlockPool, mp *pool.Mempool, r *gorpc.Client, bootstrap multiaddr.Multiaddr) (sync.SyncManager, error) {
+func provideSyncManager(bp *pool.BlockPool, mp *pool.Mempool, r *gorpc.Client, bootstrap multiaddr.Multiaddr, psb *pubsub.PubSubRouter) (sync.SyncManager, error) {
 	addr, err := peer.AddrInfoFromP2pAddr(bootstrap)
 	if err != nil {
 		return nil, err
 	}
-	return sync.NewSyncManager(bp, mp, r, addr.ID), nil
+	return sync.NewSyncManager(bp, mp, r, addr.ID, psb), nil
 }
 
 func provideP2PRPCClient(h host.Host) *gorpc.Client {

@@ -6,10 +6,8 @@ import (
 
 	"github.com/fxamacker/cbor/v2"
 
-	"github.com/Secured-Finance/dione/consensus/types"
-
-	host "github.com/libp2p/go-libp2p-core/host"
-	peer "github.com/libp2p/go-libp2p-core/peer"
+	"github.com/libp2p/go-libp2p-core/host"
+	"github.com/libp2p/go-libp2p-core/peer"
 	pubsub "github.com/libp2p/go-libp2p-pubsub"
 	"github.com/sirupsen/logrus"
 )
@@ -20,10 +18,12 @@ type PubSubRouter struct {
 	context             context.Context
 	contextCancel       context.CancelFunc
 	serviceSubscription *pubsub.Subscription
-	handlers            map[types.MessageType][]Handler
+	handlers            map[PubSubMessageType][]Handler
 	oracleTopicName     string
 	oracleTopic         *pubsub.Topic
 }
+
+type Handler func(message *PubSubMessage)
 
 func NewPubSubRouter(h host.Host, oracleTopic string, isBootstrap bool) *PubSubRouter {
 	ctx, ctxCancel := context.WithCancel(context.Background())
@@ -32,7 +32,7 @@ func NewPubSubRouter(h host.Host, oracleTopic string, isBootstrap bool) *PubSubR
 		node:          h,
 		context:       ctx,
 		contextCancel: ctxCancel,
-		handlers:      make(map[types.MessageType][]Handler),
+		handlers:      make(map[PubSubMessageType][]Handler),
 	}
 
 	var pbOptions []pubsub.Option
@@ -102,7 +102,7 @@ func (psr *PubSubRouter) handleMessage(p *pubsub.Message) {
 	if senderPeerID == psr.node.ID() {
 		return
 	}
-	var message types.Message
+	var message PubSubMessage
 	err = cbor.Unmarshal(p.Data, &message)
 	if err != nil {
 		logrus.Warn("Unable to decode message data! " + err.Error())
@@ -119,7 +119,7 @@ func (psr *PubSubRouter) handleMessage(p *pubsub.Message) {
 	}
 }
 
-func (psr *PubSubRouter) Hook(messageType types.MessageType, handler Handler) {
+func (psr *PubSubRouter) Hook(messageType PubSubMessageType, handler Handler) {
 	_, ok := psr.handlers[messageType]
 	if !ok {
 		psr.handlers[messageType] = []Handler{}
@@ -127,7 +127,7 @@ func (psr *PubSubRouter) Hook(messageType types.MessageType, handler Handler) {
 	psr.handlers[messageType] = append(psr.handlers[messageType], handler)
 }
 
-func (psr *PubSubRouter) BroadcastToServiceTopic(msg *types.Message) error {
+func (psr *PubSubRouter) BroadcastToServiceTopic(msg *PubSubMessage) error {
 	data, err := cbor.Marshal(msg)
 	if err != nil {
 		return err

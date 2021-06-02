@@ -17,10 +17,6 @@ const (
 
 type ConsensusMessage struct {
 	Task types.DioneTask
-}
-
-type Message struct {
-	Type    MessageType
-	Payload ConsensusMessage
-	From    peer.ID `cbor:"-"`
+	From peer.ID
+	Type MessageType
 }

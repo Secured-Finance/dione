@@ -8,7 +8,7 @@ import (
 type MessageLog struct {
 	messages          mapset.Set
 	maxLogSize        int
-	validationFuncMap map[types2.MessageType]func(message types2.Message)
+	validationFuncMap map[types2.MessageType]func(message types2.ConsensusMessage)
 }
 
 func NewMessageLog() *MessageLog {
@@ -20,21 +20,21 @@ func NewMessageLog() *MessageLog {
 	return msgLog
 }
 
-func (ml *MessageLog) AddMessage(msg types2.Message) {
+func (ml *MessageLog) AddMessage(msg types2.ConsensusMessage) {
 	ml.messages.Add(msg)
 }
 
-func (ml *MessageLog) Exists(msg types2.Message) bool {
+func (ml *MessageLog) Exists(msg types2.ConsensusMessage) bool {
 	return ml.messages.Contains(msg)
 }
 
-func (ml *MessageLog) GetMessagesByTypeAndConsensusID(typ types2.MessageType, consensusID string) []types2.Message {
-	var result []types2.Message
+func (ml *MessageLog) Get(typ types2.MessageType, consensusID string) []*types2.ConsensusMessage {
+	var result []*types2.ConsensusMessage
 
 	for v := range ml.messages.Iter() {
-		msg := v.(types2.Message)
-		if msg.Type == typ && msg.Payload.Task.ConsensusID == consensusID {
-			result = append(result, msg)
+		msg := v.(types2.ConsensusMessage)
+		if msg.Type == typ && msg.Task.ConsensusID == consensusID {
+			result = append(result, &msg)
 		}
 	}
 
