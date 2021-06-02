@@ -43,10 +43,11 @@ type syncManager struct {
 	rpcClient            *gorpc.Client
 }
 
-func NewSyncManager(bp *pool.BlockPool, p2pRPCClient *gorpc.Client, bootstrapPeer peer.ID) SyncManager {
+func NewSyncManager(bp *pool.BlockPool, mp *pool.Mempool, p2pRPCClient *gorpc.Client, bootstrapPeer peer.ID) SyncManager {
 	ctx, cancelFunc := context.WithCancel(context.Background())
 	return &syncManager{
 		blockpool:            bp,
+		mempool:              mp,
 		ctx:                  ctx,
 		ctxCancelFunc:        cancelFunc,
 		initialSyncCompleted: false,

@@ -9,6 +9,10 @@ import (
 	"os"
 	"time"
 
+	types2 "github.com/Secured-Finance/dione/blockchain/types"
+
+	"github.com/fxamacker/cbor/v2"
+
 	gorpc "github.com/libp2p/go-libp2p-gorpc"
 
 	"github.com/Secured-Finance/dione/blockchain/pool"
@@ -143,7 +147,7 @@ func NewNode(config *config.Config, prvKey crypto.PrivKey, pexDiscoveryUpdateTim
 	logrus.Info("Block pool database has been successfully initialized!")
 
 	// initialize mempool
-	mp, err := provideMemPool(c)
+	mp, err := provideMemPool()
 	if err != nil {
 		logrus.Fatalf("Failed to initialize mempool: %s", err.Error())
 	}
@@ -163,7 +167,7 @@ func NewNode(config *config.Config, prvKey crypto.PrivKey, pexDiscoveryUpdateTim
 	r := provideP2PRPCClient(lhost)
 
 	// initialize sync manager
-	sm, err := provideSyncManager(bp, r, baddrs[0]) // FIXME here we just pick up first bootstrap in list
+	sm, err := provideSyncManager(bp, mp, r, baddrs[0]) // FIXME here we just pick up first bootstrap in list
 	if err != nil {
 		logrus.Fatal(err)
 	}
@@ -268,12 +272,7 @@ func (n *Node) subscribeOnEthContractsAsync(ctx context.Context) {
 			select {
 			case event := <-eventChan:
 				{
-					err := n.Cache.Store("request_"+event.ReqID.String(), event)
-					if err != nil {
-						logrus.Errorf("Failed to store new request event to event log cache: %v", err)
-					}
-
-					logrus.Info("Let's wait a little so that all nodes have time to receive the request and cache it")
+					logrus.Info("Let's wait a little so that all nodes have time to receive the request")
 					time.Sleep(5 * time.Second)
 
 					task, err := n.Miner.MineTask(context.TODO(), event)
@@ -281,13 +280,25 @@ func (n *Node) subscribeOnEthContractsAsync(ctx context.Context) {
 						logrus.Errorf("Failed to mine task: %v", err)
 					}
 					if task == nil {
+						logrus.Warnf("Task is nil!")
 						continue
 					}
-					logrus.Infof("Proposed new Dione task with ID: %s", event.ReqID.String())
-					err = n.ConsensusManager.Propose(*task)
+					payload, err := cbor.Marshal(task)
 					if err != nil {
-						logrus.Errorf("Failed to propose task: %v", err)
+						logrus.Errorf("Failed to marshal request event")
+						continue
 					}
+					tx := types2.CreateTransaction(payload)
+					err = n.MemPool.StoreTx(tx)
+					if err != nil {
+						logrus.Errorf("Failed to store tx in mempool: %s", err.Error())
+						continue
+					}
+					//logrus.Infof("Proposed new Dione task with ID: %s", event.ReqID.String())
+					//err = n.ConsensusManager.Propose(*task)
+					//if err != nil {
+					//	logrus.Errorf("Failed to propose task: %v", err)
+					//}
 				}
 			case <-ctx.Done():
 				break EventLoop

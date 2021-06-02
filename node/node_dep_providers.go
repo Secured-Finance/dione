@@ -155,16 +155,16 @@ func provideBlockPool(config *config.Config) (*pool.BlockPool, error) {
 	return pool.NewBlockPool(config.Blockchain.DatabasePath)
 }
 
-func provideMemPool(c cache.Cache) (*pool.Mempool, error) {
-	return pool.NewMempool(c)
+func provideMemPool() (*pool.Mempool, error) {
+	return pool.NewMempool()
 }
 
-func provideSyncManager(bp *pool.BlockPool, r *gorpc.Client, bootstrap multiaddr.Multiaddr) (sync.SyncManager, error) {
+func provideSyncManager(bp *pool.BlockPool, mp *pool.Mempool, r *gorpc.Client, bootstrap multiaddr.Multiaddr) (sync.SyncManager, error) {
 	addr, err := peer.AddrInfoFromP2pAddr(bootstrap)
 	if err != nil {
 		return nil, err
 	}
-	return sync.NewSyncManager(bp, r, addr.ID), nil
+	return sync.NewSyncManager(bp, mp, r, addr.ID), nil
 }
 
 func provideP2PRPCClient(h host.Host) *gorpc.Client {
