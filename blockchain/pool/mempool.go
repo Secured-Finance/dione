@@ -2,6 +2,7 @@ package pool
 
 import (
 	"encoding/hex"
+	"errors"
 	"sort"
 	"time"
 
@@ -15,6 +16,10 @@ import (
 const (
 	DefaultTxTTL    = 10 * time.Minute
 	DefaultTxPrefix = "tx_"
+)
+
+var (
+	ErrTxNotFound = errors.New("tx isn't found in mempool")
 )
 
 type Mempool struct {
@@ -35,9 +40,9 @@ func (mp *Mempool) StoreTx(tx *types2.Transaction) error {
 	return err
 }
 
-func (mp *Mempool) GetTxsForNewBlock() []*types2.Transaction {
+func (mp *Mempool) GetTransactionsForNewBlock() []*types2.Transaction {
 	var txForBlock []*types2.Transaction
-	allTxs := mp.GetAllTxs()
+	allTxs := mp.GetAllTransactions()
 	sort.Slice(allTxs, func(i, j int) bool {
 		return allTxs[i].Timestamp.Before(allTxs[j].Timestamp)
 	})
@@ -54,7 +59,7 @@ func (mp *Mempool) GetTxsForNewBlock() []*types2.Transaction {
 	return txForBlock
 }
 
-func (mp *Mempool) GetAllTxs() []*types2.Transaction {
+func (mp *Mempool) GetAllTransactions() []*types2.Transaction {
 	var allTxs []*types2.Transaction
 
 	for _, v := range mp.cache.Items() {
@@ -64,7 +69,18 @@ func (mp *Mempool) GetAllTxs() []*types2.Transaction {
 	return allTxs
 }
 
-func removeItemFromStringSlice(s []string, i int) []string {
-	s[len(s)-1], s[i] = s[i], s[len(s)-1]
-	return s[:len(s)-1]
+func (mp *Mempool) GetTransaction(hash []byte) (*types2.Transaction, error) {
+	hashStr := hex.EncodeToString(hash)
+	var tx types2.Transaction
+	err := mp.cache.Get(DefaultTxPrefix+hashStr, &tx)
+
+	if err != nil {
+		if errors.Is(err, cache.ErrNotFound) {
+			return nil, ErrTxNotFound
+		} else {
+			return nil, err
+		}
+	}
+
+	return &tx, nil
 }

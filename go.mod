@@ -29,20 +29,21 @@ require (
 	github.com/hashicorp/golang-lru v0.5.5-0.20210104140557-80c98217689d // indirect
 	github.com/huin/goupnp v1.0.1-0.20200620063722-49508fba0031 // indirect
 	github.com/ipfs/go-log v1.0.4
+	github.com/ipfs/go-log/v2 v2.1.3 // indirect
 	github.com/jmoiron/sqlx v1.2.0
 	github.com/karalabe/usb v0.0.0-20191104083709-911d15fe12a9 // indirect
 	github.com/klauspost/cpuid/v2 v2.0.6 // indirect
 	github.com/ledgerwatch/lmdb-go v1.17.8
 	github.com/libp2p/go-libp2p v0.13.0
-	github.com/libp2p/go-libp2p-core v0.8.0
-	github.com/libp2p/go-libp2p-gorpc v0.1.2
+	github.com/libp2p/go-libp2p-core v0.8.5
+	github.com/libp2p/go-libp2p-gorpc v0.1.3
 	github.com/libp2p/go-libp2p-pubsub v0.4.2-0.20210212194758-6c1addf493eb
 	github.com/mattn/go-sqlite3 v1.11.0
 	github.com/miguelmota/go-ethereum-hdwallet v0.0.0-20210314074952-8dd49aa599b9
 	github.com/minio/blake2b-simd v0.0.0-20160723061019-3f5f724cb5b1
 	github.com/mitchellh/hashstructure/v2 v2.0.1
 	github.com/mitchellh/mapstructure v1.3.3 // indirect
-	github.com/multiformats/go-multiaddr v0.3.1
+	github.com/multiformats/go-multiaddr v0.3.2
 	github.com/multiformats/go-multihash v0.0.15 // indirect
 	github.com/olekukonko/tablewriter v0.0.4 // indirect
 	github.com/patrickmn/go-cache v2.1.0+incompatible
@@ -56,15 +57,17 @@ require (
 	github.com/status-im/keycard-go v0.0.0-20200402102358-957c09536969 // indirect
 	github.com/stretchr/testify v1.7.0
 	github.com/tyler-smith/go-bip39 v1.1.0 // indirect
+	github.com/ugorji/go v1.2.6 // indirect
 	github.com/valyala/fasthttp v1.17.0
 	github.com/wealdtech/go-merkletree v1.0.1-0.20190605192610-2bb163c2ea2a
 	github.com/whyrusleeping/cbor-gen v0.0.0-20210219115102-f37d292932f2
 	github.com/xorcare/golden v0.6.1-0.20191112154924-b87f686d7542
-	go.uber.org/zap v1.16.0
-	golang.org/x/crypto v0.0.0-20210421170649-83a5a9bb288b
+	go.uber.org/multierr v1.7.0 // indirect
+	go.uber.org/zap v1.17.0
+	golang.org/x/crypto v0.0.0-20210513164829-c07d793c2f9a
 	golang.org/x/lint v0.0.0-20200302205851-738671d3881b // indirect
 	golang.org/x/net v0.0.0-20210428140749-89ef3d95e781 // indirect
-	golang.org/x/sys v0.0.0-20210426230700-d19ff857e887 // indirect
+	golang.org/x/sys v0.0.0-20210601080250-7ecdf8ef093b // indirect
 	golang.org/x/xerrors v0.0.0-20200804184101-5ec99f83aff1
 	honnef.co/go/tools v0.0.1-2020.1.3 // indirect
 	nhooyr.io/websocket v1.8.6 // indirect

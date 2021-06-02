@@ -3,17 +3,18 @@ package sync
 import (
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"strings"
 	"sync"
+
+	"github.com/Secured-Finance/dione/consensus/policy"
 
 	"github.com/wealdtech/go-merkletree/keccak256"
 
 	"github.com/wealdtech/go-merkletree"
 
 	"github.com/sirupsen/logrus"
-
-	"github.com/Secured-Finance/dione/node"
 
 	"github.com/Secured-Finance/dione/node/wire"
 
@@ -32,7 +33,8 @@ type SyncManager interface {
 }
 
 type syncManager struct {
-	blockPool            *pool.BlockPool
+	blockpool            *pool.BlockPool
+	mempool              *pool.Mempool
 	wg                   sync.WaitGroup
 	ctx                  context.Context
 	ctxCancelFunc        context.CancelFunc
@@ -44,7 +46,7 @@ type syncManager struct {
 func NewSyncManager(bp *pool.BlockPool, p2pRPCClient *gorpc.Client, bootstrapPeer peer.ID) SyncManager {
 	ctx, cancelFunc := context.WithCancel(context.Background())
 	return &syncManager{
-		blockPool:            bp,
+		blockpool:            bp,
 		ctx:                  ctx,
 		ctxCancelFunc:        cancelFunc,
 		initialSyncCompleted: false,
@@ -56,7 +58,16 @@ func NewSyncManager(bp *pool.BlockPool, p2pRPCClient *gorpc.Client, bootstrapPee
 func (sm *syncManager) Start() {
 	sm.wg.Add(1)
 
-	sm.doInitialSync()
+	err := sm.doInitialBlockPoolSync()
+	if err != nil {
+		logrus.Error(err)
+	}
+
+	err = sm.doInitialMempoolSync()
+	if err != nil {
+		logrus.Error(err)
+	}
+
 	go sm.syncLoop()
 }
 
@@ -65,15 +76,15 @@ func (sm *syncManager) Stop() {
 	sm.wg.Wait()
 }
 
-func (sm *syncManager) doInitialSync() error {
+func (sm *syncManager) doInitialBlockPoolSync() error {
 	if sm.initialSyncCompleted {
 		return nil
 	}
 
-	ourLastHeight, err := sm.blockPool.GetLatestBlockHeight()
+	ourLastHeight, err := sm.blockpool.GetLatestBlockHeight()
 	if err == pool.ErrLatestHeightNil {
 		gBlock := types2.GenesisBlock()
-		err = sm.blockPool.StoreBlock(gBlock) // commit genesis block
+		err = sm.blockpool.StoreBlock(gBlock) // commit genesis block
 		if err != nil {
 			return err
 		}
@@ -96,16 +107,16 @@ func (sm *syncManager) doInitialSync() error {
 		for heightCount > 0 {
 			from = to + 1
 			var addedVal uint64
-			if heightCount < node.MaxBlockCountForRetrieving {
+			if heightCount < policy.MaxBlockCountForRetrieving {
 				addedVal = heightCount
 			} else {
-				addedVal = node.MaxBlockCountForRetrieving
+				addedVal = policy.MaxBlockCountForRetrieving
 			}
 			heightCount -= addedVal
 			to += addedVal
-			var getBlocksReply wire.GetBlocksReply
-			arg := wire.GetBlocksArg{From: from, To: to}
-			err = sm.rpcClient.Call(sm.bootstrapPeer, "NetworkService", "GetBlocks", arg, &getBlocksReply)
+			var getBlocksReply wire.GetRangeOfBlocksReply
+			arg := wire.GetRangeOfBlocksArg{From: from, To: to}
+			err = sm.rpcClient.Call(sm.bootstrapPeer, "NetworkService", "GetRangeOfBlocks", arg, &getBlocksReply)
 			if err != nil {
 				return err
 			}
@@ -129,9 +140,59 @@ func (sm *syncManager) doInitialSync() error {
 	return nil
 }
 
+func (sm *syncManager) doInitialMempoolSync() error {
+	var reply wire.InvMessage
+	err := sm.rpcClient.Call(sm.bootstrapPeer, "NetworkService", "Mempool", nil, &reply)
+	if err != nil {
+		return err
+	}
+
+	var txsToRetrieve [][]byte
+
+	for _, v := range reply.Inventory {
+		_, err = sm.mempool.GetTransaction(v.Hash)
+		if errors.Is(err, pool.ErrTxNotFound) {
+			txsToRetrieve = append(txsToRetrieve, v.Hash)
+		}
+	}
+
+	for {
+		var txHashes [][]byte
+
+		if len(txsToRetrieve) == 0 {
+			break
+		}
+
+		if len(txsToRetrieve) > policy.MaxTransactionCountForRetrieving {
+			txHashes = txsToRetrieve[:policy.MaxTransactionCountForRetrieving]
+			txsToRetrieve = txsToRetrieve[policy.MaxTransactionCountForRetrieving:]
+		} else {
+			txHashes = txsToRetrieve
+		}
+
+		getMempoolTxArg := wire.GetMempoolTxsArg{
+			Items: txHashes,
+		}
+		var getMempoolTxReply wire.GetMempoolTxsReply
+		err := sm.rpcClient.Call(sm.bootstrapPeer, "NetworkService", "GetMempoolTxs", getMempoolTxArg, &getMempoolTxReply)
+		if err != nil {
+			return err
+		}
+		for _, v := range getMempoolTxReply.Transactions {
+			err := sm.mempool.StoreTx(&v)
+			if err != nil {
+				logrus.Warnf(err.Error())
+			}
+		}
+		// FIXME handle not found transactions
+	}
+
+	return nil
+}
+
 func (sm *syncManager) processReceivedBlock(block types2.Block) error {
 	// validate block
-	previousBlockHeader, err := sm.blockPool.FetchBlockHeaderByHeight(block.Header.Height - 1)
+	previousBlockHeader, err := sm.blockpool.FetchBlockHeaderByHeight(block.Header.Height - 1)
 	if err != nil {
 		return fmt.Errorf("failed to retrieve previous block %d", block.Header.Height-1)
 	}
@@ -163,7 +224,7 @@ func (sm *syncManager) processReceivedBlock(block types2.Block) error {
 		}
 	}
 
-	err = sm.blockPool.StoreBlock(&block)
+	err = sm.blockpool.StoreBlock(&block)
 	if err != nil {
 		return fmt.Errorf("failed to store block in blockpool: %s", err.Error())
 	}
@@ -172,5 +233,4 @@ func (sm *syncManager) processReceivedBlock(block types2.Block) error {
 }
 
 func (sm *syncManager) syncLoop() {
-
 }
