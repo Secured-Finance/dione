@@ -1,10 +1,9 @@
 package consensus
 
 import (
+	"fmt"
 	"math/big"
 	"sync"
-
-	"github.com/fxamacker/cbor/v2"
 
 	"github.com/Secured-Finance/dione/cache"
 
@@ -47,9 +46,9 @@ func NewPBFTConsensusManager(psb *pubsub.PubSubRouter, minApprovals int, privKey
 	pcm.ethereumClient = ethereumClient
 	pcm.cache = evc
 	pcm.consensusMap = map[string]*Consensus{}
-	pcm.psb.Hook(pubsub.PrePrepareMessageType, pcm.handlePrePrepare)
-	pcm.psb.Hook(pubsub.PrepareMessageType, pcm.handlePrepare)
-	pcm.psb.Hook(pubsub.CommitMessageType, pcm.handleCommit)
+	pcm.psb.Hook(pubsub.PrePrepareMessageType, pcm.handlePrePrepare, types2.DioneTask{})
+	pcm.psb.Hook(pubsub.PrepareMessageType, pcm.handlePrepare, types2.DioneTask{})
+	pcm.psb.Hook(pubsub.CommitMessageType, pcm.handleCommit, types2.DioneTask{})
 	return pcm
 }
 
@@ -64,7 +63,7 @@ func (pcm *PBFTConsensusManager) Propose(task types2.DioneTask) error {
 	return nil
 }
 
-func (pcm *PBFTConsensusManager) handlePrePrepare(message *pubsub.PubSubMessage) {
+func (pcm *PBFTConsensusManager) handlePrePrepare(message *pubsub.GenericMessage) {
 	cmsg, err := unmarshalPayload(message)
 	if err != nil {
 		return
@@ -87,6 +86,7 @@ func (pcm *PBFTConsensusManager) handlePrePrepare(message *pubsub.PubSubMessage)
 	prepareMsg, err := NewMessage(message, pubsub.PrepareMessageType)
 	if err != nil {
 		logrus.Errorf("failed to create prepare message: %v", err)
+		return
 	}
 
 	pcm.createConsensusInfo(&cmsg.Task, false)
@@ -94,7 +94,7 @@ func (pcm *PBFTConsensusManager) handlePrePrepare(message *pubsub.PubSubMessage)
 	pcm.psb.BroadcastToServiceTopic(&prepareMsg)
 }
 
-func (pcm *PBFTConsensusManager) handlePrepare(message *pubsub.PubSubMessage) {
+func (pcm *PBFTConsensusManager) handlePrepare(message *pubsub.GenericMessage) {
 	cmsg, err := unmarshalPayload(message)
 	if err != nil {
 		return
@@ -112,7 +112,7 @@ func (pcm *PBFTConsensusManager) handlePrepare(message *pubsub.PubSubMessage) {
 	pcm.msgLog.AddMessage(cmsg)
 
 	if len(pcm.msgLog.Get(types.MessageTypePrepare, cmsg.Task.ConsensusID)) >= pcm.minApprovals {
-		commitMsg, err := NewMessage(message, types.MessageTypeCommit)
+		commitMsg, err := NewMessage(message, pubsub.CommitMessageType)
 		if err != nil {
 			logrus.Errorf("failed to create commit message: %w", err)
 		}
@@ -120,7 +120,7 @@ func (pcm *PBFTConsensusManager) handlePrepare(message *pubsub.PubSubMessage) {
 	}
 }
 
-func (pcm *PBFTConsensusManager) handleCommit(message *pubsub.PubSubMessage) {
+func (pcm *PBFTConsensusManager) handleCommit(message *pubsub.GenericMessage) {
 	cmsg, err := unmarshalPayload(message)
 	if err != nil {
 		return
@@ -184,12 +184,10 @@ func (pcm *PBFTConsensusManager) GetConsensusInfo(consensusID string) *Consensus
 	return c
 }
 
-func unmarshalPayload(msg *pubsub.PubSubMessage) (types.ConsensusMessage, error) {
-	var task types2.DioneTask
-	err := cbor.Unmarshal(msg.Payload, &task)
-	if err != nil {
-		logrus.Debug(err)
-		return types.ConsensusMessage{}, err
+func unmarshalPayload(msg *pubsub.GenericMessage) (types.ConsensusMessage, error) {
+	task, ok := msg.Payload.(types2.DioneTask)
+	if !ok {
+		return types.ConsensusMessage{}, fmt.Errorf("cannot convert payload to DioneTask")
 	}
 	var consensusMessageType types.MessageType
 	switch msg.Type {

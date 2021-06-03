@@ -13,8 +13,13 @@ const (
 	NewBlockMessageType
 )
 
-type PubSubMessage struct {
+type GenericMessage struct {
 	Type    PubSubMessageType
 	From    peer.ID `cbor:"-"`
+	Payload interface{}
+}
+
+type PubSubMessage struct {
+	Type    PubSubMessageType
 	Payload []byte
 }

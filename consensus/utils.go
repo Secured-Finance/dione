@@ -4,6 +4,10 @@ import (
 	"encoding/binary"
 	"fmt"
 
+	"github.com/fxamacker/cbor/v2"
+
+	"github.com/Secured-Finance/dione/pubsub"
+
 	types2 "github.com/Secured-Finance/dione/consensus/types"
 
 	"github.com/mitchellh/hashstructure/v2"
@@ -107,17 +111,17 @@ func VerifyTaskSignature(task types.DioneTask) error {
 	return nil
 }
 
-func NewMessage(msg *types2.Message, typ types2.MessageType) (types2.Message, error) {
-	var newMsg types2.Message
+func NewMessage(msg *pubsub.GenericMessage, typ pubsub.PubSubMessageType) (pubsub.GenericMessage, error) {
+	var newMsg pubsub.GenericMessage
 	newMsg.Type = typ
 	newCMsg := msg.Payload
 	newMsg.Payload = newCMsg
 	return newMsg, nil
 }
 
-func CreatePrePrepareWithTaskSignature(task *types.DioneTask, privateKey []byte) (*types2.Message, error) {
-	var message types2.Message
-	message.Type = types2.MessageTypePrePrepare
+func CreatePrePrepareWithTaskSignature(task *types.DioneTask, privateKey []byte) (*pubsub.GenericMessage, error) {
+	var message pubsub.GenericMessage
+	message.Type = pubsub.PrePrepareMessageType
 
 	cHash, err := hashstructure.Hash(task, hashstructure.FormatV2, nil)
 	if err != nil {
@@ -128,6 +132,10 @@ func CreatePrePrepareWithTaskSignature(task *types.DioneTask, privateKey []byte)
 		return nil, err
 	}
 	task.Signature = signature.Data
-	message.Payload = types2.ConsensusMessage{Task: *task}
+	data, err := cbor.Marshal(types2.ConsensusMessage{Task: *task})
+	if err != nil {
+		return nil, err
+	}
+	message.Payload = data
 	return &message, nil
 }
