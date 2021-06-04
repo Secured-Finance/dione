@@ -5,7 +5,6 @@ import (
 	"context"
 	"fmt"
 	"sync"
-	"time"
 
 	"github.com/Secured-Finance/dione/beacon"
 	"github.com/drand/drand/chain"
@@ -43,18 +42,15 @@ type DrandResponse struct {
 }
 
 type DrandBeacon struct {
-	DrandClient      client.Client
-	PublicKey        kyber.Point
-	Interval         time.Duration
-	chainGenesisTime uint64
-	chainRoundTime   uint64
+	DrandClient        client.Client
+	PublicKey          kyber.Point
+	drandResultChannel <-chan client.Result
 
-	drandGenesisTime uint64
-	cacheLock        sync.Mutex
-	localCache       map[uint64]types.BeaconEntry
+	cacheLock  sync.Mutex
+	localCache map[uint64]types.BeaconEntry
 }
 
-func NewDrandBeacon(genesisTs, interval uint64, ps *pubsub.PubSub) (*DrandBeacon, error) {
+func NewDrandBeacon(ps *pubsub.PubSub) (*DrandBeacon, error) {
 	cfg := config.NewDrandConfig()
 
 	drandChain, err := chain.InfoFromJSON(bytes.NewReader([]byte(cfg.ChainInfo)))
@@ -98,12 +94,27 @@ func NewDrandBeacon(genesisTs, interval uint64, ps *pubsub.PubSub) (*DrandBeacon
 	}
 
 	db.PublicKey = drandChain.PublicKey
-	db.Interval = drandChain.Period
-	db.drandGenesisTime = uint64(drandChain.GenesisTime)
-	db.chainRoundTime = interval
-	db.chainGenesisTime = genesisTs
+
+	db.drandResultChannel = db.DrandClient.Watch(context.TODO())
+
+	go db.loop(context.TODO())
 
 	return db, nil
+}
+
+func (db *DrandBeacon) loop(ctx context.Context) {
+	for {
+		select {
+		case <-ctx.Done():
+			{
+				return
+			}
+		case res := <-db.drandResultChannel:
+			{
+				db.cacheValue(types.NewBeaconEntry(res.Round(), res.Randomness(), map[string]interface{}{"signature": res.Signature()}))
+			}
+		}
+	}
 }
 
 func (db *DrandBeacon) Entry(ctx context.Context, round uint64) <-chan beacon.BeaconResult {
@@ -160,15 +171,11 @@ func (db *DrandBeacon) VerifyEntry(curr, prev types.BeaconEntry) error {
 		return nil
 	}
 	b := &chain.Beacon{
-		PreviousSig: prev.Data,
+		PreviousSig: prev.Metadata["signature"].([]byte),
 		Round:       curr.Round,
-		Signature:   curr.Data,
+		Signature:   curr.Metadata["signature"].([]byte),
 	}
-	err := chain.VerifyBeacon(db.PublicKey, b)
-	if err == nil {
-		db.cacheValue(curr)
-	}
-	return err
+	return chain.VerifyBeacon(db.PublicKey, b)
 }
 
 func (db *DrandBeacon) LatestBeaconRound() uint64 {

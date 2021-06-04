@@ -42,8 +42,9 @@ type BeaconAPI interface {
 	LatestBeaconRound() uint64
 }
 
-func ValidateTaskBeacons(beaconNetworks BeaconNetworks, t *types.DioneTask, prevEpoch types.DrandRound, prevEntry types.BeaconEntry) error {
-	parentBeacon := beaconNetworks.BeaconNetworkForRound(prevEpoch)
+// ValidateTaskBeacons is a function that verifies dione task randomness
+func ValidateTaskBeacons(beaconNetworks BeaconNetworks, t *types.DioneTask, prevEntry types.BeaconEntry) error {
+	parentBeacon := beaconNetworks.BeaconNetworkForRound(t.DrandRound - 1)
 	currBeacon := beaconNetworks.BeaconNetworkForRound(t.DrandRound)
 	if parentBeacon != currBeacon {
 		if len(t.BeaconEntries) != 2 {
@@ -89,59 +90,22 @@ func BeaconEntriesForTask(ctx context.Context, beaconNetworks BeaconNetworks) ([
 	beacon := beaconNetworks.BeaconNetworkForRound(0)
 	round := beacon.LatestBeaconRound()
 
-	//prevBeacon := beaconNetworks.BeaconNetworkForRound(prevRound)
-	//currBeacon := beaconNetworks.BeaconNetworkForRound(round)
-	//if prevBeacon != currBeacon {
-	//	// Fork logic
-	//	round := currBeacon.LatestBeaconRound()
-	//	out := make([]types.BeaconEntry, 2)
-	//	rch := currBeacon.Entry(ctx, round-1)
-	//	res := <-rch
-	//	if res.Err != nil {
-	//		return nil, fmt.Errorf("getting entry %d returned error: %w", round-1, res.Err)
-	//	}
-	//	out[0] = res.Entry
-	//	rch = currBeacon.Entry(ctx, round)
-	//	res = <-rch
-	//	if res.Err != nil {
-	//		return nil, fmt.Errorf("getting entry %d returned error: %w", round, res.Err)
-	//	}
-	//	out[1] = res.Entry
-	//	return out, nil
-	//}
-
 	start := lib.Clock.Now()
 
-	//if round == prev.Round {
-	//	return nil, nil
-	//}
-	//
-	//// TODO: this is a sketchy way to handle the genesis block not having a beacon entry
-	//if prev.Round == 0 {
-	//	prev.Round = round - 1
-	//}
-
 	out := make([]types.BeaconEntry, 2)
-	rch := beacon.Entry(ctx, round-1)
-	res := <-rch
+	prevBeaconEntry := beacon.Entry(ctx, round-1)
+	res := <-prevBeaconEntry
 	if res.Err != nil {
 		return nil, fmt.Errorf("getting entry %d returned error: %w", round-1, res.Err)
 	}
 	out[0] = res.Entry
-	rch = beacon.Entry(ctx, round)
-	res = <-rch
+	curBeaconEntry := beacon.Entry(ctx, round)
+	res = <-curBeaconEntry
 	if res.Err != nil {
 		return nil, fmt.Errorf("getting entry %d returned error: %w", round, res.Err)
 	}
 	out[1] = res.Entry
 
 	logrus.Debugf("fetching beacon entries: took %v, count of entries: %v", lib.Clock.Since(start), len(out))
-	//reverse(out)
 	return out, nil
-}
-
-func reverse(arr []types.BeaconEntry) {
-	for i := 0; i < len(arr)/2; i++ {
-		arr[i], arr[len(arr)-(1+i)] = arr[len(arr)-(1+i)], arr[i]
-	}
 }

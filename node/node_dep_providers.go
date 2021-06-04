@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"time"
 
+	drand2 "github.com/Secured-Finance/dione/beacon/drand"
+
 	"github.com/libp2p/go-libp2p-core/protocol"
 
 	gorpc "github.com/libp2p/go-libp2p-gorpc"
@@ -17,7 +19,6 @@ import (
 	"github.com/Secured-Finance/dione/cache"
 	"github.com/Secured-Finance/dione/config"
 	"github.com/Secured-Finance/dione/consensus"
-	"github.com/Secured-Finance/dione/drand"
 	"github.com/Secured-Finance/dione/ethclient"
 	"github.com/Secured-Finance/dione/pubsub"
 	"github.com/Secured-Finance/dione/types"
@@ -61,7 +62,7 @@ func provideMiner(peerID peer.ID, ethAddress common.Address, beacon beacon.Beaco
 
 func provideBeacon(ps *pubsub2.PubSub) (beacon.BeaconNetworks, error) {
 	networks := beacon.BeaconNetworks{}
-	bc, err := drand.NewDrandBeacon(config.ChainGenesis, config.TaskEpochInterval, ps)
+	bc, err := drand2.NewDrandBeacon(ps)
 	if err != nil {
 		return nil, fmt.Errorf("failed to setup drand beacon: %w", err)
 	}

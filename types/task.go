@@ -59,5 +59,3 @@ func NewDioneTask(
 }
 
 var tasksPerEpoch = NewInt(config.TasksPerEpoch)
-
-const sha256bits = 256
