@@ -9,6 +9,8 @@ import (
 	"os"
 	"time"
 
+	"github.com/Secured-Finance/dione/blockchain"
+
 	types2 "github.com/Secured-Finance/dione/blockchain/types"
 
 	"github.com/fxamacker/cbor/v2"
@@ -63,7 +65,7 @@ type Node struct {
 	Wallet           *wallet.LocalWallet
 	Cache            cache.Cache
 	DisputeManager   *consensus.DisputeManager
-	BlockPool        *pool.BlockPool
+	BlockPool        *blockchain.BlockChain
 	MemPool          *pool.Mempool
 	SyncManager      sync.SyncManager
 	NetworkService   *NetworkService
@@ -139,7 +141,7 @@ func NewNode(config *config.Config, prvKey crypto.PrivKey, pexDiscoveryUpdateTim
 	// == initialize blockchain modules
 
 	// initialize blockpool database
-	bp, err := provideBlockPool(n.Config)
+	bp, err := provideBlockChain(n.Config)
 	if err != nil {
 		logrus.Fatalf("Failed to initialize blockpool: %s", err.Error())
 	}

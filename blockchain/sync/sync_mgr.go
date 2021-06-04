@@ -8,6 +8,8 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/Secured-Finance/dione/blockchain"
+
 	"github.com/Secured-Finance/dione/pubsub"
 
 	"github.com/Secured-Finance/dione/consensus/policy"
@@ -28,13 +30,10 @@ import (
 	gorpc "github.com/libp2p/go-libp2p-gorpc"
 )
 
-type SyncManager interface {
-	Start()
-	Stop()
-}
+type SyncManager interface{}
 
 type syncManager struct {
-	blockpool            *pool.BlockPool
+	blockpool            *blockchain.BlockChain
 	mempool              *pool.Mempool
 	wg                   sync.WaitGroup
 	ctx                  context.Context
@@ -45,7 +44,7 @@ type syncManager struct {
 	psb                  *pubsub.PubSubRouter
 }
 
-func NewSyncManager(bp *pool.BlockPool, mp *pool.Mempool, p2pRPCClient *gorpc.Client, bootstrapPeer peer.ID, psb *pubsub.PubSubRouter) SyncManager {
+func NewSyncManager(bp *blockchain.BlockChain, mp *pool.Mempool, p2pRPCClient *gorpc.Client, bootstrapPeer peer.ID, psb *pubsub.PubSubRouter) SyncManager {
 	ctx, cancelFunc := context.WithCancel(context.Background())
 	sm := &syncManager{
 		blockpool:            bp,
@@ -63,34 +62,13 @@ func NewSyncManager(bp *pool.BlockPool, mp *pool.Mempool, p2pRPCClient *gorpc.Cl
 	return sm
 }
 
-func (sm *syncManager) Start() {
-	sm.wg.Add(1)
-
-	err := sm.doInitialBlockPoolSync()
-	if err != nil {
-		logrus.Error(err)
-	}
-
-	err = sm.doInitialMempoolSync()
-	if err != nil {
-		logrus.Error(err)
-	}
-
-	go sm.syncLoop()
-}
-
-func (sm *syncManager) Stop() {
-	sm.ctxCancelFunc()
-	sm.wg.Wait()
-}
-
 func (sm *syncManager) doInitialBlockPoolSync() error {
 	if sm.initialSyncCompleted {
 		return nil
 	}
 
 	ourLastHeight, err := sm.blockpool.GetLatestBlockHeight()
-	if err == pool.ErrLatestHeightNil {
+	if err == blockchain.ErrLatestHeightNil {
 		gBlock := types2.GenesisBlock()
 		err = sm.blockpool.StoreBlock(gBlock) // commit genesis block
 		if err != nil {
@@ -241,9 +219,6 @@ func (sm *syncManager) processReceivedBlock(block types2.Block) error {
 	}
 
 	return nil
-}
-
-func (sm *syncManager) syncLoop() {
 }
 
 func (sm *syncManager) onNewTransaction(message *pubsub.GenericMessage) {

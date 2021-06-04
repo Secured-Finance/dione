@@ -1,9 +1,11 @@
-package pool
+package blockchain
 
 import (
 	"encoding/binary"
 	"encoding/hex"
 	"errors"
+
+	"github.com/Secured-Finance/dione/blockchain/utils"
 
 	types2 "github.com/Secured-Finance/dione/blockchain/types"
 	"github.com/fxamacker/cbor/v2"
@@ -23,15 +25,15 @@ var (
 	ErrLatestHeightNil = errors.New("latest block height is nil")
 )
 
-type BlockPool struct {
+type BlockChain struct {
 	dbEnv         *lmdb.Env
 	db            lmdb.DBI
-	metadataIndex *Index
-	heightIndex   *Index
+	metadataIndex *utils.Index
+	heightIndex   *utils.Index
 }
 
-func NewBlockPool(path string) (*BlockPool, error) {
-	pool := &BlockPool{}
+func NewBlockChain(path string) (*BlockChain, error) {
+	chain := &BlockChain{}
 
 	// configure lmdb env
 	env, err := lmdb.NewEnv()
@@ -49,7 +51,7 @@ func NewBlockPool(path string) (*BlockPool, error) {
 		return nil, err
 	}
 
-	pool.dbEnv = env
+	chain.dbEnv = env
 
 	var dbi lmdb.DBI
 	err = env.Update(func(txn *lmdb.Txn) error {
@@ -60,25 +62,25 @@ func NewBlockPool(path string) (*BlockPool, error) {
 		return nil, err
 	}
 
-	pool.db = dbi
+	chain.db = dbi
 
 	// create index instances
-	metadataIndex := NewIndex(DefaultMetadataIndexName, env, dbi)
-	heightIndex := NewIndex("height", env, dbi)
-	pool.metadataIndex = metadataIndex
-	pool.heightIndex = heightIndex
+	metadataIndex := utils.NewIndex(DefaultMetadataIndexName, env, dbi)
+	heightIndex := utils.NewIndex("height", env, dbi)
+	chain.metadataIndex = metadataIndex
+	chain.heightIndex = heightIndex
 
-	return pool, nil
+	return chain, nil
 }
 
-func (bp *BlockPool) setLatestBlockHeight(height uint64) error {
+func (bp *BlockChain) setLatestBlockHeight(height uint64) error {
 	return bp.metadataIndex.PutUint64([]byte(LatestBlockHeightKey), height)
 }
 
-func (bp *BlockPool) GetLatestBlockHeight() (uint64, error) {
+func (bp *BlockChain) GetLatestBlockHeight() (uint64, error) {
 	height, err := bp.metadataIndex.GetUint64([]byte(LatestBlockHeightKey))
 	if err != nil {
-		if err == ErrIndexKeyNotFound {
+		if err == utils.ErrIndexKeyNotFound {
 			return 0, ErrLatestHeightNil
 		}
 		return 0, err
@@ -86,7 +88,7 @@ func (bp *BlockPool) GetLatestBlockHeight() (uint64, error) {
 	return height, nil
 }
 
-func (bp *BlockPool) StoreBlock(block *types2.Block) error {
+func (bp *BlockChain) StoreBlock(block *types2.Block) error {
 	err := bp.dbEnv.Update(func(txn *lmdb.Txn) error {
 		data, err := cbor.Marshal(block.Data)
 		if err != nil {
@@ -136,7 +138,7 @@ func (bp *BlockPool) StoreBlock(block *types2.Block) error {
 	return nil
 }
 
-func (bp *BlockPool) HasBlock(blockHash []byte) (bool, error) {
+func (bp *BlockChain) HasBlock(blockHash []byte) (bool, error) {
 	var blockExists bool
 	err := bp.dbEnv.View(func(txn *lmdb.Txn) error {
 		h := hex.EncodeToString(blockHash)
@@ -157,7 +159,7 @@ func (bp *BlockPool) HasBlock(blockHash []byte) (bool, error) {
 	return blockExists, nil
 }
 
-func (bp *BlockPool) FetchBlockData(blockHash []byte) ([]*types2.Transaction, error) {
+func (bp *BlockChain) FetchBlockData(blockHash []byte) ([]*types2.Transaction, error) {
 	var data []*types2.Transaction
 	err := bp.dbEnv.View(func(txn *lmdb.Txn) error {
 		h := hex.EncodeToString(blockHash)
@@ -177,7 +179,7 @@ func (bp *BlockPool) FetchBlockData(blockHash []byte) ([]*types2.Transaction, er
 	return data, nil
 }
 
-func (bp *BlockPool) FetchBlockHeader(blockHash []byte) (*types2.BlockHeader, error) {
+func (bp *BlockChain) FetchBlockHeader(blockHash []byte) (*types2.BlockHeader, error) {
 	var blockHeader types2.BlockHeader
 	err := bp.dbEnv.View(func(txn *lmdb.Txn) error {
 		h := hex.EncodeToString(blockHash)
@@ -197,7 +199,7 @@ func (bp *BlockPool) FetchBlockHeader(blockHash []byte) (*types2.BlockHeader, er
 	return &blockHeader, nil
 }
 
-func (bp *BlockPool) FetchBlock(blockHash []byte) (*types2.Block, error) {
+func (bp *BlockChain) FetchBlock(blockHash []byte) (*types2.Block, error) {
 	var block types2.Block
 	header, err := bp.FetchBlockHeader(blockHash)
 	if err != nil {
@@ -214,12 +216,12 @@ func (bp *BlockPool) FetchBlock(blockHash []byte) (*types2.Block, error) {
 	return &block, nil
 }
 
-func (bp *BlockPool) FetchBlockByHeight(height uint64) (*types2.Block, error) {
+func (bp *BlockChain) FetchBlockByHeight(height uint64) (*types2.Block, error) {
 	var heightBytes []byte
 	binary.LittleEndian.PutUint64(heightBytes, height)
 	blockHash, err := bp.heightIndex.GetBytes(heightBytes)
 	if err != nil {
-		if err == ErrIndexKeyNotFound {
+		if err == utils.ErrIndexKeyNotFound {
 			return nil, ErrBlockNotFound
 		}
 	}
@@ -230,12 +232,12 @@ func (bp *BlockPool) FetchBlockByHeight(height uint64) (*types2.Block, error) {
 	return block, nil
 }
 
-func (bp *BlockPool) FetchBlockHeaderByHeight(height uint64) (*types2.BlockHeader, error) {
+func (bp *BlockChain) FetchBlockHeaderByHeight(height uint64) (*types2.BlockHeader, error) {
 	var heightBytes []byte
 	binary.LittleEndian.PutUint64(heightBytes, height)
 	blockHash, err := bp.heightIndex.GetBytes(heightBytes)
 	if err != nil {
-		if err == ErrIndexKeyNotFound {
+		if err == utils.ErrIndexKeyNotFound {
 			return nil, ErrBlockNotFound
 		}
 	}

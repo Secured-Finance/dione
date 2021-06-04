@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/Secured-Finance/dione/blockchain"
+
 	drand2 "github.com/Secured-Finance/dione/beacon/drand"
 
 	"github.com/libp2p/go-libp2p-core/protocol"
@@ -152,15 +154,15 @@ func providePeerDiscovery(baddrs []multiaddr.Multiaddr, h host.Host, pexDiscover
 	return pexDiscovery, nil
 }
 
-func provideBlockPool(config *config.Config) (*pool.BlockPool, error) {
-	return pool.NewBlockPool(config.Blockchain.DatabasePath)
+func provideBlockChain(config *config.Config) (*blockchain.BlockChain, error) {
+	return blockchain.NewBlockChain(config.Blockchain.DatabasePath)
 }
 
 func provideMemPool() (*pool.Mempool, error) {
 	return pool.NewMempool()
 }
 
-func provideSyncManager(bp *pool.BlockPool, mp *pool.Mempool, r *gorpc.Client, bootstrap multiaddr.Multiaddr, psb *pubsub.PubSubRouter) (sync.SyncManager, error) {
+func provideSyncManager(bp *blockchain.BlockChain, mp *pool.Mempool, r *gorpc.Client, bootstrap multiaddr.Multiaddr, psb *pubsub.PubSubRouter) (sync.SyncManager, error) {
 	addr, err := peer.AddrInfoFromP2pAddr(bootstrap)
 	if err != nil {
 		return nil, err
@@ -172,6 +174,6 @@ func provideP2PRPCClient(h host.Host) *gorpc.Client {
 	return gorpc.NewClient(h, DioneProtocolID)
 }
 
-func provideNetworkService(bp *pool.BlockPool) *NetworkService {
+func provideNetworkService(bp *blockchain.BlockChain) *NetworkService {
 	return NewNetworkService(bp)
 }

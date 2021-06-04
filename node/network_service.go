@@ -5,6 +5,8 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/Secured-Finance/dione/blockchain"
+
 	gorpc "github.com/libp2p/go-libp2p-gorpc"
 
 	"github.com/sirupsen/logrus"
@@ -16,12 +18,12 @@ import (
 )
 
 type NetworkService struct {
-	blockpool *pool.BlockPool
+	blockpool *blockchain.BlockChain
 	mempool   *pool.Mempool
 	rpcClient *gorpc.Client
 }
 
-func NewNetworkService(bp *pool.BlockPool) *NetworkService {
+func NewNetworkService(bp *blockchain.BlockChain) *NetworkService {
 	return &NetworkService{
 		blockpool: bp,
 	}
