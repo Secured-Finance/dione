@@ -3,8 +3,7 @@ package consensus
 import (
 	"encoding/binary"
 	"fmt"
-
-	"github.com/fxamacker/cbor/v2"
+	"math/big"
 
 	"github.com/Secured-Finance/dione/pubsub"
 
@@ -18,23 +17,15 @@ import (
 	"github.com/libp2p/go-libp2p-core/peer"
 
 	"github.com/Secured-Finance/dione/types"
-	"github.com/filecoin-project/go-state-types/crypto"
+	crypto2 "github.com/filecoin-project/go-state-types/crypto"
+	"github.com/libp2p/go-libp2p-core/crypto"
 	"golang.org/x/xerrors"
 )
 
 type SignFunc func(peer.ID, []byte) (*types.Signature, error)
 
-func ComputeVRF(sign SignFunc, worker peer.ID, sigInput []byte) ([]byte, error) {
-	sig, err := sign(worker, sigInput)
-	if err != nil {
-		return nil, err
-	}
-
-	if sig.Type != types.SigTypeEd25519 {
-		return nil, fmt.Errorf("miner worker address was not a Ed25519 key")
-	}
-
-	return sig.Data, nil
+func ComputeVRF(privKey crypto.PrivKey, sigInput []byte) ([]byte, error) {
+	return privKey.Sign(sigInput)
 }
 
 func VerifyVRF(worker peer.ID, vrfBase, vrfproof []byte) error {
@@ -46,20 +37,20 @@ func VerifyVRF(worker peer.ID, vrfBase, vrfproof []byte) error {
 	return nil
 }
 
-func IsRoundWinner(round types.DrandRound,
-	worker peer.ID, brand types.BeaconEntry, minerStake, networkStake types.BigInt, sign SignFunc) (*types.ElectionProof, error) {
+func IsRoundWinner(round uint64,
+	worker peer.ID, randomness []byte, minerStake, networkStake *big.Int, privKey crypto.PrivKey) (*types.ElectionProof, error) {
 
 	buf, err := worker.MarshalBinary()
 	if err != nil {
 		return nil, xerrors.Errorf("failed to marshal address: %w", err)
 	}
 
-	electionRand, err := DrawRandomness(brand.Data, crypto.DomainSeparationTag_ElectionProofProduction, round, buf)
+	electionRand, err := DrawRandomness(randomness, crypto2.DomainSeparationTag_ElectionProofProduction, round, buf)
 	if err != nil {
 		return nil, xerrors.Errorf("failed to draw randomness: %w", err)
 	}
 
-	vrfout, err := ComputeVRF(sign, worker, electionRand)
+	vrfout, err := ComputeVRF(privKey, electionRand)
 	if err != nil {
 		return nil, xerrors.Errorf("failed to compute VRF: %w", err)
 	}
@@ -74,7 +65,7 @@ func IsRoundWinner(round types.DrandRound,
 	return ep, nil
 }
 
-func DrawRandomness(rbase []byte, pers crypto.DomainSeparationTag, round types.DrandRound, entropy []byte) ([]byte, error) {
+func DrawRandomness(rbase []byte, pers crypto2.DomainSeparationTag, round uint64, entropy []byte) ([]byte, error) {
 	h := blake2b.New256()
 	if err := binary.Write(h, binary.BigEndian, int64(pers)); err != nil {
 		return nil, xerrors.Errorf("deriving randomness: %v", err)
@@ -111,31 +102,46 @@ func VerifyTaskSignature(task types.DioneTask) error {
 	return nil
 }
 
-func NewMessage(msg *pubsub.GenericMessage, typ pubsub.PubSubMessageType) (pubsub.GenericMessage, error) {
-	var newMsg pubsub.GenericMessage
-	newMsg.Type = typ
-	newCMsg := msg.Payload
-	newMsg.Payload = newCMsg
-	return newMsg, nil
-}
-
-func CreatePrePrepareWithTaskSignature(task *types.DioneTask, privateKey []byte) (*pubsub.GenericMessage, error) {
+func NewMessage(cmsg types2.ConsensusMessage, typ types2.ConsensusMessageType, privKey crypto.PrivKey) (*pubsub.GenericMessage, error) {
 	var message pubsub.GenericMessage
-	message.Type = pubsub.PrePrepareMessageType
+	switch typ {
+	case types2.ConsensusMessageTypePrePrepare:
+		{
+			message.Type = pubsub.PrePrepareMessageType
+			message.Payload = types2.PrePrepareMessage{
+				Block: cmsg.Block,
+			}
+			break
+		}
+	case types2.ConsensusMessageTypePrepare:
+		{
+			message.Type = pubsub.PrepareMessageType
+			pm := types2.PrepareMessage{
+				Blockhash: cmsg.Blockhash,
+			}
+			signature, err := privKey.Sign(cmsg.Blockhash)
+			if err != nil {
+				return nil, fmt.Errorf("failed to create signature: %v", err)
+			}
+			pm.Signature = signature
+			message.Payload = pm
+			break
+		}
+	case types2.ConsensusMessageTypeCommit:
+		{
+			message.Type = pubsub.CommitMessageType
+			pm := types2.CommitMessage{
+				Blockhash: cmsg.Blockhash,
+			}
+			signature, err := privKey.Sign(cmsg.Blockhash)
+			if err != nil {
+				return nil, fmt.Errorf("failed to create signature: %v", err)
+			}
+			pm.Signature = signature
+			message.Payload = pm
+			break
+		}
+	}
 
-	cHash, err := hashstructure.Hash(task, hashstructure.FormatV2, nil)
-	if err != nil {
-		return nil, err
-	}
-	signature, err := sigs.Sign(types.SigTypeEd25519, privateKey, []byte(fmt.Sprintf("%v", cHash)))
-	if err != nil {
-		return nil, err
-	}
-	task.Signature = signature.Data
-	data, err := cbor.Marshal(types2.ConsensusMessage{Task: *task})
-	if err != nil {
-		return nil, err
-	}
-	message.Payload = data
 	return &message, nil
 }

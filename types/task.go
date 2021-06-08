@@ -1,33 +1,24 @@
 package types
 
 import (
-	"strconv"
+	"github.com/ethereum/go-ethereum/common"
 
 	"github.com/libp2p/go-libp2p-core/peer"
-
-	"github.com/Secured-Finance/dione/config"
 )
 
-// DrandRound represents the round number in DRAND
-type DrandRound int64
-
-const TicketRandomnessLookback = DrandRound(1)
-
-func (e DrandRound) String() string {
-	return strconv.FormatInt(int64(e), 10)
-}
+const TicketRandomnessLookback = 1
 
 // DioneTask represents the values of task computation
+// DEPRECATED!
 type DioneTask struct {
 	OriginChain   uint8
 	RequestType   string
 	RequestParams string
 	Miner         peer.ID
-	MinerEth      string
-	Ticket        *Ticket
+	MinerEth      common.Address
 	ElectionProof *ElectionProof
 	BeaconEntries []BeaconEntry
-	DrandRound    DrandRound
+	DrandRound    uint64
 	Payload       []byte
 	RequestID     string
 	ConsensusID   string
@@ -39,10 +30,9 @@ func NewDioneTask(
 	requestType string,
 	requestParams string,
 	miner peer.ID,
-	ticket *Ticket,
 	electionProof *ElectionProof,
 	beacon []BeaconEntry,
-	drand DrandRound,
+	drandRound uint64,
 	payload []byte,
 ) *DioneTask {
 	return &DioneTask{
@@ -50,12 +40,9 @@ func NewDioneTask(
 		RequestType:   requestType,
 		RequestParams: requestParams,
 		Miner:         miner,
-		Ticket:        ticket,
 		ElectionProof: electionProof,
 		BeaconEntries: beacon,
-		DrandRound:    drand,
+		DrandRound:    drandRound,
 		Payload:       payload,
 	}
 }
-
-var tasksPerEpoch = NewInt(config.TasksPerEpoch)

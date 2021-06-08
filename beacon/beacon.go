@@ -17,7 +17,7 @@ type BeaconResult struct {
 
 type BeaconNetworks []BeaconNetwork
 
-func (bn BeaconNetworks) BeaconNetworkForRound(e types.DrandRound) BeaconAPI {
+func (bn BeaconNetworks) BeaconNetworkForRound(e uint64) BeaconAPI {
 	for i := len(bn) - 1; i >= 0; i-- {
 		bp := bn[i]
 		if e >= bp.Start {
@@ -28,7 +28,7 @@ func (bn BeaconNetworks) BeaconNetworkForRound(e types.DrandRound) BeaconAPI {
 }
 
 type BeaconNetwork struct {
-	Start  types.DrandRound
+	Start  uint64
 	Beacon BeaconAPI
 }
 

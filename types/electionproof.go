@@ -99,13 +99,13 @@ func polyval(p []*big.Int, x *big.Int) *big.Int {
 
 // computes lambda in Q.256
 func lambda(power, totalPower *big.Int) *big.Int {
-	lam := new(big.Int).Mul(power, tasksPerEpoch.Int)    // Q.0
-	lam = lam.Lsh(lam, precision)                        // Q.256
-	lam = lam.Div(lam /* Q.256 */, totalPower /* Q.0 */) // Q.256
+	lam := new(big.Int).Mul(power, config.ExpectedLeadersPerEpoch) // Q.0
+	lam = lam.Lsh(lam, precision)                                  // Q.256
+	lam = lam.Div(lam /* Q.256 */, totalPower /* Q.0 */)           // Q.256
 	return lam
 }
 
-var MaxWinCount = 3 * int64(config.TasksPerEpoch)
+var MaxWinCount = 3 * config.ExpectedLeadersPerEpoch.Int64()
 
 type poiss struct {
 	lam  *big.Int
@@ -175,10 +175,10 @@ func (p *poiss) next() *big.Int {
 // ComputeWinCount uses VRFProof to compute number of wins
 // The algorithm is based on Algorand's Sortition with Binomial distribution
 // replaced by Poisson distribution.
-func (ep *ElectionProof) ComputeWinCount(power BigInt, totalPower BigInt) int64 {
+func (ep *ElectionProof) ComputeWinCount(power *big.Int, totalPower *big.Int) int64 {
 	h := blake2b.Sum256(ep.VRFProof)
 
-	lhs := BigFromBytes(h[:]).Int // 256bits, assume Q.256 so [0, 1)
+	lhs := big.NewInt(0).SetBytes(h[:]) // 256bits, assume Q.256 so [0, 1)
 
 	// We are calculating upside-down CDF of Poisson distribution with
 	// rate λ=power*E/totalPower
@@ -191,7 +191,7 @@ func (ep *ElectionProof) ComputeWinCount(power BigInt, totalPower BigInt) int64 
 	//    rhs = 1 - pmf
 	//    for h(vrf) < rhs: j++; pmf = pmf * lam / j; rhs = rhs - pmf
 
-	lam := lambda(power.Int, totalPower.Int) // Q.256
+	lam := lambda(power, totalPower) // Q.256
 
 	p, rhs := newPoiss(lam)
 

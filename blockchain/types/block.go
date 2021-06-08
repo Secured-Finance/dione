@@ -3,10 +3,13 @@ package types
 import (
 	"time"
 
+	"github.com/libp2p/go-libp2p-core/crypto"
+
+	"github.com/ethereum/go-ethereum/common"
+
 	"github.com/wealdtech/go-merkletree"
 	"github.com/wealdtech/go-merkletree/keccak256"
 
-	"github.com/Secured-Finance/dione/wallet"
 	"github.com/libp2p/go-libp2p-core/peer"
 )
 
@@ -22,6 +25,7 @@ type BlockHeader struct {
 	LastHash      []byte
 	LastHashProof *merkletree.Proof
 	Proposer      peer.ID
+	ProposerEth   common.Address
 	Signature     []byte
 }
 
@@ -36,12 +40,8 @@ func GenesisBlock() *Block {
 	}
 }
 
-func CreateBlock(lastBlockHeader *BlockHeader, txs []*Transaction, wallet *wallet.LocalWallet) (*Block, error) {
+func CreateBlock(lastBlockHeader *BlockHeader, txs []*Transaction, minerEth common.Address, privateKey crypto.PrivKey) (*Block, error) {
 	timestamp := time.Now().Unix()
-	proposer, err := wallet.GetDefault()
-	if err != nil {
-		return nil, err
-	}
 
 	// extract hashes from transactions
 	var txHashes [][]byte
@@ -58,8 +58,8 @@ func CreateBlock(lastBlockHeader *BlockHeader, txs []*Transaction, wallet *walle
 	// fetch merkle tree root hash (block hash)
 	blockHash := tree.Root()
 
-	// sign this block hash
-	s, err := wallet.Sign(proposer, blockHash)
+	// sign the block hash
+	s, err := privateKey.Sign(blockHash)
 	if err != nil {
 		return nil, err
 	}
@@ -69,12 +69,18 @@ func CreateBlock(lastBlockHeader *BlockHeader, txs []*Transaction, wallet *walle
 		return nil, err
 	}
 
+	proposer, err := peer.IDFromPrivateKey(privateKey)
+	if err != nil {
+		return nil, err
+	}
+
 	block := &Block{
 		Header: &BlockHeader{
 			Timestamp:     timestamp,
 			Height:        lastBlockHeader.Height + 1,
 			Proposer:      proposer,
-			Signature:     s.Data,
+			ProposerEth:   minerEth,
+			Signature:     s,
 			Hash:          blockHash,
 			LastHash:      lastBlockHeader.Hash,
 			LastHashProof: lastHashProof,

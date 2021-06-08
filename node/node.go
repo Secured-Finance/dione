@@ -13,15 +13,12 @@ import (
 
 	types2 "github.com/Secured-Finance/dione/blockchain/types"
 
-	"github.com/fxamacker/cbor/v2"
-
 	gorpc "github.com/libp2p/go-libp2p-gorpc"
 
 	"github.com/Secured-Finance/dione/blockchain/pool"
 
 	"github.com/Secured-Finance/dione/blockchain/sync"
 
-	"github.com/Secured-Finance/dione/cache"
 	"github.com/Secured-Finance/dione/consensus"
 	pubsub2 "github.com/Secured-Finance/dione/pubsub"
 
@@ -33,8 +30,6 @@ import (
 	solana2 "github.com/Secured-Finance/dione/rpc/solana"
 
 	"github.com/Secured-Finance/dione/rpc/filecoin"
-
-	"github.com/Secured-Finance/dione/wallet"
 
 	"golang.org/x/xerrors"
 
@@ -62,14 +57,14 @@ type Node struct {
 	ConsensusManager *consensus.PBFTConsensusManager
 	Miner            *consensus.Miner
 	Beacon           beacon.BeaconNetworks
-	Wallet           *wallet.LocalWallet
-	Cache            cache.Cache
 	DisputeManager   *consensus.DisputeManager
 	BlockPool        *blockchain.BlockChain
 	MemPool          *pool.Mempool
 	SyncManager      sync.SyncManager
 	NetworkService   *NetworkService
 	NetworkRPCHost   *gorpc.Server
+	//Cache            cache.Cache
+	//Wallet           *wallet.LocalWallet
 }
 
 func NewNode(config *config.Config, prvKey crypto.PrivKey, pexDiscoveryUpdateTime time.Duration) (*Node, error) {
@@ -119,24 +114,10 @@ func NewNode(config *config.Config, prvKey crypto.PrivKey, pexDiscoveryUpdateTim
 	n.PeerDiscovery = peerDiscovery
 	logrus.Info("Peer discovery subsystem has been initialized!")
 
-	// get private key of libp2p host
-	rawPrivKey, err := prvKey.Raw()
-	if err != nil {
-		logrus.Fatal(err)
-	}
-
-	// initialize random beacon network subsystem
-	randomBeaconNetwork, err := provideBeacon(psb.Pubsub)
-	if err != nil {
-		logrus.Fatal(err)
-	}
-	n.Beacon = randomBeaconNetwork
-	logrus.Info("Random beacon subsystem has been initialized!")
-
 	// initialize event log cache subsystem
-	c := provideCache(config)
-	n.Cache = c
-	logrus.Info("Event cache subsystem has initialized!")
+	//c := provideCache(config)
+	//n.Cache = c
+	//logrus.Info("Event cache subsystem has initialized!")
 
 	// == initialize blockchain modules
 
@@ -177,17 +158,25 @@ func NewNode(config *config.Config, prvKey crypto.PrivKey, pexDiscoveryUpdateTim
 	logrus.Info("Blockchain synchronization subsystem has been successfully initialized!")
 
 	// initialize mining subsystem
-	miner := provideMiner(n.Host.ID(), *n.Ethereum.GetEthAddress(), n.Beacon, n.Ethereum, rawPrivKey)
+	miner := provideMiner(n.Host.ID(), *n.Ethereum.GetEthAddress(), n.Beacon, n.Ethereum, prvKey, mp)
 	n.Miner = miner
 	logrus.Info("Mining subsystem has initialized!")
 
 	// initialize consensus subsystem
-	cManager := provideConsensusManager(psb, miner, ethClient, rawPrivKey, n.Config.ConsensusMinApprovals, c)
-	n.ConsensusManager = cManager
+	consensusManager := provideConsensusManager(psb, miner, ethClient, prvKey, n.Config.ConsensusMinApprovals)
+	n.ConsensusManager = consensusManager
 	logrus.Info("Consensus subsystem has initialized!")
 
+	// initialize random beacon network subsystem
+	randomBeaconNetwork, err := provideBeacon(psb.Pubsub, consensusManager)
+	if err != nil {
+		logrus.Fatal(err)
+	}
+	n.Beacon = randomBeaconNetwork
+	logrus.Info("Random beacon subsystem has been initialized!")
+
 	// initialize dispute subsystem
-	disputeManager, err := provideDisputeManager(context.TODO(), ethClient, cManager, config)
+	disputeManager, err := provideDisputeManager(context.TODO(), ethClient, consensusManager, config)
 	if err != nil {
 		logrus.Fatal(err)
 	}
@@ -195,11 +184,11 @@ func NewNode(config *config.Config, prvKey crypto.PrivKey, pexDiscoveryUpdateTim
 	logrus.Info("Dispute subsystem has initialized!")
 
 	// initialize internal eth wallet
-	w, err := provideWallet(n.Host.ID(), rawPrivKey)
-	if err != nil {
-		logrus.Fatal(err)
-	}
-	n.Wallet = w
+	//w, err := provideWallet(n.Host.ID(), rawPrivKey)
+	//if err != nil {
+	//	logrus.Fatal(err)
+	//}
+	//n.Wallet = w
 
 	return n, nil
 }
@@ -272,35 +261,18 @@ func (n *Node) subscribeOnEthContractsAsync(ctx context.Context) {
 	EventLoop:
 		for {
 			select {
-			case event := <-eventChan:
+			case <-eventChan:
 				{
 					logrus.Info("Let's wait a little so that all nodes have time to receive the request")
 					time.Sleep(5 * time.Second)
 
-					task, err := n.Miner.MineTask(context.TODO(), event)
-					if err != nil {
-						logrus.Errorf("Failed to mine task: %v", err)
-					}
-					if task == nil {
-						logrus.Warnf("Task is nil!")
-						continue
-					}
-					payload, err := cbor.Marshal(task)
-					if err != nil {
-						logrus.Errorf("Failed to marshal request event")
-						continue
-					}
-					tx := types2.CreateTransaction(payload)
+					// TODO make the rpc request and save response as tx payload
+					tx := types2.CreateTransaction([]byte{})
 					err = n.MemPool.StoreTx(tx)
 					if err != nil {
 						logrus.Errorf("Failed to store tx in mempool: %s", err.Error())
 						continue
 					}
-					//logrus.Infof("Proposed new Dione task with ID: %s", event.ReqID.String())
-					//err = n.ConsensusManager.Propose(*task)
-					//if err != nil {
-					//	logrus.Errorf("Failed to propose task: %v", err)
-					//}
 				}
 			case <-ctx.Done():
 				break EventLoop

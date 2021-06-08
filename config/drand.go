@@ -28,3 +28,5 @@ func NewDrandConfig() *DrandConfig {
 	}
 	return cfg
 }
+
+var DrandChainGenesisTime = uint64(1603603302)

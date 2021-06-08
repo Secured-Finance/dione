@@ -1,25 +1,23 @@
 package consensus
 
 import (
-	"context"
+	"errors"
+	"fmt"
+	"math/big"
 	"sync"
 
-	big2 "github.com/filecoin-project/go-state-types/big"
+	"github.com/Secured-Finance/dione/blockchain/pool"
 
-	"github.com/Secured-Finance/dione/sigs"
+	"github.com/libp2p/go-libp2p-core/crypto"
 
-	"github.com/Secured-Finance/dione/rpc"
+	types2 "github.com/Secured-Finance/dione/blockchain/types"
 
 	"github.com/Secured-Finance/dione/beacon"
-	"github.com/Secured-Finance/dione/contracts/dioneOracle"
 	"github.com/libp2p/go-libp2p-core/peer"
 
 	"github.com/Secured-Finance/dione/ethclient"
-	"github.com/Secured-Finance/dione/types"
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/filecoin-project/go-state-types/crypto"
 	"github.com/sirupsen/logrus"
-	"golang.org/x/xerrors"
 )
 
 type Miner struct {
@@ -28,9 +26,10 @@ type Miner struct {
 	mutex        sync.Mutex
 	beacon       beacon.BeaconNetworks
 	ethClient    *ethclient.EthereumClient
-	minerStake   types.BigInt
-	networkStake types.BigInt
-	privateKey   []byte
+	minerStake   *big.Int
+	networkStake *big.Int
+	privateKey   crypto.PrivKey
+	mempool      *pool.Mempool
 }
 
 func NewMiner(
@@ -38,7 +37,8 @@ func NewMiner(
 	ethAddress common.Address,
 	beacon beacon.BeaconNetworks,
 	ethClient *ethclient.EthereumClient,
-	privateKey []byte,
+	privateKey crypto.PrivKey,
+	mempool *pool.Mempool,
 ) *Miner {
 	return &Miner{
 		address:    address,
@@ -46,6 +46,7 @@ func NewMiner(
 		beacon:     beacon,
 		ethClient:  ethClient,
 		privateKey: privateKey,
+		mempool:    mempool,
 	}
 }
 
@@ -64,13 +65,13 @@ func (m *Miner) UpdateCurrentStakeInfo() error {
 		return err
 	}
 
-	m.minerStake = *mStake
-	m.networkStake = *nStake
+	m.minerStake = mStake
+	m.networkStake = nStake
 
 	return nil
 }
 
-func (m *Miner) GetStakeInfo(miner common.Address) (*types.BigInt, *types.BigInt, error) {
+func (m *Miner) GetStakeInfo(miner common.Address) (*big.Int, *big.Int, error) {
 	mStake, err := m.ethClient.GetMinerStake(miner)
 
 	if err != nil {
@@ -88,100 +89,59 @@ func (m *Miner) GetStakeInfo(miner common.Address) (*types.BigInt, *types.BigInt
 	return mStake, nStake, nil
 }
 
-func (m *Miner) MineTask(ctx context.Context, event *dioneOracle.DioneOracleNewOracleRequest) (*types.DioneTask, error) {
-	beaconValues, err := beacon.BeaconEntriesForTask(ctx, m.beacon)
-	if err != nil {
-		return nil, xerrors.Errorf("failed to get beacon entries: %w", err)
-	}
-	logrus.Debug("attempting to mine the task at epoch: ", beaconValues[1].Round)
-
-	randomBase := beaconValues[1]
+func (m *Miner) MineBlock(randomness []byte, drandRound uint64, lastBlockHeader *types2.BlockHeader) (*types2.Block, error) {
+	logrus.Debug("attempting to mine the block at epoch: ", drandRound)
 
 	if err := m.UpdateCurrentStakeInfo(); err != nil {
-		return nil, xerrors.Errorf("failed to update miner stake: %w", err)
-	}
-
-	ticket, err := m.computeTicket(&randomBase)
-	if err != nil {
-		return nil, xerrors.Errorf("scratching ticket failed: %w", err)
+		return nil, fmt.Errorf("failed to update miner stake: %w", err)
 	}
 
 	winner, err := IsRoundWinner(
-		types.DrandRound(randomBase.Round),
+		drandRound,
 		m.address,
-		randomBase,
+		randomness,
 		m.minerStake,
 		m.networkStake,
-		func(id peer.ID, bytes []byte) (*types.Signature, error) {
-			return sigs.Sign(types.SigTypeEd25519, m.privateKey, bytes)
-		},
+		m.privateKey,
 	)
 	if err != nil {
-		return nil, xerrors.Errorf("failed to check if we win next round: %w", err)
+		return nil, fmt.Errorf("failed to check if we winned in next round: %w", err)
 	}
 
 	if winner == nil {
 		return nil, nil
 	}
 
-	rpcMethod := rpc.GetRPCMethod(event.OriginChain, event.RequestType)
-	if rpcMethod == nil {
-		return nil, xerrors.Errorf("invalid rpc method name/type")
-	}
-	res, err := rpcMethod(event.RequestParams)
-	if err != nil {
-		return nil, xerrors.Errorf("couldn't do rpc request: %w", err)
+	// TODO get rpc responses for oracle requests
+	//rpcMethod := rpc.GetRPCMethod(event.OriginChain, event.RequestType)
+	//if rpcMethod == nil {
+	//	return nil, xerrors.Errorf("invalid rpc method name/type")
+	//}
+	//res, err := rpcMethod(event.RequestParams)
+	//if err != nil {
+	//	return nil, xerrors.Errorf("couldn't do rpc request: %w", err)
+	//}
+
+	txs := m.mempool.GetAllTransactions()
+	if txs == nil {
+		return nil, fmt.Errorf("there is no txes for processing") // skip new consensus round because there is no transaction for processing
 	}
 
-	return &types.DioneTask{
-		OriginChain:   event.OriginChain,
-		RequestType:   event.RequestType,
-		RequestParams: event.RequestParams,
-		RequestID:     event.ReqID.String(),
-		ConsensusID:   event.ReqID.String(),
-		Miner:         m.address,
-		MinerEth:      m.ethAddress.Hex(),
-		Ticket:        ticket,
-		ElectionProof: winner,
-		BeaconEntries: beaconValues,
-		Payload:       res,
-		DrandRound:    types.DrandRound(randomBase.Round),
-	}, nil
+	newBlock, err := types2.CreateBlock(lastBlockHeader, txs, m.ethAddress, m.privateKey)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create new block: %w", err)
+	}
+
+	return newBlock, nil
 }
 
-func (m *Miner) computeTicket(brand *types.BeaconEntry) (*types.Ticket, error) {
-	buf, err := m.address.MarshalBinary()
-	if err != nil {
-		return nil, xerrors.Errorf("failed to marshal address: %w", err)
-	}
-
-	round := types.DrandRound(brand.Round)
-
-	input, err := DrawRandomness(brand.Data, crypto.DomainSeparationTag_TicketProduction, round-types.TicketRandomnessLookback, buf)
-	if err != nil {
-		return nil, err
-	}
-
-	vrfOut, err := ComputeVRF(func(id peer.ID, bytes []byte) (*types.Signature, error) {
-		return sigs.Sign(types.SigTypeEd25519, m.privateKey, bytes)
-	}, m.address, input)
-	if err != nil {
-		return nil, err
-	}
-
-	return &types.Ticket{
-		VRFProof: vrfOut,
-	}, nil
-}
-
-func (m *Miner) IsMinerEligibleToProposeTask(ethAddress common.Address) error {
+func (m *Miner) IsMinerEligibleToProposeBlock(ethAddress common.Address) error {
 	mStake, err := m.ethClient.GetMinerStake(ethAddress)
 	if err != nil {
 		return err
 	}
-	ok := mStake.GreaterThanEqual(big2.NewInt(ethclient.MinMinerStake))
-	if !ok {
-		return xerrors.Errorf("miner doesn't have enough staked tokens")
+	if mStake.Cmp(big.NewInt(ethclient.MinMinerStake)) == -1 {
+		return errors.New("miner doesn't have enough staked tokens")
 	}
 	return nil
 }

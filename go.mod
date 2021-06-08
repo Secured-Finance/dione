@@ -3,6 +3,7 @@ module github.com/Secured-Finance/dione
 go 1.14
 
 require (
+	github.com/Arceliar/phony v0.0.0-20210209235338-dde1a8dca979 // indirect
 	github.com/Secured-Finance/go-libp2p-pex v1.1.0
 	github.com/Secured-Finance/golang-set v1.8.0
 	github.com/aristanetworks/goarista v0.0.0-20210308203447-b196d8410f1d // indirect

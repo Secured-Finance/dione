@@ -6,6 +6,10 @@ import (
 	"fmt"
 	"sync"
 
+	"github.com/Arceliar/phony"
+
+	"github.com/Secured-Finance/dione/consensus"
+
 	"github.com/Secured-Finance/dione/beacon"
 	"github.com/drand/drand/chain"
 	"github.com/drand/drand/client"
@@ -30,16 +34,17 @@ var log = logrus.WithFields(logrus.Fields{
 })
 
 type DrandBeacon struct {
+	phony.Inbox
 	DrandClient        client.Client
 	PublicKey          kyber.Point
 	drandResultChannel <-chan client.Result
-
-	cacheLock        sync.Mutex
-	localCache       map[uint64]types.BeaconEntry
-	latestDrandRound uint64
+	cacheLock          sync.Mutex
+	localCache         map[uint64]types.BeaconEntry
+	latestDrandRound   uint64
+	consensusManager   *consensus.PBFTConsensusManager
 }
 
-func NewDrandBeacon(ps *pubsub.PubSub) (*DrandBeacon, error) {
+func NewDrandBeacon(ps *pubsub.PubSub, pcm *consensus.PBFTConsensusManager) (*DrandBeacon, error) {
 	cfg := config.NewDrandConfig()
 
 	drandChain, err := chain.InfoFromJSON(bytes.NewReader([]byte(cfg.ChainInfo)))
@@ -78,8 +83,9 @@ func NewDrandBeacon(ps *pubsub.PubSub) (*DrandBeacon, error) {
 	}
 
 	db := &DrandBeacon{
-		DrandClient: drandClient,
-		localCache:  make(map[uint64]types.BeaconEntry),
+		DrandClient:      drandClient,
+		localCache:       make(map[uint64]types.BeaconEntry),
+		consensusManager: pcm,
 	}
 
 	db.PublicKey = drandChain.PublicKey
@@ -116,6 +122,7 @@ func (db *DrandBeacon) loop(ctx context.Context) {
 			{
 				db.cacheValue(newBeaconResultFromDrandResult(res))
 				db.updateLatestDrandRound(res.Round())
+				db.consensusManager.NewDrandRound(db, res)
 			}
 		}
 	}

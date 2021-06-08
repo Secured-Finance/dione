@@ -1,22 +1,16 @@
 package types
 
 import (
-	"github.com/Secured-Finance/dione/types"
-	"github.com/libp2p/go-libp2p-core/peer"
+	types2 "github.com/Secured-Finance/dione/blockchain/types"
 )
 
-type MessageType uint8
-
-const (
-	MessageTypeUnknown = MessageType(iota)
-
-	MessageTypePrePrepare
-	MessageTypePrepare
-	MessageTypeCommit
-)
-
-type ConsensusMessage struct {
-	Task types.DioneTask
-	From peer.ID
-	Type MessageType
+type PrePrepareMessage struct {
+	Block *types2.Block
 }
+
+type PrepareMessage struct {
+	Blockhash []byte
+	Signature []byte
+}
+
+type CommitMessage PrepareMessage

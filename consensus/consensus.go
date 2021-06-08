@@ -1,11 +1,21 @@
 package consensus
 
 import (
-	"fmt"
+	"errors"
 	"math/big"
 	"sync"
 
-	"github.com/Secured-Finance/dione/cache"
+	"github.com/Secured-Finance/dione/blockchain"
+
+	"github.com/drand/drand/client"
+
+	"github.com/Arceliar/phony"
+
+	types3 "github.com/Secured-Finance/dione/blockchain/types"
+
+	"github.com/libp2p/go-libp2p-core/crypto"
+
+	"github.com/Secured-Finance/dione/blockchain/pool"
 
 	"github.com/Secured-Finance/dione/consensus/types"
 
@@ -13,65 +23,87 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/Secured-Finance/dione/pubsub"
-	types2 "github.com/Secured-Finance/dione/types"
+)
+
+type StateStatus uint8
+
+const (
+	StateStatusUnknown = iota
+
+	StateStatusPrePrepared
+	StateStatusPrepared
+	StateStatusCommited
 )
 
 type PBFTConsensusManager struct {
+	phony.Inbox
 	psb            *pubsub.PubSubRouter
-	minApprovals   int
-	privKey        []byte
-	msgLog         *MessageLog
+	minApprovals   int // FIXME
+	privKey        crypto.PrivKey
+	msgLog         *ConsensusMessageLog
 	validator      *ConsensusValidator
-	consensusMap   map[string]*Consensus
 	ethereumClient *ethclient.EthereumClient
 	miner          *Miner
-	cache          cache.Cache
+	blockPool      pool.BlockPool
+	blockchain     blockchain.BlockChain
+	state          *State
 }
 
-type Consensus struct {
-	mutex                sync.Mutex
-	Finished             bool
-	IsCurrentMinerLeader bool
-	Task                 *types2.DioneTask
+type State struct {
+	mutex       sync.Mutex
+	drandRound  uint64
+	randomness  []byte
+	blockHeight uint64
+	status      StateStatus
 }
 
-func NewPBFTConsensusManager(psb *pubsub.PubSubRouter, minApprovals int, privKey []byte, ethereumClient *ethclient.EthereumClient, miner *Miner, evc cache.Cache) *PBFTConsensusManager {
+func NewPBFTConsensusManager(psb *pubsub.PubSubRouter, minApprovals int, privKey crypto.PrivKey, ethereumClient *ethclient.EthereumClient, miner *Miner) *PBFTConsensusManager {
 	pcm := &PBFTConsensusManager{}
 	pcm.psb = psb
 	pcm.miner = miner
-	pcm.validator = NewConsensusValidator(evc, miner)
-	pcm.msgLog = NewMessageLog()
+	pcm.validator = NewConsensusValidator(miner)
+	pcm.msgLog = NewConsensusMessageLog()
 	pcm.minApprovals = minApprovals
 	pcm.privKey = privKey
 	pcm.ethereumClient = ethereumClient
-	pcm.cache = evc
-	pcm.consensusMap = map[string]*Consensus{}
-	pcm.psb.Hook(pubsub.PrePrepareMessageType, pcm.handlePrePrepare, types2.DioneTask{})
-	pcm.psb.Hook(pubsub.PrepareMessageType, pcm.handlePrepare, types2.DioneTask{})
-	pcm.psb.Hook(pubsub.CommitMessageType, pcm.handleCommit, types2.DioneTask{})
+	pcm.state = &State{}
+	pcm.psb.Hook(pubsub.PrePrepareMessageType, pcm.handlePrePrepare, types.PrePrepareMessage{})
+	pcm.psb.Hook(pubsub.PrepareMessageType, pcm.handlePrepare, types.PrepareMessage{})
+	pcm.psb.Hook(pubsub.CommitMessageType, pcm.handleCommit, types.CommitMessage{})
 	return pcm
 }
 
-func (pcm *PBFTConsensusManager) Propose(task types2.DioneTask) error {
-	pcm.createConsensusInfo(&task, true)
-
-	prePrepareMsg, err := CreatePrePrepareWithTaskSignature(&task, pcm.privKey)
+func (pcm *PBFTConsensusManager) propose(blk *types3.Block) error {
+	pcm.state.mutex.Lock()
+	defer pcm.state.mutex.Unlock()
+	prePrepareMsg, err := NewMessage(types.ConsensusMessage{Block: blk}, types.ConsensusMessageTypePrePrepare, pcm.privKey)
 	if err != nil {
 		return err
 	}
 	pcm.psb.BroadcastToServiceTopic(prePrepareMsg)
+	pcm.state.status = StateStatusPrePrepared
 	return nil
 }
 
 func (pcm *PBFTConsensusManager) handlePrePrepare(message *pubsub.GenericMessage) {
-	cmsg, err := unmarshalPayload(message)
-	if err != nil {
+	pcm.state.mutex.Lock()
+	defer pcm.state.mutex.Unlock()
+	prePrepare, ok := message.Payload.(types.PrePrepareMessage)
+	if !ok {
+		logrus.Warn("failed to convert payload to PrePrepare message")
 		return
 	}
 
-	if cmsg.Task.Miner == pcm.miner.address {
+	if prePrepare.Block.Header.Proposer == pcm.miner.address {
 		return
 	}
+
+	cmsg := types.ConsensusMessage{
+		Type:  types.ConsensusMessageTypePrePrepare,
+		From:  message.From,
+		Block: prePrepare.Block,
+	}
+
 	if pcm.msgLog.Exists(cmsg) {
 		logrus.Debugf("received existing pre_prepare msg, dropping...")
 		return
@@ -82,21 +114,43 @@ func (pcm *PBFTConsensusManager) handlePrePrepare(message *pubsub.GenericMessage
 	}
 
 	pcm.msgLog.AddMessage(cmsg)
+	pcm.blockPool.AddBlock(cmsg.Block)
 
-	prepareMsg, err := NewMessage(message, pubsub.PrepareMessageType)
+	prepareMsg, err := NewMessage(cmsg, types.ConsensusMessageTypePrepare, pcm.privKey)
 	if err != nil {
 		logrus.Errorf("failed to create prepare message: %v", err)
 		return
 	}
 
-	pcm.createConsensusInfo(&cmsg.Task, false)
-
-	pcm.psb.BroadcastToServiceTopic(&prepareMsg)
+	pcm.psb.BroadcastToServiceTopic(prepareMsg)
+	pcm.state.status = StateStatusPrePrepared
 }
 
 func (pcm *PBFTConsensusManager) handlePrepare(message *pubsub.GenericMessage) {
-	cmsg, err := unmarshalPayload(message)
+	pcm.state.mutex.Lock()
+	defer pcm.state.mutex.Unlock()
+	prepare, ok := message.Payload.(types.PrepareMessage)
+	if !ok {
+		logrus.Warn("failed to convert payload to Prepare message")
+		return
+	}
+
+	cmsg := types.ConsensusMessage{
+		Type:      types.ConsensusMessageTypePrepare,
+		From:      message.From,
+		Blockhash: prepare.Blockhash,
+		Signature: prepare.Signature, // TODO check the signature
+	}
+
+	pk, _ := message.From.ExtractPublicKey()
+	ok, err := pk.Verify(cmsg.Blockhash, cmsg.Signature)
 	if err != nil {
+		logrus.Warnf("Failed to verify PREPARE message signature: %s", err.Error())
+		return
+	}
+
+	if !ok {
+		logrus.Errorf("Signature of PREPARE message of peer %s isn't valid!", cmsg.From)
 		return
 	}
 
@@ -111,18 +165,41 @@ func (pcm *PBFTConsensusManager) handlePrepare(message *pubsub.GenericMessage) {
 
 	pcm.msgLog.AddMessage(cmsg)
 
-	if len(pcm.msgLog.Get(types.MessageTypePrepare, cmsg.Task.ConsensusID)) >= pcm.minApprovals {
-		commitMsg, err := NewMessage(message, pubsub.CommitMessageType)
+	if len(pcm.msgLog.Get(types.ConsensusMessageTypePrepare, cmsg.Blockhash)) >= pcm.minApprovals {
+		commitMsg, err := NewMessage(cmsg, types.ConsensusMessageTypeCommit, pcm.privKey)
 		if err != nil {
-			logrus.Errorf("failed to create commit message: %w", err)
+			logrus.Errorf("failed to create commit message: %v", err)
 		}
-		pcm.psb.BroadcastToServiceTopic(&commitMsg)
+		pcm.psb.BroadcastToServiceTopic(commitMsg)
+		pcm.state.status = StateStatusPrepared
 	}
 }
 
 func (pcm *PBFTConsensusManager) handleCommit(message *pubsub.GenericMessage) {
-	cmsg, err := unmarshalPayload(message)
+	pcm.state.mutex.Lock()
+	defer pcm.state.mutex.Unlock()
+	commit, ok := message.Payload.(types.CommitMessage)
+	if !ok {
+		logrus.Warn("failed to convert payload to Prepare message")
+		return
+	}
+
+	cmsg := types.ConsensusMessage{
+		Type:      types.ConsensusMessageTypeCommit,
+		From:      message.From,
+		Blockhash: commit.Blockhash,
+		Signature: commit.Signature, // TODO check the signature
+	}
+
+	pk, _ := message.From.ExtractPublicKey()
+	ok, err := pk.Verify(cmsg.Blockhash, cmsg.Signature)
 	if err != nil {
+		logrus.Warnf("Failed to verify COMMIT message signature: %s", err.Error())
+		return
+	}
+
+	if !ok {
+		logrus.Errorf("Signature of COMMIT message of peer %s isn't valid!", cmsg.From)
 		return
 	}
 
@@ -137,80 +214,70 @@ func (pcm *PBFTConsensusManager) handleCommit(message *pubsub.GenericMessage) {
 
 	pcm.msgLog.AddMessage(cmsg)
 
-	if len(pcm.msgLog.Get(types.MessageTypeCommit, cmsg.Task.ConsensusID)) >= pcm.minApprovals {
-		info := pcm.GetConsensusInfo(cmsg.Task.ConsensusID)
-		if info == nil {
-			logrus.Debugf("consensus doesn't exist in our consensus map - skipping...")
+	if len(pcm.msgLog.Get(types.ConsensusMessageTypeCommit, cmsg.Blockhash)) >= pcm.minApprovals {
+		block, err := pcm.blockPool.GetBlock(cmsg.Blockhash)
+		if err != nil {
+			logrus.Debug(err)
 			return
 		}
-		info.mutex.Lock()
-		defer info.mutex.Unlock()
-		if info.Finished {
-			return
-		}
-		if info.IsCurrentMinerLeader {
-			logrus.Infof("Submitting on-chain result for consensus ID: %s", cmsg.Task.ConsensusID)
-			reqID, ok := new(big.Int).SetString(cmsg.Task.RequestID, 10)
-			if !ok {
-				logrus.Errorf("Failed to parse request ID: %v", cmsg.Task.RequestID)
-			}
+		pcm.blockPool.AddAcceptedBlock(block)
+		pcm.state.status = StateStatusCommited
+	}
+}
 
-			err := pcm.ethereumClient.SubmitRequestAnswer(reqID, cmsg.Task.Payload)
+func (pcm *PBFTConsensusManager) NewDrandRound(from phony.Actor, res client.Result) {
+	pcm.Act(from, func() {
+		pcm.state.mutex.Lock()
+		defer pcm.state.mutex.Unlock()
+		block, err := pcm.commitAcceptedBlocks()
+		if err != nil {
+			logrus.Errorf("Failed to select the block in consensus round %d: %s", pcm.state.blockHeight, err.Error())
+			return
+		}
+
+		minedBlock, err := pcm.miner.MineBlock(res.Randomness(), res.Round(), block.Header)
+		if err != nil {
+			logrus.Errorf("Failed to mine the block: %s", err.Error())
+			return
+		}
+
+		pcm.state.drandRound = res.Round()
+		pcm.state.randomness = res.Randomness()
+		pcm.state.blockHeight = pcm.state.blockHeight + 1
+
+		// if we are round winner
+		if minedBlock != nil {
+			err = pcm.propose(minedBlock)
 			if err != nil {
-				logrus.Errorf("Failed to submit on-chain result: %v", err)
+				logrus.Errorf("Failed to propose the block: %s", err.Error())
+				return
 			}
 		}
-
-		info.Finished = true
-	}
+	})
 }
 
-func (pcm *PBFTConsensusManager) createConsensusInfo(task *types2.DioneTask, isLeader bool) {
-	if _, ok := pcm.consensusMap[task.ConsensusID]; !ok {
-		pcm.consensusMap[task.ConsensusID] = &Consensus{
-			IsCurrentMinerLeader: isLeader,
-			Task:                 task,
-			Finished:             false,
-		}
+func (pcm *PBFTConsensusManager) commitAcceptedBlocks() (*types3.Block, error) {
+	blocks := pcm.blockPool.GetAllAcceptedBlocks()
+	if blocks == nil {
+		return nil, errors.New("there is no accepted blocks")
 	}
-}
+	var maxStake *big.Int
+	var selectedBlock *types3.Block
+	for _, v := range blocks {
+		stake, err := pcm.ethereumClient.GetMinerStake(v.Header.ProposerEth)
+		if err != nil {
+			return nil, err
+		}
 
-func (pcm *PBFTConsensusManager) GetConsensusInfo(consensusID string) *Consensus {
-	c, ok := pcm.consensusMap[consensusID]
-	if !ok {
-		return nil
-	}
-
-	return c
-}
-
-func unmarshalPayload(msg *pubsub.GenericMessage) (types.ConsensusMessage, error) {
-	task, ok := msg.Payload.(types2.DioneTask)
-	if !ok {
-		return types.ConsensusMessage{}, fmt.Errorf("cannot convert payload to DioneTask")
-	}
-	var consensusMessageType types.MessageType
-	switch msg.Type {
-	case pubsub.PrePrepareMessageType:
-		{
-			consensusMessageType = types.MessageTypePrePrepare
-			break
+		if maxStake != nil {
+			if stake.Cmp(maxStake) == -1 {
+				continue
+			}
 		}
-	case pubsub.PrepareMessageType:
-		{
-			consensusMessageType = types.MessageTypePrepare
-			break
-		}
-	case pubsub.CommitMessageType:
-		{
-			consensusMessageType = types.MessageTypeCommit
-			break
-		}
+		maxStake = stake
+		selectedBlock = v
 	}
-	cmsg := types.ConsensusMessage{
-		Type: consensusMessageType,
-		From: msg.From,
-		Task: task,
-	}
-	return cmsg, nil
+	logrus.Debugf("Selected block of miner %s", selectedBlock.Header.ProposerEth.Hex())
+	pcm.blockPool.PruneAcceptedBlocks()
+	return selectedBlock, pcm.blockchain.StoreBlock(selectedBlock)
 }
