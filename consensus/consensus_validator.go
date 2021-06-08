@@ -108,20 +108,32 @@ func NewConsensusValidator(miner *Miner) *ConsensusValidator {
 		//
 		//	return true
 		//},
-		//types2.ConsensusMessageTypePrepare: func(msg types2.PrePrepareMessage) bool {
-		//	err := VerifyTaskSignature(msg.Task)
-		//	if err != nil {
-		//		return false
-		//	}
-		//	return true
-		//},
-		//types2.ConsensusMessageTypeCommit: func(msg types2.PrePrepareMessage) bool {
-		//	err := VerifyTaskSignature(msg.Task)
-		//	if err != nil {
-		//		return false
-		//	}
-		//	return true
-		//},
+		types2.ConsensusMessageTypePrepare: func(msg types2.ConsensusMessage) bool {
+			pubKey, err := msg.From.ExtractPublicKey()
+			if err != nil {
+				// TODO logging
+				return false
+			}
+			ok, err := pubKey.Verify(msg.Blockhash, msg.Signature)
+			if err != nil {
+				// TODO logging
+				return false
+			}
+			return ok
+		},
+		types2.ConsensusMessageTypeCommit: func(msg types2.ConsensusMessage) bool {
+			pubKey, err := msg.From.ExtractPublicKey()
+			if err != nil {
+				// TODO logging
+				return false
+			}
+			ok, err := pubKey.Verify(msg.Blockhash, msg.Signature)
+			if err != nil {
+				// TODO logging
+				return false
+			}
+			return ok
+		},
 	}
 
 	return cv

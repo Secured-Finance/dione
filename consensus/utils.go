@@ -9,8 +9,6 @@ import (
 
 	types2 "github.com/Secured-Finance/dione/consensus/types"
 
-	"github.com/mitchellh/hashstructure/v2"
-
 	"github.com/Secured-Finance/dione/sigs"
 	"github.com/minio/blake2b-simd"
 
@@ -84,22 +82,6 @@ func DrawRandomness(rbase []byte, pers crypto2.DomainSeparationTag, round uint64
 	}
 
 	return h.Sum(nil), nil
-}
-
-func VerifyTaskSignature(task types.DioneTask) error {
-	cHash, err := hashstructure.Hash(task, hashstructure.FormatV2, nil)
-	if err != nil {
-		return err
-	}
-	err = sigs.Verify(
-		&types.Signature{Type: types.SigTypeEd25519, Data: task.Signature},
-		[]byte(task.Miner),
-		[]byte(fmt.Sprintf("%v", cHash)),
-	)
-	if err != nil {
-		return err
-	}
-	return nil
 }
 
 func NewMessage(cmsg types2.ConsensusMessage, typ types2.ConsensusMessageType, privKey crypto.PrivKey) (*pubsub.GenericMessage, error) {
