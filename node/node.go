@@ -9,6 +9,10 @@ import (
 	"os"
 	"time"
 
+	"github.com/fxamacker/cbor/v2"
+
+	"github.com/Secured-Finance/dione/types"
+
 	"github.com/Secured-Finance/dione/blockchain"
 
 	types2 "github.com/Secured-Finance/dione/blockchain/types"
@@ -261,13 +265,31 @@ func (n *Node) subscribeOnEthContractsAsync(ctx context.Context) {
 	EventLoop:
 		for {
 			select {
-			case <-eventChan:
+			case event := <-eventChan:
 				{
-					logrus.Info("Let's wait a little so that all nodes have time to receive the request")
-					time.Sleep(5 * time.Second)
-
-					// TODO make the rpc request and save response as tx payload
-					tx := types2.CreateTransaction([]byte{})
+					rpcMethod := rpc.GetRPCMethod(event.OriginChain, event.RequestType)
+					if rpcMethod == nil {
+						logrus.Errorf("Invalid RPC method name/type %d/%s for oracle request %s", event.OriginChain, event.RequestType, event.ReqID.String())
+						continue
+					}
+					res, err := rpcMethod(event.RequestParams)
+					if err != nil {
+						logrus.Errorf("Failed to invoke RPC method for oracle request %s: %s", event.ReqID.String(), err.Error())
+						continue
+					}
+					task := &types.DioneTask{
+						OriginChain:   event.OriginChain,
+						RequestType:   event.RequestType,
+						RequestParams: event.RequestParams,
+						Payload:       res,
+						RequestID:     event.ReqID.String(),
+					}
+					data, err := cbor.Marshal(task)
+					if err != nil {
+						logrus.Errorf("Failed to marshal RPC response for oracle request %s: %s", event.ReqID.String(), err.Error())
+						continue
+					}
+					tx := types2.CreateTransaction(data)
 					err = n.MemPool.StoreTx(tx)
 					if err != nil {
 						logrus.Errorf("Failed to store tx in mempool: %s", err.Error())
