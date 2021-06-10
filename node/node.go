@@ -158,14 +158,14 @@ func NewNode(config *config.Config, prvKey crypto.PrivKey, pexDiscoveryUpdateTim
 	logrus.Info("Blockchain synchronization subsystem has been successfully initialized!")
 
 	// initialize mining subsystem
-	miner := provideMiner(n.Host.ID(), *n.Ethereum.GetEthAddress(), n.Beacon, n.Ethereum, prvKey, mp)
+	miner := provideMiner(n.Host.ID(), *n.Ethereum.GetEthAddress(), n.Ethereum, prvKey, mp)
 	n.Miner = miner
-	logrus.Info("Mining subsystem has initialized!")
+	logrus.Info("Mining subsystem has been initialized!")
 
 	// initialize consensus subsystem
 	consensusManager := provideConsensusManager(psb, miner, ethClient, prvKey, n.Config.ConsensusMinApprovals)
 	n.ConsensusManager = consensusManager
-	logrus.Info("Consensus subsystem has initialized!")
+	logrus.Info("Consensus subsystem has been initialized!")
 
 	// initialize random beacon network subsystem
 	randomBeaconNetwork, err := provideBeacon(psb.Pubsub, consensusManager)
@@ -181,7 +181,7 @@ func NewNode(config *config.Config, prvKey crypto.PrivKey, pexDiscoveryUpdateTim
 		logrus.Fatal(err)
 	}
 	n.DisputeManager = disputeManager
-	logrus.Info("Dispute subsystem has initialized!")
+	logrus.Info("Dispute subsystem has been initialized!")
 
 	// initialize internal eth wallet
 	//w, err := provideWallet(n.Host.ID(), rawPrivKey)

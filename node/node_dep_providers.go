@@ -58,8 +58,8 @@ func provideDisputeManager(ctx context.Context, ethClient *ethclient.EthereumCli
 	return consensus.NewDisputeManager(ctx, ethClient, pcm, cfg.Ethereum.DisputeVoteWindow)
 }
 
-func provideMiner(peerID peer.ID, ethAddress common.Address, beacon beacon.BeaconNetworks, ethClient *ethclient.EthereumClient, privateKey crypto.PrivKey, mempool *pool.Mempool) *consensus.Miner {
-	return consensus.NewMiner(peerID, ethAddress, beacon, ethClient, privateKey, mempool)
+func provideMiner(peerID peer.ID, ethAddress common.Address, ethClient *ethclient.EthereumClient, privateKey crypto.PrivKey, mempool *pool.Mempool) *consensus.Miner {
+	return consensus.NewMiner(peerID, ethAddress, ethClient, privateKey, mempool)
 }
 
 func provideBeacon(ps *pubsub2.PubSub, pcm *consensus.PBFTConsensusManager) (beacon.BeaconNetworks, error) {

@@ -3,6 +3,8 @@ package types
 import (
 	"time"
 
+	"github.com/Secured-Finance/dione/types"
+
 	"github.com/libp2p/go-libp2p-core/crypto"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -27,6 +29,8 @@ type BlockHeader struct {
 	Proposer      peer.ID
 	ProposerEth   common.Address
 	Signature     []byte
+	BeaconEntry   types.BeaconEntry
+	ElectionProof *types.ElectionProof
 }
 
 func GenesisBlock() *Block {

@@ -12,7 +12,6 @@ import (
 
 	types2 "github.com/Secured-Finance/dione/blockchain/types"
 
-	"github.com/Secured-Finance/dione/beacon"
 	"github.com/libp2p/go-libp2p-core/peer"
 
 	"github.com/Secured-Finance/dione/ethclient"
@@ -24,7 +23,6 @@ type Miner struct {
 	address      peer.ID
 	ethAddress   common.Address
 	mutex        sync.Mutex
-	beacon       beacon.BeaconNetworks
 	ethClient    *ethclient.EthereumClient
 	minerStake   *big.Int
 	networkStake *big.Int
@@ -35,7 +33,6 @@ type Miner struct {
 func NewMiner(
 	address peer.ID,
 	ethAddress common.Address,
-	beacon beacon.BeaconNetworks,
 	ethClient *ethclient.EthereumClient,
 	privateKey crypto.PrivKey,
 	mempool *pool.Mempool,
@@ -43,7 +40,6 @@ func NewMiner(
 	return &Miner{
 		address:    address,
 		ethAddress: ethAddress,
-		beacon:     beacon,
 		ethClient:  ethClient,
 		privateKey: privateKey,
 		mempool:    mempool,
@@ -111,16 +107,6 @@ func (m *Miner) MineBlock(randomness []byte, drandRound uint64, lastBlockHeader 
 	if winner == nil {
 		return nil, nil
 	}
-
-	// TODO get rpc responses for oracle requests
-	//rpcMethod := rpc.GetRPCMethod(event.OriginChain, event.RequestType)
-	//if rpcMethod == nil {
-	//	return nil, xerrors.Errorf("invalid rpc method name/type")
-	//}
-	//res, err := rpcMethod(event.RequestParams)
-	//if err != nil {
-	//	return nil, xerrors.Errorf("couldn't do rpc request: %w", err)
-	//}
 
 	txs := m.mempool.GetAllTransactions()
 	if txs == nil {

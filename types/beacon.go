@@ -6,8 +6,6 @@ type BeaconEntry struct {
 	Metadata map[string]interface{}
 }
 
-type Randomness []byte
-
 func NewBeaconEntry(round uint64, data []byte, metadata map[string]interface{}) BeaconEntry {
 	return BeaconEntry{
 		Round:    round,
