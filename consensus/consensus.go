@@ -247,6 +247,7 @@ func (pcm *PBFTConsensusManager) NewDrandRound(from phony.Actor, res client.Resu
 			logrus.Errorf("Failed to select the block in consensus round %d: %s", pcm.state.blockHeight, err.Error())
 			return
 		}
+		pcm.state.ready <- true
 
 		minedBlock, err := pcm.miner.MineBlock(res.Randomness(), block.Header)
 		if err != nil {
