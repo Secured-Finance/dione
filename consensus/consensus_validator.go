@@ -1,114 +1,180 @@
 package consensus
 
 import (
+	"bytes"
+	"fmt"
+	"sync"
+
+	types3 "github.com/Secured-Finance/dione/blockchain/types"
+
+	"github.com/Secured-Finance/dione/blockchain"
+	"github.com/Secured-Finance/dione/blockchain/utils"
 	types2 "github.com/Secured-Finance/dione/consensus/types"
+	"github.com/Secured-Finance/dione/consensus/validation"
+	"github.com/Secured-Finance/dione/types"
+	"github.com/filecoin-project/go-state-types/crypto"
+	"github.com/fxamacker/cbor/v2"
+	"github.com/sirupsen/logrus"
+	"github.com/wealdtech/go-merkletree"
+	"github.com/wealdtech/go-merkletree/keccak256"
 )
 
 type ConsensusValidator struct {
-	validationFuncMap map[types2.ConsensusMessageType]func(msg types2.ConsensusMessage) bool
+	validationFuncMap map[types2.ConsensusMessageType]func(msg types2.ConsensusMessage, metadata map[string]interface{}) bool
 	miner             *Miner
+	blockchain        *blockchain.BlockChain
 }
 
-func NewConsensusValidator(miner *Miner) *ConsensusValidator {
+func NewConsensusValidator(miner *Miner, bc *blockchain.BlockChain) *ConsensusValidator {
 	cv := &ConsensusValidator{
-		miner: miner,
+		miner:      miner,
+		blockchain: bc,
 	}
 
-	cv.validationFuncMap = map[types2.ConsensusMessageType]func(msg types2.ConsensusMessage) bool{
+	cv.validationFuncMap = map[types2.ConsensusMessageType]func(msg types2.ConsensusMessage, metadata map[string]interface{}) bool{
 		// FIXME it all
-		//types2.ConsensusMessageTypePrePrepare: func(msg types2.PrePrepareMessage) bool {
-		//	// TODO here we need to do validation of block itself
-		//
-		//	// === verify task signature ===
-		//	err := VerifyTaskSignature(msg.Task)
-		//	if err != nil {
-		//		logrus.Errorf("unable to verify signature: %v", err)
-		//		return false
-		//	}
-		//	/////////////////////////////////
-		//
-		//	// === verify if request exists in cache ===
-		//	var requestEvent *dioneOracle.DioneOracleNewOracleRequest
-		//	err = cv.cache.Get("request_"+msg.Task.RequestID, &requestEvent)
-		//	if err != nil {
-		//		logrus.Errorf("the request doesn't exist in the cache or has been failed to decode: %v", err)
-		//		return false
-		//	}
-		//
-		//	if requestEvent.OriginChain != msg.Task.OriginChain ||
-		//		requestEvent.RequestType != msg.Task.RequestType ||
-		//		requestEvent.RequestParams != msg.Task.RequestParams {
-		//
-		//		logrus.Errorf("the incoming task and cached request requestEvent don't match!")
-		//		return false
-		//	}
-		//	/////////////////////////////////
-		//
-		//	// === verify election proof wincount preliminarily ===
-		//	if msg.Task.ElectionProof.WinCount < 1 {
-		//		logrus.Error("miner isn't a winner!")
-		//		return false
-		//	}
-		//	/////////////////////////////////
-		//
-		//	// === verify miner's eligibility to propose this task ===
-		//	err = cv.miner.IsMinerEligibleToProposeBlock(common.HexToAddress(msg.Task.MinerEth))
-		//	if err != nil {
-		//		logrus.Errorf("miner is not eligible to propose task: %v", err)
-		//		return false
-		//	}
-		//	/////////////////////////////////
-		//
-		//	// === verify election proof vrf ===
-		//	minerAddressMarshalled, err := msg.Task.Miner.MarshalBinary()
-		//	if err != nil {
-		//		logrus.Errorf("failed to marshal miner address: %v", err)
-		//		return false
-		//	}
-		//	electionProofRandomness, err := DrawRandomness(
-		//		msg.Task.BeaconEntries[1].Data,
-		//		crypto.DomainSeparationTag_ElectionProofProduction,
-		//		msg.Task.DrandRound,
-		//		minerAddressMarshalled,
-		//	)
-		//	if err != nil {
-		//		logrus.Errorf("failed to draw electionProofRandomness: %v", err)
-		//		return false
-		//	}
-		//	err = VerifyVRF(msg.Task.Miner, electionProofRandomness, msg.Task.ElectionProof.VRFProof)
-		//	if err != nil {
-		//		logrus.Errorf("failed to verify election proof vrf: %v", err)
-		//	}
-		//	//////////////////////////////////////
-		//
-		//	// === compute wincount locally and verify values ===
-		//	mStake, nStake, err := cv.miner.GetStakeInfo(common.HexToAddress(msg.Task.MinerEth))
-		//	if err != nil {
-		//		logrus.Errorf("failed to get miner stake: %v", err)
-		//		return false
-		//	}
-		//	actualWinCount := msg.Task.ElectionProof.ComputeWinCount(*mStake, *nStake)
-		//	if msg.Task.ElectionProof.WinCount != actualWinCount {
-		//		logrus.Errorf("locally computed wincount isn't matching received value!", err)
-		//		return false
-		//	}
-		//	//////////////////////////////////////
-		//
-		//	// === validate payload by specific-chain checks ===
-		//	if validationFunc := validation.GetValidationMethod(msg.Task.OriginChain, msg.Task.RequestType); validationFunc != nil {
-		//		err := validationFunc(msg.Task.Payload)
-		//		if err != nil {
-		//			logrus.Errorf("payload validation has failed: %v", err)
-		//			return false
-		//		}
-		//	} else {
-		//		logrus.Debugf("Origin chain [%v]/request type[%v] doesn't have any payload validation!", msg.Task.OriginChain, msg.Task.RequestType)
-		//	}
-		//	/////////////////////////////////
-		//
-		//	return true
-		//},
-		types2.ConsensusMessageTypePrepare: func(msg types2.ConsensusMessage) bool {
+		types2.ConsensusMessageTypePrePrepare: func(msg types2.ConsensusMessage, metadata map[string]interface{}) bool {
+			// === verify block signature ===
+			pubkey, err := msg.Block.Header.Proposer.ExtractPublicKey()
+			if err != nil {
+				logrus.Errorf("unable to extract public key from block proposer's peer id: %s", err.Error())
+				return false
+			}
+
+			ok, err := pubkey.Verify(msg.Block.Header.Hash, msg.Block.Header.Signature)
+			if err != nil {
+				logrus.Errorf("failed to verify block signature: %s", err.Error())
+				return false
+			}
+			if !ok {
+				logrus.Errorf("signature of block %x is invalid", msg.Block.Header.Hash)
+				return false
+			}
+			/////////////////////////////////
+
+			// === check last hash merkle proof ===
+			latestHeight, err := cv.blockchain.GetLatestBlockHeight()
+			if err != nil {
+				logrus.Error(err)
+				return false
+			}
+			previousBlockHeader, err := cv.blockchain.FetchBlockHeaderByHeight(latestHeight)
+			if err != nil {
+				logrus.Error(err)
+				return false
+			}
+			if bytes.Compare(msg.Block.Header.LastHash, previousBlockHeader.Hash) != 0 {
+				logrus.Error("block header has invalid last block hash")
+				return false
+			}
+
+			verified, err := merkletree.VerifyProofUsing(previousBlockHeader.Hash, false, msg.Block.Header.LastHashProof, [][]byte{msg.Block.Header.Hash}, keccak256.New())
+			if err != nil {
+				logrus.Error("failed to verify last block hash merkle proof: %s", err.Error())
+				return false
+			}
+			if !verified {
+				logrus.Error("merkle hash of current block doesn't contain hash of previous block: %s", err.Error())
+				return false
+			}
+			/////////////////////////////////
+
+			// === verify election proof wincount preliminarily ===
+			if msg.Block.Header.ElectionProof.WinCount < 1 {
+				logrus.Error("miner isn't a winner!")
+				return false
+			}
+			/////////////////////////////////
+
+			// === verify miner's eligibility to propose this task ===
+			err = cv.miner.IsMinerEligibleToProposeBlock(msg.Block.Header.ProposerEth)
+			if err != nil {
+				logrus.Errorf("miner is not eligible to propose block: %v", err)
+				return false
+			}
+			/////////////////////////////////
+
+			// === verify election proof vrf ===
+			proposerBuf, err := msg.Block.Header.Proposer.MarshalBinary()
+			if err != nil {
+				logrus.Error(err)
+				return false
+			}
+
+			eproofRandomness, err := DrawRandomness(
+				metadata["randomness"].([]byte),
+				crypto.DomainSeparationTag_ElectionProofProduction,
+				msg.Block.Header.Height,
+				proposerBuf,
+			)
+			if err != nil {
+				logrus.Errorf("failed to draw ElectionProof randomness: %s", err.Error())
+				return false
+			}
+			err = VerifyVRF(msg.Block.Header.Proposer, eproofRandomness, msg.Block.Header.ElectionProof.VRFProof)
+			if err != nil {
+				logrus.Errorf("failed to verify election proof vrf: %v", err)
+				return false
+			}
+			//////////////////////////////////////
+
+			// === compute wincount locally and verify values ===
+			mStake, nStake, err := cv.miner.GetStakeInfo(msg.Block.Header.ProposerEth)
+			if err != nil {
+				logrus.Errorf("failed to get miner stake: %v", err)
+				return false
+			}
+			actualWinCount := msg.Block.Header.ElectionProof.ComputeWinCount(mStake, nStake)
+			if msg.Block.Header.ElectionProof.WinCount != actualWinCount {
+				logrus.Errorf("locally computed wincount of block %x isn't matching received value!", msg.Block.Header.Hash)
+				return false
+			}
+			//////////////////////////////////////
+
+			// === validate block transactions ===
+			result := make(chan error)
+			var wg sync.WaitGroup
+			for _, v := range msg.Block.Data {
+				wg.Add(1)
+				go func(v *types3.Transaction, c chan error) {
+					if err := utils.VerifyTx(msg.Block.Header, v); err != nil {
+						c <- fmt.Errorf("failed to verify tx: %w", err)
+						return
+					}
+
+					var task types.DioneTask
+					err = cbor.Unmarshal(v.Data, &task)
+					if err != nil {
+						c <- fmt.Errorf("failed to unmarshal transaction payload: %w", err)
+						return
+					}
+
+					if validationFunc := validation.GetValidationMethod(task.OriginChain, task.RequestType); validationFunc != nil {
+						if err := validationFunc(&task); err != nil {
+							c <- fmt.Errorf("payload validation has been failed: %w", err)
+							return
+						}
+					} else {
+						logrus.Debugf("Origin chain [%v]/request type[%v] doesn't have any payload validation!", task.OriginChain, task.RequestType)
+					}
+					wg.Done()
+				}(v, result)
+			}
+			go func() {
+				wg.Wait()
+				close(result)
+			}()
+			for err := range result {
+				if err != nil {
+					logrus.Error(err)
+					return false
+				}
+			}
+			/////////////////////////////////
+
+			return true
+		},
+		types2.ConsensusMessageTypePrepare: func(msg types2.ConsensusMessage, metadata map[string]interface{}) bool {
 			pubKey, err := msg.From.ExtractPublicKey()
 			if err != nil {
 				// TODO logging
@@ -121,7 +187,7 @@ func NewConsensusValidator(miner *Miner) *ConsensusValidator {
 			}
 			return ok
 		},
-		types2.ConsensusMessageTypeCommit: func(msg types2.ConsensusMessage) bool {
+		types2.ConsensusMessageTypeCommit: func(msg types2.ConsensusMessage, metadata map[string]interface{}) bool {
 			pubKey, err := msg.From.ExtractPublicKey()
 			if err != nil {
 				// TODO logging
@@ -139,6 +205,6 @@ func NewConsensusValidator(miner *Miner) *ConsensusValidator {
 	return cv
 }
 
-func (cv *ConsensusValidator) Valid(msg types2.ConsensusMessage) bool {
-	return cv.validationFuncMap[msg.Type](msg)
+func (cv *ConsensusValidator) Valid(msg types2.ConsensusMessage, metadata map[string]interface{}) bool {
+	return cv.validationFuncMap[msg.Type](msg, metadata)
 }

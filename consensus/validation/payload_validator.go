@@ -1,12 +1,14 @@
 package validation
 
-var validations = map[uint8]map[string]func([]byte) error{} // rpcType -> {rpcMethodName -> actual func var}
+import "github.com/Secured-Finance/dione/types"
 
-func RegisterValidation(typ uint8, methods map[string]func([]byte) error) {
+var validations = map[uint8]map[string]func(*types.DioneTask) error{} // rpcType -> {rpcMethodName -> actual func var}
+
+func RegisterValidation(typ uint8, methods map[string]func(*types.DioneTask) error) {
 	validations[typ] = methods
 }
 
-func GetValidationMethod(typ uint8, methodName string) func([]byte) error {
+func GetValidationMethod(typ uint8, methodName string) func(*types.DioneTask) error {
 	rpcMethods, ok := validations[typ]
 	if !ok {
 		return nil

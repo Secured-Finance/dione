@@ -44,7 +44,7 @@ func GenesisBlock() *Block {
 	}
 }
 
-func CreateBlock(lastBlockHeader *BlockHeader, txs []*Transaction, minerEth common.Address, privateKey crypto.PrivKey) (*Block, error) {
+func CreateBlock(lastBlockHeader *BlockHeader, txs []*Transaction, minerEth common.Address, privateKey crypto.PrivKey, eproof *types.ElectionProof) (*Block, error) {
 	timestamp := time.Now().Unix()
 
 	// extract hashes from transactions
@@ -88,6 +88,7 @@ func CreateBlock(lastBlockHeader *BlockHeader, txs []*Transaction, minerEth comm
 			Hash:          blockHash,
 			LastHash:      lastBlockHeader.Hash,
 			LastHashProof: lastHashProof,
+			ElectionProof: eproof,
 		},
 		Data: txs,
 	}

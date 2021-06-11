@@ -9,7 +9,6 @@ import (
 
 	types2 "github.com/Secured-Finance/dione/consensus/types"
 
-	"github.com/Secured-Finance/dione/sigs"
 	"github.com/minio/blake2b-simd"
 
 	"github.com/libp2p/go-libp2p-core/peer"
@@ -27,9 +26,16 @@ func ComputeVRF(privKey crypto.PrivKey, sigInput []byte) ([]byte, error) {
 }
 
 func VerifyVRF(worker peer.ID, vrfBase, vrfproof []byte) error {
-	err := sigs.Verify(&types.Signature{Type: types.SigTypeEd25519, Data: vrfproof}, []byte(worker), vrfBase)
+	pk, err := worker.ExtractPublicKey()
 	if err != nil {
-		return xerrors.Errorf("vrf was invalid: %w", err)
+		return err
+	}
+	ok, err := pk.Verify(vrfproof, vrfBase)
+	if err != nil {
+		return err
+	}
+	if !ok {
+		return fmt.Errorf("vrf was invalid")
 	}
 
 	return nil
@@ -40,17 +46,17 @@ func IsRoundWinner(round uint64,
 
 	buf, err := worker.MarshalBinary()
 	if err != nil {
-		return nil, xerrors.Errorf("failed to marshal address: %w", err)
+		return nil, fmt.Errorf("failed to marshal address: %w", err)
 	}
 
 	electionRand, err := DrawRandomness(randomness, crypto2.DomainSeparationTag_ElectionProofProduction, round, buf)
 	if err != nil {
-		return nil, xerrors.Errorf("failed to draw randomness: %w", err)
+		return nil, fmt.Errorf("failed to draw randomness: %w", err)
 	}
 
 	vrfout, err := ComputeVRF(privKey, electionRand)
 	if err != nil {
-		return nil, xerrors.Errorf("failed to compute VRF: %w", err)
+		return nil, fmt.Errorf("failed to compute VRF: %w", err)
 	}
 
 	ep := &types.ElectionProof{VRFProof: vrfout}

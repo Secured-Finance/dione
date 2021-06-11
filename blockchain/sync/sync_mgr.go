@@ -8,6 +8,10 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/asaskevich/EventBus"
+
+	"github.com/Secured-Finance/dione/blockchain/utils"
+
 	"github.com/Secured-Finance/dione/blockchain"
 
 	"github.com/Secured-Finance/dione/pubsub"
@@ -42,11 +46,13 @@ type syncManager struct {
 	bootstrapPeer        peer.ID
 	rpcClient            *gorpc.Client
 	psb                  *pubsub.PubSubRouter
+	bus                  EventBus.Bus
 }
 
-func NewSyncManager(bp *blockchain.BlockChain, mp *pool.Mempool, p2pRPCClient *gorpc.Client, bootstrapPeer peer.ID, psb *pubsub.PubSubRouter) SyncManager {
+func NewSyncManager(bus EventBus.Bus, bp *blockchain.BlockChain, mp *pool.Mempool, p2pRPCClient *gorpc.Client, bootstrapPeer peer.ID, psb *pubsub.PubSubRouter) SyncManager {
 	ctx, cancelFunc := context.WithCancel(context.Background())
 	sm := &syncManager{
+		bus:                  bus,
 		blockpool:            bp,
 		mempool:              mp,
 		ctx:                  ctx,
@@ -59,7 +65,24 @@ func NewSyncManager(bp *blockchain.BlockChain, mp *pool.Mempool, p2pRPCClient *g
 
 	psb.Hook(pubsub.NewTxMessageType, sm.onNewTransaction, types2.Transaction{})
 
+	go func() {
+		if err := sm.initialSync(); err != nil {
+			logrus.Error(err)
+		}
+	}()
+
 	return sm
+}
+
+func (sm *syncManager) initialSync() error {
+	if err := sm.doInitialBlockPoolSync(); err != nil {
+		return err
+	}
+	if err := sm.doInitialMempoolSync(); err != nil {
+		return err
+	}
+	sm.bus.Publish("sync:initialSyncCompleted")
+	return nil
 }
 
 func (sm *syncManager) doInitialBlockPoolSync() error {
@@ -173,7 +196,7 @@ func (sm *syncManager) doInitialMempoolSync() error {
 				logrus.Warnf(err.Error())
 			}
 		}
-		// FIXME handle not found transactions
+		// TODO handle not found transactions
 	}
 
 	return nil
@@ -198,18 +221,8 @@ func (sm *syncManager) processReceivedBlock(block types2.Block) error {
 
 	// check if hashes of block transactions are present in the block hash merkle tree
 	for _, tx := range block.Data { // FIXME we need to do something with rejected txs
-		if tx.MerkleProof == nil {
-			return fmt.Errorf("block transaction hasn't merkle proof")
-		}
-		txProofVerified, err := merkletree.VerifyProofUsing(tx.Hash, false, tx.MerkleProof, [][]byte{block.Header.Hash}, keccak256.New())
-		if err != nil {
-			return fmt.Errorf("failed to verify tx hash merkle proof: %s", err.Error())
-		}
-		if !txProofVerified {
-			return fmt.Errorf("transaction doesn't present in block hash merkle tree")
-		}
-		if !tx.ValidateHash() {
-			return fmt.Errorf("transaction hash is invalid")
+		if err := utils.VerifyTx(block.Header, tx); err != nil {
+			return err
 		}
 	}
 

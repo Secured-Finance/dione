@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/asaskevich/EventBus"
+
 	"github.com/Secured-Finance/dione/blockchain"
 
 	drand2 "github.com/Secured-Finance/dione/beacon/drand"
@@ -103,8 +105,8 @@ func providePubsubRouter(lhost host.Host, config *config.Config) *pubsub.PubSubR
 	return pubsub.NewPubSubRouter(lhost, config.PubSub.ServiceTopicName, config.IsBootstrap)
 }
 
-func provideConsensusManager(psb *pubsub.PubSubRouter, miner *consensus.Miner, ethClient *ethclient.EthereumClient, privateKey crypto.PrivKey, minApprovals int) *consensus.PBFTConsensusManager {
-	return consensus.NewPBFTConsensusManager(psb, minApprovals, privateKey, ethClient, miner)
+func provideConsensusManager(bus EventBus.Bus, psb *pubsub.PubSubRouter, miner *consensus.Miner, bc *blockchain.BlockChain, ethClient *ethclient.EthereumClient, privateKey crypto.PrivKey, minApprovals int) *consensus.PBFTConsensusManager {
+	return consensus.NewPBFTConsensusManager(bus, psb, minApprovals, privateKey, ethClient, miner, bc)
 }
 
 func provideLibp2pHost(config *config.Config, privateKey crypto.PrivKey) (host.Host, error) {
@@ -162,12 +164,12 @@ func provideMemPool() (*pool.Mempool, error) {
 	return pool.NewMempool()
 }
 
-func provideSyncManager(bp *blockchain.BlockChain, mp *pool.Mempool, r *gorpc.Client, bootstrap multiaddr.Multiaddr, psb *pubsub.PubSubRouter) (sync.SyncManager, error) {
+func provideSyncManager(bus EventBus.Bus, bp *blockchain.BlockChain, mp *pool.Mempool, r *gorpc.Client, bootstrap multiaddr.Multiaddr, psb *pubsub.PubSubRouter) (sync.SyncManager, error) {
 	addr, err := peer.AddrInfoFromP2pAddr(bootstrap)
 	if err != nil {
 		return nil, err
 	}
-	return sync.NewSyncManager(bp, mp, r, addr.ID, psb), nil
+	return sync.NewSyncManager(bus, bp, mp, r, addr.ID, psb), nil
 }
 
 func provideP2PRPCClient(h host.Host) *gorpc.Client {

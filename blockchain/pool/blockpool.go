@@ -9,13 +9,16 @@ import (
 
 // BlockPool is pool for blocks that isn't not validated or committed yet
 type BlockPool struct {
+	mempool        *Mempool
 	knownBlocks    cache.Cache
 	acceptedBlocks cache.Cache
 }
 
-func NewBlockPool() (*BlockPool, error) {
+func NewBlockPool(mp *Mempool) (*BlockPool, error) {
 	bp := &BlockPool{
 		acceptedBlocks: cache.NewInMemoryCache(), // here we need to use separate cache
+		knownBlocks:    cache.NewInMemoryCache(),
+		mempool:        mp,
 	}
 
 	return bp, nil
@@ -51,7 +54,12 @@ func (bp *BlockPool) GetAllAcceptedBlocks() []*types.Block {
 
 // PruneAcceptedBlocks cleans accepted blocks list. It is called when new consensus round starts.
 func (bp *BlockPool) PruneAcceptedBlocks() {
-	for k := range bp.acceptedBlocks.Items() {
+	for k, v := range bp.acceptedBlocks.Items() {
+		block := v.(*types.Block)
+		for _, v := range block.Data {
+			v.MerkleProof = nil
+			bp.mempool.StoreTx(v) // return transactions back to mempool
+		}
 		bp.acceptedBlocks.Delete(k)
 	}
 }

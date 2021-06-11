@@ -85,15 +85,15 @@ func (m *Miner) GetStakeInfo(miner common.Address) (*big.Int, *big.Int, error) {
 	return mStake, nStake, nil
 }
 
-func (m *Miner) MineBlock(randomness []byte, drandRound uint64, lastBlockHeader *types2.BlockHeader) (*types2.Block, error) {
-	logrus.Debug("attempting to mine the block at epoch: ", drandRound)
+func (m *Miner) MineBlock(randomness []byte, lastBlockHeader *types2.BlockHeader) (*types2.Block, error) {
+	logrus.Debug("attempting to mine the block at epoch: ", lastBlockHeader.Height+1)
 
 	if err := m.UpdateCurrentStakeInfo(); err != nil {
 		return nil, fmt.Errorf("failed to update miner stake: %w", err)
 	}
 
 	winner, err := IsRoundWinner(
-		drandRound,
+		lastBlockHeader.Height+1,
 		m.address,
 		randomness,
 		m.minerStake,
@@ -113,7 +113,7 @@ func (m *Miner) MineBlock(randomness []byte, drandRound uint64, lastBlockHeader 
 		return nil, fmt.Errorf("there is no txes for processing") // skip new consensus round because there is no transaction for processing
 	}
 
-	newBlock, err := types2.CreateBlock(lastBlockHeader, txs, m.ethAddress, m.privateKey)
+	newBlock, err := types2.CreateBlock(lastBlockHeader, txs, m.ethAddress, m.privateKey, winner)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create new block: %w", err)
 	}

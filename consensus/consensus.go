@@ -5,6 +5,8 @@ import (
 	"math/big"
 	"sync"
 
+	"github.com/asaskevich/EventBus"
+
 	"github.com/Secured-Finance/dione/blockchain"
 
 	"github.com/drand/drand/client"
@@ -37,6 +39,7 @@ const (
 
 type PBFTConsensusManager struct {
 	phony.Inbox
+	bus            EventBus.Bus
 	psb            *pubsub.PubSubRouter
 	minApprovals   int // FIXME
 	privKey        crypto.PrivKey
@@ -55,21 +58,29 @@ type State struct {
 	randomness  []byte
 	blockHeight uint64
 	status      StateStatus
+	ready       chan bool
 }
 
-func NewPBFTConsensusManager(psb *pubsub.PubSubRouter, minApprovals int, privKey crypto.PrivKey, ethereumClient *ethclient.EthereumClient, miner *Miner) *PBFTConsensusManager {
+func NewPBFTConsensusManager(bus EventBus.Bus, psb *pubsub.PubSubRouter, minApprovals int, privKey crypto.PrivKey, ethereumClient *ethclient.EthereumClient, miner *Miner, bc *blockchain.BlockChain) *PBFTConsensusManager {
 	pcm := &PBFTConsensusManager{}
 	pcm.psb = psb
 	pcm.miner = miner
-	pcm.validator = NewConsensusValidator(miner)
+	pcm.validator = NewConsensusValidator(miner, bc)
 	pcm.msgLog = NewConsensusMessageLog()
 	pcm.minApprovals = minApprovals
 	pcm.privKey = privKey
 	pcm.ethereumClient = ethereumClient
-	pcm.state = &State{}
+	pcm.state = &State{
+		ready:  make(chan bool, 1),
+		status: StateStatusUnknown,
+	}
+	pcm.bus = bus
 	pcm.psb.Hook(pubsub.PrePrepareMessageType, pcm.handlePrePrepare, types.PrePrepareMessage{})
 	pcm.psb.Hook(pubsub.PrepareMessageType, pcm.handlePrepare, types.PrepareMessage{})
 	pcm.psb.Hook(pubsub.CommitMessageType, pcm.handleCommit, types.CommitMessage{})
+	bus.SubscribeOnce("sync:initialSyncCompleted", func() {
+		pcm.state.ready <- true
+	})
 	return pcm
 }
 
@@ -104,11 +115,13 @@ func (pcm *PBFTConsensusManager) handlePrePrepare(message *pubsub.GenericMessage
 		Block: prePrepare.Block,
 	}
 
+	<-pcm.state.ready
+
 	if pcm.msgLog.Exists(cmsg) {
 		logrus.Debugf("received existing pre_prepare msg, dropping...")
 		return
 	}
-	if !pcm.validator.Valid(cmsg) {
+	if !pcm.validator.Valid(cmsg, map[string]interface{}{"randomness": pcm.state.randomness}) {
 		logrus.Warn("received invalid pre_prepare msg, dropping...")
 		return
 	}
@@ -158,7 +171,7 @@ func (pcm *PBFTConsensusManager) handlePrepare(message *pubsub.GenericMessage) {
 		logrus.Debugf("received existing prepare msg, dropping...")
 		return
 	}
-	if !pcm.validator.Valid(cmsg) {
+	if !pcm.validator.Valid(cmsg, nil) {
 		logrus.Warn("received invalid prepare msg, dropping...")
 		return
 	}
@@ -207,7 +220,7 @@ func (pcm *PBFTConsensusManager) handleCommit(message *pubsub.GenericMessage) {
 		logrus.Debugf("received existing commit msg, dropping...")
 		return
 	}
-	if !pcm.validator.Valid(cmsg) {
+	if !pcm.validator.Valid(cmsg, nil) {
 		logrus.Warn("received invalid commit msg, dropping...")
 		return
 	}
@@ -235,7 +248,7 @@ func (pcm *PBFTConsensusManager) NewDrandRound(from phony.Actor, res client.Resu
 			return
 		}
 
-		minedBlock, err := pcm.miner.MineBlock(res.Randomness(), res.Round(), block.Header)
+		minedBlock, err := pcm.miner.MineBlock(res.Randomness(), block.Header)
 		if err != nil {
 			logrus.Errorf("Failed to mine the block: %s", err.Error())
 			return

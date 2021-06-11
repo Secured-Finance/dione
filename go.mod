@@ -7,6 +7,7 @@ require (
 	github.com/Secured-Finance/go-libp2p-pex v1.1.0
 	github.com/Secured-Finance/golang-set v1.8.0
 	github.com/aristanetworks/goarista v0.0.0-20210308203447-b196d8410f1d // indirect
+	github.com/asaskevich/EventBus v0.0.0-20200907212545-49d423059eef // indirect
 	github.com/asaskevich/govalidator v0.0.0-20200907205600-7a23bdc65eef // indirect
 	github.com/cespare/cp v1.1.1 // indirect
 	github.com/deckarep/golang-set v1.7.1 // indirect
