@@ -108,7 +108,7 @@ func (m *Miner) MineBlock(randomness []byte, lastBlockHeader *types2.BlockHeader
 		return nil, nil
 	}
 
-	txs := m.mempool.GetAllTransactions()
+	txs := m.mempool.GetTransactionsForNewBlock()
 	if txs == nil {
 		return nil, fmt.Errorf("there is no txes for processing") // skip new consensus round because there is no transaction for processing
 	}

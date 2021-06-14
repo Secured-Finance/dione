@@ -5,6 +5,8 @@ import (
 	"math/big"
 	"sync"
 
+	"github.com/Secured-Finance/dione/cache"
+
 	"github.com/asaskevich/EventBus"
 
 	"github.com/Secured-Finance/dione/blockchain"
@@ -92,6 +94,7 @@ func (pcm *PBFTConsensusManager) propose(blk *types3.Block) error {
 		return err
 	}
 	pcm.psb.BroadcastToServiceTopic(prePrepareMsg)
+	pcm.blockPool.AddBlock(blk)
 	pcm.state.status = StateStatusPrePrepared
 	return nil
 }
@@ -152,18 +155,11 @@ func (pcm *PBFTConsensusManager) handlePrepare(message *pubsub.GenericMessage) {
 		Type:      types.ConsensusMessageTypePrepare,
 		From:      message.From,
 		Blockhash: prepare.Blockhash,
-		Signature: prepare.Signature, // TODO check the signature
+		Signature: prepare.Signature,
 	}
 
-	pk, _ := message.From.ExtractPublicKey()
-	ok, err := pk.Verify(cmsg.Blockhash, cmsg.Signature)
-	if err != nil {
-		logrus.Warnf("Failed to verify PREPARE message signature: %s", err.Error())
-		return
-	}
-
-	if !ok {
-		logrus.Errorf("Signature of PREPARE message of peer %s isn't valid!", cmsg.From)
+	if _, err := pcm.blockPool.GetBlock(cmsg.Blockhash); errors.Is(err, cache.ErrNotFound) {
+		logrus.Debugf("received unknown block")
 		return
 	}
 
@@ -171,6 +167,7 @@ func (pcm *PBFTConsensusManager) handlePrepare(message *pubsub.GenericMessage) {
 		logrus.Debugf("received existing prepare msg, dropping...")
 		return
 	}
+
 	if !pcm.validator.Valid(cmsg, nil) {
 		logrus.Warn("received invalid prepare msg, dropping...")
 		return
@@ -204,15 +201,8 @@ func (pcm *PBFTConsensusManager) handleCommit(message *pubsub.GenericMessage) {
 		Signature: commit.Signature, // TODO check the signature
 	}
 
-	pk, _ := message.From.ExtractPublicKey()
-	ok, err := pk.Verify(cmsg.Blockhash, cmsg.Signature)
-	if err != nil {
-		logrus.Warnf("Failed to verify COMMIT message signature: %s", err.Error())
-		return
-	}
-
-	if !ok {
-		logrus.Errorf("Signature of COMMIT message of peer %s isn't valid!", cmsg.From)
+	if _, err := pcm.blockPool.GetBlock(cmsg.Blockhash); errors.Is(err, cache.ErrNotFound) {
+		logrus.Debugf("received unknown block")
 		return
 	}
 

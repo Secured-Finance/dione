@@ -137,6 +137,7 @@ func NewConsensusValidator(miner *Miner, bc *blockchain.BlockChain) *ConsensusVa
 			for _, v := range msg.Block.Data {
 				wg.Add(1)
 				go func(v *types3.Transaction, c chan error) {
+					defer wg.Done()
 					if err := utils.VerifyTx(msg.Block.Header, v); err != nil {
 						c <- fmt.Errorf("failed to verify tx: %w", err)
 						return
@@ -157,7 +158,6 @@ func NewConsensusValidator(miner *Miner, bc *blockchain.BlockChain) *ConsensusVa
 					} else {
 						logrus.Debugf("Origin chain [%v]/request type[%v] doesn't have any payload validation!", task.OriginChain, task.RequestType)
 					}
-					wg.Done()
 				}(v, result)
 			}
 			go func() {
