@@ -73,7 +73,7 @@ func (s *NetworkService) Mempool(ctx context.Context, arg struct{}, reply *wire.
 }
 
 func (s *NetworkService) GetMempoolTxs(ctx context.Context, arg wire.GetMempoolTxsArg, reply *wire.GetMempoolTxsReply) {
-	if len(arg.Items) > MaxTransactionCountForRetrieving {
+	if len(arg.Items) > policy.MaxTransactionCountForRetrieving {
 		pid, _ := gorpc.GetRequestSender(ctx)
 		logrus.Warnf("Max tx count limit exceeded for GetMempoolTxs request of node %s", pid)
 		reply.Error = fmt.Errorf("max tx count limit exceeded")

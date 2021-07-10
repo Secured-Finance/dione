@@ -31,8 +31,5 @@ func CreateTransaction(data []byte) *Transaction {
 
 func (tx *Transaction) ValidateHash() bool {
 	h := crypto.Keccak256([]byte(fmt.Sprintf("%d_%s", tx.Timestamp.Unix(), tx.Hash)))
-	if bytes.Compare(h, tx.Hash) != 0 {
-		return false
-	}
-	return true
+	return bytes.Equal(h, tx.Hash)
 }
