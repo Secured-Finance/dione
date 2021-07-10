@@ -5,6 +5,8 @@ import (
 	"math/big"
 	"sync"
 
+	"github.com/fxamacker/cbor/v2"
+
 	"github.com/Secured-Finance/dione/cache"
 
 	"github.com/asaskevich/EventBus"
@@ -22,6 +24,7 @@ import (
 	"github.com/Secured-Finance/dione/blockchain/pool"
 
 	"github.com/Secured-Finance/dione/consensus/types"
+	types2 "github.com/Secured-Finance/dione/types"
 
 	"github.com/Secured-Finance/dione/ethclient"
 	"github.com/sirupsen/logrus"
@@ -237,6 +240,31 @@ func (pcm *PBFTConsensusManager) NewDrandRound(from phony.Actor, res client.Resu
 			logrus.Errorf("Failed to select the block in consensus round %d: %s", pcm.state.blockHeight, err.Error())
 			return
 		}
+
+		// if we are miner for this block
+		// then post dione tasks to target chains (currently, only Ethereum)
+		if block.Header.Proposer == pcm.miner.address {
+			for _, v := range block.Data {
+				var task *types2.DioneTask
+				err := cbor.Unmarshal(v.Data, &task)
+				if err != nil {
+					logrus.Errorf("Failed to unmarshal transaction %x payload: %s", v.Hash, err.Error())
+					continue // FIXME
+				}
+				reqIDNumber, ok := big.NewInt(0).SetString(task.RequestID, 10)
+				if !ok {
+					logrus.Errorf("Failed to parse request id number in task of tx %x", v.Hash)
+					continue // FIXME
+				}
+
+				err = pcm.ethereumClient.SubmitRequestAnswer(reqIDNumber, task.Payload)
+				if err != nil {
+					logrus.Errorf("Failed to submit task in tx %x: %s", v.Hash, err.Error())
+					continue // FIXME
+				}
+			}
+		}
+
 		pcm.state.ready <- true
 
 		minedBlock, err := pcm.miner.MineBlock(res.Randomness(), block.Header)
