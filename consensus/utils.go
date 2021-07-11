@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"math/big"
 
+	"github.com/fxamacker/cbor/v2"
+
 	"github.com/Secured-Finance/dione/pubsub"
 
 	types2 "github.com/Secured-Finance/dione/consensus/types"
@@ -30,7 +32,7 @@ func VerifyVRF(worker peer.ID, vrfBase, vrfproof []byte) error {
 	if err != nil {
 		return err
 	}
-	ok, err := pk.Verify(vrfproof, vrfBase)
+	ok, err := pk.Verify(vrfBase, vrfproof)
 	if err != nil {
 		return err
 	}
@@ -42,7 +44,7 @@ func VerifyVRF(worker peer.ID, vrfBase, vrfproof []byte) error {
 }
 
 func IsRoundWinner(round uint64,
-	worker peer.ID, randomness []byte, minerStake, networkStake *big.Int, privKey crypto.PrivKey) (*types.ElectionProof, error) {
+	worker peer.ID, randomness []byte, randomnessRound uint64, minerStake, networkStake *big.Int, privKey crypto.PrivKey) (*types.ElectionProof, error) {
 
 	buf, err := worker.MarshalBinary()
 	if err != nil {
@@ -59,7 +61,7 @@ func IsRoundWinner(round uint64,
 		return nil, fmt.Errorf("failed to compute VRF: %w", err)
 	}
 
-	ep := &types.ElectionProof{VRFProof: vrfout}
+	ep := &types.ElectionProof{VRFProof: vrfout, RandomnessRound: randomnessRound}
 	j := ep.ComputeWinCount(minerStake, networkStake)
 	ep.WinCount = j
 	if j < 1 {
@@ -90,29 +92,38 @@ func DrawRandomness(rbase []byte, pers crypto2.DomainSeparationTag, round uint64
 	return h.Sum(nil), nil
 }
 
-func NewMessage(cmsg types2.ConsensusMessage, typ types2.ConsensusMessageType, privKey crypto.PrivKey) (*pubsub.GenericMessage, error) {
-	var message pubsub.GenericMessage
+func NewMessage(cmsg types2.ConsensusMessage, typ types2.ConsensusMessageType, privKey crypto.PrivKey) (*pubsub.PubSubMessage, error) {
+	var message pubsub.PubSubMessage
 	switch typ {
 	case types2.ConsensusMessageTypePrePrepare:
 		{
 			message.Type = pubsub.PrePrepareMessageType
-			message.Payload = types2.PrePrepareMessage{
+			msg := types2.PrePrepareMessage{
 				Block: cmsg.Block,
 			}
+			data, err := cbor.Marshal(msg)
+			if err != nil {
+				return nil, fmt.Errorf("failed to convert message to map: %s", err.Error())
+			}
+			message.Payload = data
 			break
 		}
 	case types2.ConsensusMessageTypePrepare:
 		{
 			message.Type = pubsub.PrepareMessageType
-			pm := types2.PrepareMessage{
-				Blockhash: cmsg.Blockhash,
-			}
 			signature, err := privKey.Sign(cmsg.Blockhash)
 			if err != nil {
 				return nil, fmt.Errorf("failed to create signature: %v", err)
 			}
-			pm.Signature = signature
-			message.Payload = pm
+			pm := types2.PrepareMessage{
+				Blockhash: cmsg.Block.Header.Hash,
+				Signature: signature,
+			}
+			data, err := cbor.Marshal(pm)
+			if err != nil {
+				return nil, fmt.Errorf("failed to convert message to map: %s", err.Error())
+			}
+			message.Payload = data
 			break
 		}
 	case types2.ConsensusMessageTypeCommit:
@@ -126,7 +137,11 @@ func NewMessage(cmsg types2.ConsensusMessage, typ types2.ConsensusMessageType, p
 				return nil, fmt.Errorf("failed to create signature: %v", err)
 			}
 			pm.Signature = signature
-			message.Payload = pm
+			data, err := cbor.Marshal(pm)
+			if err != nil {
+				return nil, fmt.Errorf("failed to convert message to map: %s", err.Error())
+			}
+			message.Payload = data
 			break
 		}
 	}

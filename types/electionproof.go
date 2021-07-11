@@ -8,8 +8,9 @@ import (
 )
 
 type ElectionProof struct {
-	WinCount int64
-	VRFProof []byte
+	WinCount        int64
+	VRFProof        []byte
+	RandomnessRound uint64
 }
 
 const precision = 256

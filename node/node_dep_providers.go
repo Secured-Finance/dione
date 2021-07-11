@@ -64,15 +64,13 @@ func provideMiner(peerID peer.ID, ethAddress common.Address, ethClient *ethclien
 	return consensus.NewMiner(peerID, ethAddress, ethClient, privateKey, mempool)
 }
 
-func provideBeacon(ps *pubsub2.PubSub, pcm *consensus.PBFTConsensusManager) (beacon.BeaconNetworks, error) {
-	networks := beacon.BeaconNetworks{}
-	bc, err := drand2.NewDrandBeacon(ps, pcm)
+func provideBeacon(ps *pubsub2.PubSub) (beacon.BeaconNetwork, error) {
+	bc, err := drand2.NewDrandBeacon(ps)
 	if err != nil {
-		return nil, fmt.Errorf("failed to setup drand beacon: %w", err)
+		return beacon.BeaconNetwork{}, fmt.Errorf("failed to setup drand beacon: %w", err)
 	}
-	networks = append(networks, beacon.BeaconNetwork{Start: config.DrandChainGenesisTime, Beacon: bc})
 	// NOTE: currently we use only one network
-	return networks, nil
+	return beacon.BeaconNetwork{Start: config.DrandChainGenesisTime, Beacon: bc}, nil
 }
 
 // FIXME: do we really need this?
@@ -114,6 +112,8 @@ func provideConsensusManager(
 	privateKey crypto.PrivKey,
 	minApprovals int,
 	bp *pool.BlockPool,
+	b beacon.BeaconNetwork,
+	mp *pool.Mempool,
 ) *consensus.PBFTConsensusManager {
 	return consensus.NewPBFTConsensusManager(
 		bus,
@@ -124,6 +124,8 @@ func provideConsensusManager(
 		miner,
 		bc,
 		bp,
+		b,
+		mp,
 	)
 }
 

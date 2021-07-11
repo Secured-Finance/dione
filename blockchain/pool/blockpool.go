@@ -1,7 +1,10 @@
 package pool
 
 import (
+	"bytes"
 	"encoding/hex"
+
+	"github.com/sirupsen/logrus"
 
 	"github.com/Secured-Finance/dione/blockchain/types"
 	"github.com/Secured-Finance/dione/cache"
@@ -29,8 +32,9 @@ func (bp *BlockPool) AddBlock(block *types.Block) error {
 }
 
 func (bp *BlockPool) GetBlock(blockhash []byte) (*types.Block, error) {
-	var block *types.Block
-	return block, bp.knownBlocks.Get(hex.EncodeToString(blockhash), &block)
+	var block types.Block
+	err := bp.knownBlocks.Get(hex.EncodeToString(blockhash), &block)
+	return &block, err
 }
 
 // PruneBlocks cleans known blocks list. It is called when new consensus round starts.
@@ -53,13 +57,27 @@ func (bp *BlockPool) GetAllAcceptedBlocks() []*types.Block {
 }
 
 // PruneAcceptedBlocks cleans accepted blocks list. It is called when new consensus round starts.
-func (bp *BlockPool) PruneAcceptedBlocks() {
+func (bp *BlockPool) PruneAcceptedBlocks(committedBlock *types.Block) {
 	for k, v := range bp.acceptedBlocks.Items() {
 		block := v.(*types.Block)
 		for _, v := range block.Data {
-			v.MerkleProof = nil
-			bp.mempool.StoreTx(v) // return transactions back to mempool
+			if !containsTx(committedBlock.Data, v) {
+				v.MerkleProof = nil
+				err := bp.mempool.StoreTx(v) // return transactions back to mempool
+				if err != nil {
+					logrus.Error(err)
+				}
+			}
 		}
 		bp.acceptedBlocks.Delete(k)
 	}
+}
+
+func containsTx(s []*types.Transaction, e *types.Transaction) bool {
+	for _, a := range s {
+		if bytes.Equal(a.Hash, e.Hash) {
+			return true
+		}
+	}
+	return false
 }

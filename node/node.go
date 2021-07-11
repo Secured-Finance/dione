@@ -7,6 +7,8 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"path"
+	"runtime"
 	"time"
 
 	"github.com/Secured-Finance/dione/blockchain"
@@ -64,7 +66,7 @@ type Node struct {
 	Ethereum         *ethclient.EthereumClient
 	ConsensusManager *consensus.PBFTConsensusManager
 	Miner            *consensus.Miner
-	Beacon           beacon.BeaconNetworks
+	Beacon           beacon.BeaconNetwork
 	DisputeManager   *consensus.DisputeManager
 	BlockPool        *pool.BlockPool
 	MemPool          *pool.Mempool
@@ -189,18 +191,18 @@ func NewNode(config *config.Config, prvKey crypto.PrivKey, pexDiscoveryUpdateTim
 	n.Miner = miner
 	logrus.Info("Mining subsystem has been initialized!")
 
-	// initialize consensus subsystem
-	consensusManager := provideConsensusManager(bus, psb, miner, bc, ethClient, prvKey, n.Config.ConsensusMinApprovals, bp)
-	n.ConsensusManager = consensusManager
-	logrus.Info("Consensus subsystem has been initialized!")
-
 	// initialize random beacon network subsystem
-	randomBeaconNetwork, err := provideBeacon(psb.Pubsub, consensusManager)
+	randomBeaconNetwork, err := provideBeacon(psb.Pubsub)
 	if err != nil {
 		logrus.Fatal(err)
 	}
 	n.Beacon = randomBeaconNetwork
 	logrus.Info("Random beacon subsystem has been initialized!")
+
+	// initialize consensus subsystem
+	consensusManager := provideConsensusManager(bus, psb, miner, bc, ethClient, prvKey, n.Config.ConsensusMinApprovals, bp, randomBeaconNetwork, mp)
+	n.ConsensusManager = consensusManager
+	logrus.Info("Consensus subsystem has been initialized!")
 
 	// initialize dispute subsystem
 	disputeManager, err := provideDisputeManager(context.TODO(), ethClient, consensusManager, config, bc)
@@ -344,6 +346,14 @@ func (n *Node) setupRPCClients() error {
 }
 
 func Start() {
+	logrus.SetReportCaller(true)
+	logrus.SetFormatter(&logrus.TextFormatter{
+		CallerPrettyfier: func(f *runtime.Frame) (string, string) {
+			filename := path.Base(f.File)
+			return "", fmt.Sprintf("%s:%d:", filename, f.Line)
+		},
+	})
+
 	configPath := flag.String("config", "", "Path to config")
 	verbose := flag.Bool("verbose", false, "Verbose logging")
 	flag.Parse()

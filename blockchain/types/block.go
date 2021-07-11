@@ -26,7 +26,7 @@ type BlockHeader struct {
 	Hash          []byte
 	LastHash      []byte
 	LastHashProof *merkletree.Proof
-	Proposer      peer.ID
+	Proposer      *peer.ID
 	ProposerEth   common.Address
 	Signature     []byte
 	BeaconEntry   types.BeaconEntry
@@ -78,11 +78,19 @@ func CreateBlock(lastBlockHeader *BlockHeader, txs []*Transaction, minerEth comm
 		return nil, err
 	}
 
+	for _, tx := range txs {
+		mp, err := tree.GenerateProof(tx.Hash, 0)
+		if err != nil {
+			return nil, err
+		}
+		tx.MerkleProof = mp
+	}
+
 	block := &Block{
 		Header: &BlockHeader{
 			Timestamp:     timestamp,
 			Height:        lastBlockHeader.Height + 1,
-			Proposer:      proposer,
+			Proposer:      &proposer,
 			ProposerEth:   minerEth,
 			Signature:     s,
 			Hash:          blockHash,

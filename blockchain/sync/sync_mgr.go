@@ -8,6 +8,8 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/fxamacker/cbor/v2"
+
 	"github.com/asaskevich/EventBus"
 
 	"github.com/Secured-Finance/dione/blockchain/utils"
@@ -63,7 +65,7 @@ func NewSyncManager(bus EventBus.Bus, bp *blockchain.BlockChain, mp *pool.Mempoo
 		psb:                  psb,
 	}
 
-	psb.Hook(pubsub.NewTxMessageType, sm.onNewTransaction, types2.Transaction{})
+	psb.Hook(pubsub.NewTxMessageType, sm.onNewTransaction)
 
 	go func() {
 		if err := sm.initialSync(); err != nil {
@@ -236,10 +238,11 @@ func (sm *syncManager) processReceivedBlock(block types2.Block) error {
 	return nil
 }
 
-func (sm *syncManager) onNewTransaction(message *pubsub.GenericMessage) {
-	tx, ok := message.Payload.(types2.Transaction)
-	if !ok {
-		logrus.Warn("failed to convert payload to Transaction")
+func (sm *syncManager) onNewTransaction(message *pubsub.PubSubMessage) {
+	var tx types2.Transaction
+	err := cbor.Unmarshal(message.Payload, &tx)
+	if err != nil {
+		logrus.Errorf("failed to convert payload to transaction: %s", err.Error())
 		return
 	}
 
@@ -248,7 +251,7 @@ func (sm *syncManager) onNewTransaction(message *pubsub.GenericMessage) {
 		return
 	} // TODO add more checks on tx
 
-	err := sm.mempool.StoreTx(&tx)
+	err = sm.mempool.StoreTx(&tx)
 	if err != nil {
 		logrus.Warnf("failed to store incoming transaction in mempool: %s", err.Error())
 	}

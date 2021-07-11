@@ -34,8 +34,9 @@ type BeaconNetwork struct {
 // valid for a specific chain epoch. Also to verify beacon entries that have
 // been posted on chain.
 type BeaconAPI interface {
-	Entry(context.Context, uint64) <-chan BeaconResult
+	Entry(context.Context, uint64) (types.BeaconEntry, error)
 	VerifyEntry(types.BeaconEntry, types.BeaconEntry) error
+	NewEntries() <-chan types.BeaconEntry
 	LatestBeaconRound() uint64
 }
 

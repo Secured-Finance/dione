@@ -2,8 +2,11 @@ package consensus
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"sync"
+
+	"github.com/Secured-Finance/dione/beacon"
 
 	types3 "github.com/Secured-Finance/dione/blockchain/types"
 
@@ -22,13 +25,15 @@ import (
 type ConsensusValidator struct {
 	validationFuncMap map[types2.ConsensusMessageType]func(msg types2.ConsensusMessage, metadata map[string]interface{}) bool
 	miner             *Miner
+	beacon            beacon.BeaconNetwork
 	blockchain        *blockchain.BlockChain
 }
 
-func NewConsensusValidator(miner *Miner, bc *blockchain.BlockChain) *ConsensusValidator {
+func NewConsensusValidator(miner *Miner, bc *blockchain.BlockChain, b beacon.BeaconNetwork) *ConsensusValidator {
 	cv := &ConsensusValidator{
 		miner:      miner,
 		blockchain: bc,
+		beacon:     b,
 	}
 
 	cv.validationFuncMap = map[types2.ConsensusMessageType]func(msg types2.ConsensusMessage, metadata map[string]interface{}) bool{
@@ -64,7 +69,7 @@ func NewConsensusValidator(miner *Miner, bc *blockchain.BlockChain) *ConsensusVa
 				return false
 			}
 			if bytes.Compare(msg.Block.Header.LastHash, previousBlockHeader.Hash) != 0 {
-				logrus.Error("block header has invalid last block hash")
+				logrus.Errorf("block header has invalid last block hash (expected: %x, actual %x)", previousBlockHeader.Hash, msg.Block.Header.LastHash)
 				return false
 			}
 
@@ -101,8 +106,13 @@ func NewConsensusValidator(miner *Miner, bc *blockchain.BlockChain) *ConsensusVa
 				return false
 			}
 
+			res, err := b.Beacon.Entry(context.TODO(), msg.Block.Header.ElectionProof.RandomnessRound)
+			if err != nil {
+				logrus.Error(err)
+				return false
+			}
 			eproofRandomness, err := DrawRandomness(
-				metadata["randomness"].([]byte),
+				res.Data,
 				crypto.DomainSeparationTag_ElectionProofProduction,
 				msg.Block.Header.Height,
 				proposerBuf,
@@ -111,7 +121,7 @@ func NewConsensusValidator(miner *Miner, bc *blockchain.BlockChain) *ConsensusVa
 				logrus.Errorf("failed to draw ElectionProof randomness: %s", err.Error())
 				return false
 			}
-			err = VerifyVRF(msg.Block.Header.Proposer, eproofRandomness, msg.Block.Header.ElectionProof.VRFProof)
+			err = VerifyVRF(*msg.Block.Header.Proposer, eproofRandomness, msg.Block.Header.ElectionProof.VRFProof)
 			if err != nil {
 				logrus.Errorf("failed to verify election proof vrf: %v", err)
 				return false

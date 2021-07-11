@@ -6,6 +6,8 @@ import (
 	"sort"
 	"time"
 
+	"github.com/sirupsen/logrus"
+
 	types2 "github.com/Secured-Finance/dione/blockchain/types"
 
 	"github.com/Secured-Finance/dione/consensus/policy"
@@ -37,7 +39,14 @@ func NewMempool() (*Mempool, error) {
 func (mp *Mempool) StoreTx(tx *types2.Transaction) error {
 	hashStr := hex.EncodeToString(tx.Hash)
 	err := mp.cache.StoreWithTTL(DefaultTxPrefix+hashStr, tx, DefaultTxTTL)
+	logrus.Infof("Submitted new transaction in mempool with hash %x", tx.Hash)
 	return err
+}
+
+func (mp *Mempool) DeleteTx(txHash []byte) {
+	hashStr := hex.EncodeToString(txHash)
+	mp.cache.Delete(DefaultTxPrefix + hashStr)
+	logrus.Debugf("Deleted transaction from mempool %x", txHash)
 }
 
 func (mp *Mempool) GetTransactionsForNewBlock() []*types2.Transaction {
@@ -63,8 +72,8 @@ func (mp *Mempool) GetAllTransactions() []*types2.Transaction {
 	var allTxs []*types2.Transaction
 
 	for _, v := range mp.cache.Items() {
-		tx := v.(types2.Transaction)
-		allTxs = append(allTxs, &tx)
+		tx := v.(*types2.Transaction)
+		allTxs = append(allTxs, tx)
 	}
 	return allTxs
 }

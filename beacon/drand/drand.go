@@ -8,8 +8,6 @@ import (
 
 	"github.com/Arceliar/phony"
 
-	"github.com/Secured-Finance/dione/consensus"
-
 	"github.com/Secured-Finance/dione/beacon"
 	"github.com/drand/drand/chain"
 	"github.com/drand/drand/client"
@@ -38,13 +36,13 @@ type DrandBeacon struct {
 	DrandClient        client.Client
 	PublicKey          kyber.Point
 	drandResultChannel <-chan client.Result
+	beaconEntryChannel chan types.BeaconEntry
 	cacheLock          sync.Mutex
 	localCache         map[uint64]types.BeaconEntry
 	latestDrandRound   uint64
-	consensusManager   *consensus.PBFTConsensusManager
 }
 
-func NewDrandBeacon(ps *pubsub.PubSub, pcm *consensus.PBFTConsensusManager) (*DrandBeacon, error) {
+func NewDrandBeacon(ps *pubsub.PubSub) (*DrandBeacon, error) {
 	cfg := config.NewDrandConfig()
 
 	drandChain, err := chain.InfoFromJSON(bytes.NewReader([]byte(cfg.ChainInfo)))
@@ -83,14 +81,14 @@ func NewDrandBeacon(ps *pubsub.PubSub, pcm *consensus.PBFTConsensusManager) (*Dr
 	}
 
 	db := &DrandBeacon{
-		DrandClient:      drandClient,
-		localCache:       make(map[uint64]types.BeaconEntry),
-		consensusManager: pcm,
+		DrandClient: drandClient,
+		localCache:  make(map[uint64]types.BeaconEntry),
 	}
 
 	db.PublicKey = drandChain.PublicKey
 
 	db.drandResultChannel = db.DrandClient.Watch(context.TODO())
+	db.beaconEntryChannel = make(chan types.BeaconEntry)
 	err = db.getLatestDrandResult()
 	if err != nil {
 		return nil, err
@@ -106,7 +104,7 @@ func (db *DrandBeacon) getLatestDrandResult() error {
 		log.Errorf("failed to get latest drand round: %v", err)
 		return err
 	}
-	db.cacheValue(newBeaconResultFromDrandResult(latestDround))
+	db.cacheValue(newBeaconEntryFromDrandResult(latestDround))
 	db.updateLatestDrandRound(latestDround.Round())
 	return nil
 }
@@ -120,43 +118,30 @@ func (db *DrandBeacon) loop(ctx context.Context) {
 			}
 		case res := <-db.drandResultChannel:
 			{
-				db.cacheValue(newBeaconResultFromDrandResult(res))
+				db.cacheValue(newBeaconEntryFromDrandResult(res))
 				db.updateLatestDrandRound(res.Round())
-				db.consensusManager.NewDrandRound(db, res)
+				db.newEntry(res)
 			}
 		}
 	}
 }
 
-func (db *DrandBeacon) Entry(ctx context.Context, round uint64) <-chan beacon.BeaconResult {
-	out := make(chan beacon.BeaconResult, 1)
+func (db *DrandBeacon) Entry(ctx context.Context, round uint64) (types.BeaconEntry, error) {
 	if round != 0 {
 		be := db.getCachedValue(round)
 		if be != nil {
-			out <- beacon.BeaconResult{Entry: *be}
-			close(out)
-			return out
+			return *be, nil
 		}
 	}
 
-	go func() {
-		start := lib.Clock.Now()
-		log.Infof("start fetching randomness: round %v", round)
-		resp, err := db.DrandClient.Get(ctx, round)
-
-		var br beacon.BeaconResult
-		if err != nil {
-			br.Err = fmt.Errorf("drand failed Get request: %w", err)
-		} else {
-			br.Entry.Round = resp.Round()
-			br.Entry.Data = resp.Signature()
-		}
-		log.Infof("done fetching randomness: round %v, took %v", round, lib.Clock.Since(start))
-		out <- br
-		close(out)
-	}()
-
-	return out
+	start := lib.Clock.Now()
+	log.Infof("start fetching randomness: round %v", round)
+	resp, err := db.DrandClient.Get(ctx, round)
+	if err != nil {
+		return types.BeaconEntry{}, fmt.Errorf("drand failed Get request: %w", err)
+	}
+	log.Infof("done fetching randomness: round %v, took %v", round, lib.Clock.Since(start))
+	return newBeaconEntryFromDrandResult(resp), nil
 }
 func (db *DrandBeacon) cacheValue(res types.BeaconEntry) {
 	db.cacheLock.Lock()
@@ -201,7 +186,17 @@ func (db *DrandBeacon) LatestBeaconRound() uint64 {
 	return db.latestDrandRound
 }
 
-func newBeaconResultFromDrandResult(res client.Result) types.BeaconEntry {
+func (db *DrandBeacon) newEntry(res client.Result) {
+	db.Act(nil, func() {
+		db.beaconEntryChannel <- types.NewBeaconEntry(res.Round(), res.Randomness(), map[string]interface{}{"signature": res.Signature()})
+	})
+}
+
+func (db *DrandBeacon) NewEntries() <-chan types.BeaconEntry {
+	return db.beaconEntryChannel
+}
+
+func newBeaconEntryFromDrandResult(res client.Result) types.BeaconEntry {
 	return types.NewBeaconEntry(res.Round(), res.Randomness(), map[string]interface{}{"signature": res.Signature()})
 }
 

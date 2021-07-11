@@ -21,10 +21,9 @@ type PubSubRouter struct {
 	handlers            map[PubSubMessageType][]Handler
 	oracleTopicName     string
 	oracleTopic         *pubsub.Topic
-	typeMapping         map[PubSubMessageType]interface{} // message type -> sample
 }
 
-type Handler func(message *GenericMessage)
+type Handler func(message *PubSubMessage)
 
 func NewPubSubRouter(h host.Host, oracleTopic string, isBootstrap bool) *PubSubRouter {
 	ctx, ctxCancel := context.WithCancel(context.Background())
@@ -34,7 +33,6 @@ func NewPubSubRouter(h host.Host, oracleTopic string, isBootstrap bool) *PubSubR
 		context:       ctx,
 		contextCancel: ctxCancel,
 		handlers:      make(map[PubSubMessageType][]Handler),
-		typeMapping:   map[PubSubMessageType]interface{}{},
 	}
 
 	var pbOptions []pubsub.Option
@@ -104,30 +102,16 @@ func (psr *PubSubRouter) handleMessage(p *pubsub.Message) {
 	if senderPeerID == psr.node.ID() {
 		return
 	}
-	var genericMessage PubSubMessage
-	var message GenericMessage
-	err = cbor.Unmarshal(p.Data, &genericMessage)
-	if err != nil {
-		logrus.Warn("Unable to decode pubsub message data! " + err.Error())
-		return
-	}
-	sampleMsg, ok := psr.typeMapping[genericMessage.Type]
-	if !ok {
-		logrus.Warnf("Unknown message type %d: we have no clue how to decode it", genericMessage.Type)
-		return
-	}
-	destMsg := sampleMsg
-	err = cbor.Unmarshal(genericMessage.Payload, &destMsg)
+	var message PubSubMessage
+	err = cbor.Unmarshal(p.Data, &message)
 	if err != nil {
 		logrus.Warn("Unable to decode pubsub message data! " + err.Error())
 		return
 	}
 	message.From = senderPeerID
-	message.Type = genericMessage.Type
-	message.Payload = destMsg
-	handlers, ok := psr.handlers[genericMessage.Type]
+	handlers, ok := psr.handlers[message.Type]
 	if !ok {
-		logrus.Warn("Dropping pubsub message " + string(genericMessage.Type) + " because we don't have any handlers!")
+		logrus.Warnf("Dropping pubsub message with type %d because we don't have any handlers!", message.Type)
 		return
 	}
 	for _, v := range handlers {
@@ -135,16 +119,15 @@ func (psr *PubSubRouter) handleMessage(p *pubsub.Message) {
 	}
 }
 
-func (psr *PubSubRouter) Hook(messageType PubSubMessageType, handler Handler, sample interface{}) {
+func (psr *PubSubRouter) Hook(messageType PubSubMessageType, handler Handler) {
 	_, ok := psr.handlers[messageType]
 	if !ok {
 		psr.handlers[messageType] = []Handler{}
 	}
 	psr.handlers[messageType] = append(psr.handlers[messageType], handler)
-	psr.typeMapping[messageType] = sample
 }
 
-func (psr *PubSubRouter) BroadcastToServiceTopic(msg *GenericMessage) error {
+func (psr *PubSubRouter) BroadcastToServiceTopic(msg *PubSubMessage) error {
 	data, err := cbor.Marshal(msg)
 	if err != nil {
 		return err

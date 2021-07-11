@@ -5,6 +5,8 @@ import (
 	"math/big"
 	"sync"
 
+	"github.com/Secured-Finance/dione/beacon"
+
 	"github.com/fxamacker/cbor/v2"
 
 	"github.com/Secured-Finance/dione/cache"
@@ -12,8 +14,6 @@ import (
 	"github.com/asaskevich/EventBus"
 
 	"github.com/Secured-Finance/dione/blockchain"
-
-	"github.com/drand/drand/client"
 
 	"github.com/Arceliar/phony"
 
@@ -57,7 +57,8 @@ type PBFTConsensusManager struct {
 	ethereumClient *ethclient.EthereumClient
 	miner          *Miner
 	blockPool      *pool.BlockPool
-	blockchain     blockchain.BlockChain
+	mempool        *pool.Mempool
+	blockchain     *blockchain.BlockChain
 	state          *State
 }
 
@@ -67,7 +68,7 @@ type State struct {
 	randomness  []byte
 	blockHeight uint64
 	status      StateStatus
-	ready       chan bool
+	ready       bool
 }
 
 func NewPBFTConsensusManager(
@@ -79,33 +80,47 @@ func NewPBFTConsensusManager(
 	miner *Miner,
 	bc *blockchain.BlockChain,
 	bp *pool.BlockPool,
+	b beacon.BeaconNetwork,
+	mempool *pool.Mempool,
 ) *PBFTConsensusManager {
 	pcm := &PBFTConsensusManager{}
 	pcm.psb = psb
 	pcm.miner = miner
-	pcm.validator = NewConsensusValidator(miner, bc)
+	pcm.validator = NewConsensusValidator(miner, bc, b)
 	pcm.msgLog = NewConsensusMessageLog()
 	pcm.minApprovals = minApprovals
 	pcm.privKey = privKey
 	pcm.ethereumClient = ethereumClient
 	pcm.state = &State{
-		ready:  make(chan bool, 1),
+		ready:  false,
 		status: StateStatusUnknown,
 	}
 	pcm.bus = bus
 	pcm.blockPool = bp
-	pcm.psb.Hook(pubsub.PrePrepareMessageType, pcm.handlePrePrepare, types.PrePrepareMessage{})
-	pcm.psb.Hook(pubsub.PrepareMessageType, pcm.handlePrepare, types.PrepareMessage{})
-	pcm.psb.Hook(pubsub.CommitMessageType, pcm.handleCommit, types.CommitMessage{})
-	bus.SubscribeOnce("sync:initialSyncCompleted", func() {
-		pcm.state.ready <- true
-	})
+	pcm.mempool = mempool
+	pcm.blockchain = bc
+	pcm.psb.Hook(pubsub.PrePrepareMessageType, pcm.handlePrePrepare)
+	pcm.psb.Hook(pubsub.PrepareMessageType, pcm.handlePrepare)
+	pcm.psb.Hook(pubsub.CommitMessageType, pcm.handleCommit)
+	//bus.SubscribeOnce("sync:initialSyncCompleted", func() {
+	//	pcm.state.ready = true
+	//})
+	height, _ := pcm.blockchain.GetLatestBlockHeight()
+	pcm.state.blockHeight = height + 1
+	go func() {
+		for {
+			select {
+			case e := <-b.Beacon.NewEntries():
+				{
+					pcm.NewDrandRound(nil, e)
+				}
+			}
+		}
+	}()
 	return pcm
 }
 
 func (pcm *PBFTConsensusManager) propose(blk *types3.Block) error {
-	pcm.state.mutex.Lock()
-	defer pcm.state.mutex.Unlock()
 	prePrepareMsg, err := NewMessage(types.ConsensusMessage{Block: blk}, types.ConsensusMessageTypePrePrepare, pcm.privKey)
 	if err != nil {
 		return err
@@ -116,33 +131,33 @@ func (pcm *PBFTConsensusManager) propose(blk *types3.Block) error {
 	return nil
 }
 
-func (pcm *PBFTConsensusManager) handlePrePrepare(message *pubsub.GenericMessage) {
+func (pcm *PBFTConsensusManager) handlePrePrepare(message *pubsub.PubSubMessage) {
 	pcm.state.mutex.Lock()
 	defer pcm.state.mutex.Unlock()
-	prePrepare, ok := message.Payload.(types.PrePrepareMessage)
-	if !ok {
-		logrus.Warn("failed to convert payload to PrePrepare message")
+	var prePrepare types.PrePrepareMessage
+	err := cbor.Unmarshal(message.Payload, &prePrepare)
+	if err != nil {
+		logrus.Errorf("failed to convert payload to PrePrepare message: %s", err.Error())
 		return
 	}
 
-	if prePrepare.Block.Header.Proposer == pcm.miner.address {
+	if *prePrepare.Block.Header.Proposer == pcm.miner.address {
 		return
 	}
 
 	cmsg := types.ConsensusMessage{
-		Type:  types.ConsensusMessageTypePrePrepare,
-		From:  message.From,
-		Block: prePrepare.Block,
+		Type:      types.ConsensusMessageTypePrePrepare,
+		From:      message.From,
+		Block:     prePrepare.Block,
+		Blockhash: prePrepare.Block.Header.Hash,
 	}
 
-	<-pcm.state.ready
-
 	if pcm.msgLog.Exists(cmsg) {
-		logrus.Debugf("received existing pre_prepare msg, dropping...")
+		logrus.Tracef("received existing pre_prepare msg for block %x", cmsg.Block.Header.Hash)
 		return
 	}
 	if !pcm.validator.Valid(cmsg, map[string]interface{}{"randomness": pcm.state.randomness}) {
-		logrus.Warn("received invalid pre_prepare msg, dropping...")
+		logrus.Warnf("received invalid pre_prepare msg for block %x", cmsg.Block.Header.Hash)
 		return
 	}
 
@@ -159,12 +174,13 @@ func (pcm *PBFTConsensusManager) handlePrePrepare(message *pubsub.GenericMessage
 	pcm.state.status = StateStatusPrePrepared
 }
 
-func (pcm *PBFTConsensusManager) handlePrepare(message *pubsub.GenericMessage) {
+func (pcm *PBFTConsensusManager) handlePrepare(message *pubsub.PubSubMessage) {
 	pcm.state.mutex.Lock()
 	defer pcm.state.mutex.Unlock()
-	prepare, ok := message.Payload.(types.PrepareMessage)
-	if !ok {
-		logrus.Warn("failed to convert payload to Prepare message")
+	var prepare types.PrepareMessage
+	err := cbor.Unmarshal(message.Payload, &prepare)
+	if err != nil {
+		logrus.Errorf("failed to convert payload to Prepare message: %s", err.Error())
 		return
 	}
 
@@ -176,17 +192,17 @@ func (pcm *PBFTConsensusManager) handlePrepare(message *pubsub.GenericMessage) {
 	}
 
 	if _, err := pcm.blockPool.GetBlock(cmsg.Blockhash); errors.Is(err, cache.ErrNotFound) {
-		logrus.Debugf("received unknown block")
+		logrus.Warnf("received unknown block %x", cmsg.Blockhash)
 		return
 	}
 
 	if pcm.msgLog.Exists(cmsg) {
-		logrus.Debugf("received existing prepare msg, dropping...")
+		logrus.Tracef("received existing prepare msg for block %x", cmsg.Blockhash)
 		return
 	}
 
 	if !pcm.validator.Valid(cmsg, nil) {
-		logrus.Warn("received invalid prepare msg, dropping...")
+		logrus.Warnf("received invalid prepare msg for block %x", cmsg.Blockhash)
 		return
 	}
 
@@ -196,18 +212,20 @@ func (pcm *PBFTConsensusManager) handlePrepare(message *pubsub.GenericMessage) {
 		commitMsg, err := NewMessage(cmsg, types.ConsensusMessageTypeCommit, pcm.privKey)
 		if err != nil {
 			logrus.Errorf("failed to create commit message: %v", err)
+			return
 		}
 		pcm.psb.BroadcastToServiceTopic(commitMsg)
 		pcm.state.status = StateStatusPrepared
 	}
 }
 
-func (pcm *PBFTConsensusManager) handleCommit(message *pubsub.GenericMessage) {
+func (pcm *PBFTConsensusManager) handleCommit(message *pubsub.PubSubMessage) {
 	pcm.state.mutex.Lock()
 	defer pcm.state.mutex.Unlock()
-	commit, ok := message.Payload.(types.CommitMessage)
-	if !ok {
-		logrus.Warn("failed to convert payload to Prepare message")
+	var commit types.CommitMessage
+	err := cbor.Unmarshal(message.Payload, &commit)
+	if err != nil {
+		logrus.Errorf("failed to convert payload to Commit message: %s", err.Error())
 		return
 	}
 
@@ -215,20 +233,20 @@ func (pcm *PBFTConsensusManager) handleCommit(message *pubsub.GenericMessage) {
 		Type:      types.ConsensusMessageTypeCommit,
 		From:      message.From,
 		Blockhash: commit.Blockhash,
-		Signature: commit.Signature, // TODO check the signature
+		Signature: commit.Signature,
 	}
 
 	if _, err := pcm.blockPool.GetBlock(cmsg.Blockhash); errors.Is(err, cache.ErrNotFound) {
-		logrus.Debugf("received unknown block")
+		logrus.Warnf("received unknown block %x", cmsg.Blockhash)
 		return
 	}
 
 	if pcm.msgLog.Exists(cmsg) {
-		logrus.Debugf("received existing commit msg, dropping...")
+		logrus.Tracef("received existing commit msg for block %x", cmsg.Blockhash)
 		return
 	}
 	if !pcm.validator.Valid(cmsg, nil) {
-		logrus.Warn("received invalid commit msg, dropping...")
+		logrus.Warnf("received invalid commit msg for block %x", cmsg.Blockhash)
 		return
 	}
 
@@ -237,7 +255,7 @@ func (pcm *PBFTConsensusManager) handleCommit(message *pubsub.GenericMessage) {
 	if len(pcm.msgLog.Get(types.ConsensusMessageTypeCommit, cmsg.Blockhash)) >= pcm.minApprovals {
 		block, err := pcm.blockPool.GetBlock(cmsg.Blockhash)
 		if err != nil {
-			logrus.Debug(err)
+			logrus.Error(err)
 			return
 		}
 		pcm.blockPool.AddAcceptedBlock(block)
@@ -245,58 +263,87 @@ func (pcm *PBFTConsensusManager) handleCommit(message *pubsub.GenericMessage) {
 	}
 }
 
-func (pcm *PBFTConsensusManager) NewDrandRound(from phony.Actor, res client.Result) {
+func (pcm *PBFTConsensusManager) NewDrandRound(from phony.Actor, entry types2.BeaconEntry) {
 	pcm.Act(from, func() {
 		pcm.state.mutex.Lock()
 		defer pcm.state.mutex.Unlock()
 		block, err := pcm.commitAcceptedBlocks()
 		if err != nil {
 			if errors.Is(err, ErrNoAcceptedBlocks) {
-				logrus.Warnf("No accepted blocks for consensus round %d", pcm.state.blockHeight)
+				logrus.Infof("No accepted blocks for consensus round %d", pcm.state.blockHeight)
 			} else {
 				logrus.Errorf("Failed to select the block in consensus round %d: %s", pcm.state.blockHeight, err.Error())
-			}
-			return
-		}
-
-		// if we are miner for this block
-		// then post dione tasks to target chains (currently, only Ethereum)
-		if block.Header.Proposer == pcm.miner.address {
-			for _, v := range block.Data {
-				var task types2.DioneTask
-				err := cbor.Unmarshal(v.Data, &task)
-				if err != nil {
-					logrus.Errorf("Failed to unmarshal transaction %x payload: %s", v.Hash, err.Error())
-					continue // FIXME
-				}
-				reqIDNumber, ok := big.NewInt(0).SetString(task.RequestID, 10)
-				if !ok {
-					logrus.Errorf("Failed to parse request id number in task of tx %x", v.Hash)
-					continue // FIXME
-				}
-
-				err = pcm.ethereumClient.SubmitRequestAnswer(reqIDNumber, task.Payload)
-				if err != nil {
-					logrus.Errorf("Failed to submit task in tx %x: %s", v.Hash, err.Error())
-					continue // FIXME
-				}
+				return
 			}
 		}
 
-		pcm.state.ready <- true
+		if block != nil {
+			// broadcast new block
+			var newBlockMessage pubsub.PubSubMessage
+			newBlockMessage.Type = pubsub.NewBlockMessageType
+			blockSerialized, err := cbor.Marshal(block)
+			if err != nil {
+				logrus.Errorf("Failed to serialize block %x for broadcasting!", block.Header.Hash)
+			} else {
+				newBlockMessage.Payload = blockSerialized
+				pcm.psb.BroadcastToServiceTopic(&newBlockMessage)
+			}
 
-		minedBlock, err := pcm.miner.MineBlock(res.Randomness(), block.Header)
+			// if we are miner for this block
+			// then post dione tasks to target chains (currently, only Ethereum)
+			if *block.Header.Proposer == pcm.miner.address {
+				for _, v := range block.Data {
+					var task types2.DioneTask
+					err := cbor.Unmarshal(v.Data, &task)
+					if err != nil {
+						logrus.Errorf("Failed to unmarshal transaction %x payload: %s", v.Hash, err.Error())
+						continue // FIXME
+					}
+					reqIDNumber, ok := big.NewInt(0).SetString(task.RequestID, 10)
+					if !ok {
+						logrus.Errorf("Failed to parse request id number in task of tx %x", v.Hash)
+						continue // FIXME
+					}
+
+					err = pcm.ethereumClient.SubmitRequestAnswer(reqIDNumber, task.Payload)
+					if err != nil {
+						logrus.Errorf("Failed to submit task in tx %x: %s", v.Hash, err.Error())
+						continue // FIXME
+					}
+				}
+			}
+
+			pcm.state.blockHeight = pcm.state.blockHeight + 1
+		}
+
+		// get latest block
+		height, err := pcm.blockchain.GetLatestBlockHeight()
 		if err != nil {
-			logrus.Errorf("Failed to mine the block: %s", err.Error())
+			logrus.Error(err)
+			return
+		}
+		blockHeader, err := pcm.blockchain.FetchBlockHeaderByHeight(height)
+		if err != nil {
+			logrus.Error(err)
 			return
 		}
 
-		pcm.state.drandRound = res.Round()
-		pcm.state.randomness = res.Randomness()
-		pcm.state.blockHeight = pcm.state.blockHeight + 1
+		pcm.state.drandRound = entry.Round
+		pcm.state.randomness = entry.Data
+
+		minedBlock, err := pcm.miner.MineBlock(entry.Data, entry.Round, blockHeader)
+		if err != nil {
+			if errors.Is(err, ErrNoTxForBlock) {
+				logrus.Info("Skipping consensus round, because we don't have transactions in mempool for including into block")
+			} else {
+				logrus.Errorf("Failed to mine the block: %s", err.Error())
+			}
+			return
+		}
 
 		// if we are round winner
 		if minedBlock != nil {
+			logrus.Infof("We are elected in consensus round %d", pcm.state.blockHeight)
 			err = pcm.propose(minedBlock)
 			if err != nil {
 				logrus.Errorf("Failed to propose the block: %s", err.Error())
@@ -327,7 +374,10 @@ func (pcm *PBFTConsensusManager) commitAcceptedBlocks() (*types3.Block, error) {
 		maxStake = stake
 		selectedBlock = v
 	}
-	logrus.Debugf("Selected block of miner %s", selectedBlock.Header.ProposerEth.Hex())
-	pcm.blockPool.PruneAcceptedBlocks()
+	logrus.Infof("Committed block %x with height %d of miner %s", selectedBlock.Header.Hash, selectedBlock.Header.Height, selectedBlock.Header.Proposer.String())
+	pcm.blockPool.PruneAcceptedBlocks(selectedBlock)
+	for _, v := range selectedBlock.Data {
+		pcm.mempool.DeleteTx(v.Hash)
+	}
 	return selectedBlock, pcm.blockchain.StoreBlock(selectedBlock)
 }

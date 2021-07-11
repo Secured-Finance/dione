@@ -19,6 +19,10 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+var (
+	ErrNoTxForBlock = fmt.Errorf("no transactions for including into block")
+)
+
 type Miner struct {
 	address      peer.ID
 	ethAddress   common.Address
@@ -85,7 +89,7 @@ func (m *Miner) GetStakeInfo(miner common.Address) (*big.Int, *big.Int, error) {
 	return mStake, nStake, nil
 }
 
-func (m *Miner) MineBlock(randomness []byte, lastBlockHeader *types2.BlockHeader) (*types2.Block, error) {
+func (m *Miner) MineBlock(randomness []byte, randomnessRound uint64, lastBlockHeader *types2.BlockHeader) (*types2.Block, error) {
 	logrus.Debug("attempting to mine the block at epoch: ", lastBlockHeader.Height+1)
 
 	if err := m.UpdateCurrentStakeInfo(); err != nil {
@@ -96,6 +100,7 @@ func (m *Miner) MineBlock(randomness []byte, lastBlockHeader *types2.BlockHeader
 		lastBlockHeader.Height+1,
 		m.address,
 		randomness,
+		randomnessRound,
 		m.minerStake,
 		m.networkStake,
 		m.privateKey,
@@ -110,7 +115,7 @@ func (m *Miner) MineBlock(randomness []byte, lastBlockHeader *types2.BlockHeader
 
 	txs := m.mempool.GetTransactionsForNewBlock()
 	if txs == nil {
-		return nil, fmt.Errorf("there is no txes for processing") // skip new consensus round because there is no transaction for processing
+		return nil, ErrNoTxForBlock // skip new consensus round because there is no transaction for processing
 	}
 
 	newBlock, err := types2.CreateBlock(lastBlockHeader, txs, m.ethAddress, m.privateKey, winner)

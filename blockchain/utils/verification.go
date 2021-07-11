@@ -10,7 +10,7 @@ import (
 
 func VerifyTx(blockHeader *types.BlockHeader, tx *types.Transaction) error {
 	if tx.MerkleProof == nil {
-		return fmt.Errorf("block transaction hasn't merkle proof")
+		return fmt.Errorf("block transaction doesn't have merkle proof")
 	}
 	txProofVerified, err := merkletree.VerifyProofUsing(tx.Hash, false, tx.MerkleProof, [][]byte{blockHeader.Hash}, keccak256.New())
 	if err != nil {

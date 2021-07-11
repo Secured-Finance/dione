@@ -180,12 +180,13 @@ func (bp *BlockChain) FetchBlockData(blockHash []byte) ([]*types2.Transaction, e
 			}
 			return err
 		}
-		err = cbor.Unmarshal(blockData, data)
+		err = cbor.Unmarshal(blockData, &data)
 		return err
 	})
 	if err != nil {
 		return nil, err
 	}
+
 	return data, nil
 }
 
@@ -227,7 +228,7 @@ func (bp *BlockChain) FetchBlock(blockHash []byte) (*types2.Block, error) {
 }
 
 func (bp *BlockChain) FetchBlockByHeight(height uint64) (*types2.Block, error) {
-	var heightBytes []byte
+	var heightBytes = make([]byte, 8)
 	binary.LittleEndian.PutUint64(heightBytes, height)
 	blockHash, err := bp.heightIndex.GetBytes(heightBytes)
 	if err != nil {
@@ -243,7 +244,7 @@ func (bp *BlockChain) FetchBlockByHeight(height uint64) (*types2.Block, error) {
 }
 
 func (bp *BlockChain) FetchBlockHeaderByHeight(height uint64) (*types2.BlockHeader, error) {
-	var heightBytes []byte
+	var heightBytes = make([]byte, 8)
 	binary.LittleEndian.PutUint64(heightBytes, height)
 	blockHash, err := bp.heightIndex.GetBytes(heightBytes)
 	if err != nil {

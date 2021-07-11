@@ -1,6 +1,8 @@
 package cache
 
 import (
+	"fmt"
+	"reflect"
 	"time"
 
 	"github.com/patrickmn/go-cache"
@@ -37,7 +39,14 @@ func (imc *InMemoryCache) Get(key string, value interface{}) error {
 	if !exists {
 		return ErrNotFound
 	}
-	value = v
+	reflectedValue := reflect.ValueOf(value)
+	if reflectedValue.Kind() != reflect.Ptr {
+		return fmt.Errorf("value isn't a pointer")
+	}
+	if reflectedValue.IsNil() {
+		reflectedValue.Set(reflect.New(reflectedValue.Type().Elem()))
+	}
+	reflectedValue.Elem().Set(reflect.ValueOf(v).Elem())
 
 	return nil
 }
