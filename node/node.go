@@ -9,6 +9,8 @@ import (
 	"os"
 	"time"
 
+	"github.com/multiformats/go-multiaddr"
+
 	"github.com/asaskevich/EventBus"
 
 	"github.com/fxamacker/cbor/v2"
@@ -160,7 +162,14 @@ func NewNode(config *config.Config, prvKey crypto.PrivKey, pexDiscoveryUpdateTim
 	r := provideP2PRPCClient(lhost)
 
 	// initialize sync manager
-	sm, err := provideSyncManager(bus, bc, mp, r, baddrs[0], psb) // FIXME here we just pick up first bootstrap in list
+
+	var baddr multiaddr.Multiaddr
+	if len(baddrs) == 0 {
+		baddr = nil
+	} else {
+		baddr = baddrs[0]
+	}
+	sm, err := provideSyncManager(bus, bc, mp, r, baddr, psb) // FIXME here we just pick up first bootstrap in list
 	if err != nil {
 		logrus.Fatal(err)
 	}
@@ -186,7 +195,7 @@ func NewNode(config *config.Config, prvKey crypto.PrivKey, pexDiscoveryUpdateTim
 	logrus.Info("Random beacon subsystem has been initialized!")
 
 	// initialize dispute subsystem
-	disputeManager, err := provideDisputeManager(context.TODO(), ethClient, consensusManager, config)
+	disputeManager, err := provideDisputeManager(context.TODO(), ethClient, consensusManager, config, bc)
 	if err != nil {
 		logrus.Fatal(err)
 	}

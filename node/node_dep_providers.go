@@ -56,8 +56,8 @@ func provideCache(config *config.Config) cache.Cache {
 	return backend
 }
 
-func provideDisputeManager(ctx context.Context, ethClient *ethclient.EthereumClient, pcm *consensus.PBFTConsensusManager, cfg *config.Config) (*consensus.DisputeManager, error) {
-	return consensus.NewDisputeManager(ctx, ethClient, pcm, cfg.Ethereum.DisputeVoteWindow)
+func provideDisputeManager(ctx context.Context, ethClient *ethclient.EthereumClient, pcm *consensus.PBFTConsensusManager, cfg *config.Config, bc *blockchain.BlockChain) (*consensus.DisputeManager, error) {
+	return consensus.NewDisputeManager(ctx, ethClient, pcm, cfg.Ethereum.DisputeVoteWindow, bc)
 }
 
 func provideMiner(peerID peer.ID, ethAddress common.Address, ethClient *ethclient.EthereumClient, privateKey crypto.PrivKey, mempool *pool.Mempool) *consensus.Miner {
@@ -165,11 +165,16 @@ func provideMemPool() (*pool.Mempool, error) {
 }
 
 func provideSyncManager(bus EventBus.Bus, bp *blockchain.BlockChain, mp *pool.Mempool, r *gorpc.Client, bootstrap multiaddr.Multiaddr, psb *pubsub.PubSubRouter) (sync.SyncManager, error) {
-	addr, err := peer.AddrInfoFromP2pAddr(bootstrap)
-	if err != nil {
-		return nil, err
+	bootstrapPeerID := peer.ID("")
+	if bootstrap != nil {
+		addr, err := peer.AddrInfoFromP2pAddr(bootstrap)
+		if err != nil {
+			return nil, err
+		}
+		bootstrapPeerID = addr.ID
 	}
-	return sync.NewSyncManager(bus, bp, mp, r, addr.ID, psb), nil
+
+	return sync.NewSyncManager(bus, bp, mp, r, bootstrapPeerID, psb), nil
 }
 
 func provideP2PRPCClient(h host.Host) *gorpc.Client {
