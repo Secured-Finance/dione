@@ -10,5 +10,4 @@ type GetRangeOfBlocksArg struct {
 type GetRangeOfBlocksReply struct {
 	Blocks             []types.Block
 	FailedBlockHeights []uint64 // list of block heights the node was unable to retrieve
-	Error              *string
 }

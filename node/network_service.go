@@ -18,39 +18,36 @@ import (
 )
 
 type NetworkService struct {
-	blockpool *blockchain.BlockChain
-	mempool   *pool.Mempool
-	rpcClient *gorpc.Client
+	blockchain *blockchain.BlockChain
+	mempool    *pool.Mempool
+	rpcClient  *gorpc.Client
 }
 
-func NewNetworkService(bp *blockchain.BlockChain) *NetworkService {
+func NewNetworkService(bc *blockchain.BlockChain, mp *pool.Mempool) *NetworkService {
 	return &NetworkService{
-		blockpool: bp,
+		blockchain: bc,
+		mempool:    mp,
 	}
 }
 
-func (s *NetworkService) LastBlockHeight(ctx context.Context, arg struct{}, reply *wire.LastBlockHeightReply) {
-	height, err := s.blockpool.GetLatestBlockHeight()
+func (s *NetworkService) LastBlockHeight(ctx context.Context, arg struct{}, reply *wire.LastBlockHeightReply) error {
+	height, err := s.blockchain.GetLatestBlockHeight()
 	if err != nil {
-		reply.Error = err
-		return
+		return err
 	}
 	reply.Height = height
+	return nil
 }
 
-func (s *NetworkService) GetRangeOfBlocks(ctx context.Context, arg wire.GetRangeOfBlocksArg, reply *wire.GetRangeOfBlocksReply) {
+func (s *NetworkService) GetRangeOfBlocks(ctx context.Context, arg wire.GetRangeOfBlocksArg, reply *wire.GetRangeOfBlocksReply) error {
 	if arg.From > arg.To {
-		errText := "incorrect arguments: from > to"
-		reply.Error = &errText
-		return
+		return fmt.Errorf("incorrect arguments: from > to")
 	}
 	if arg.To-arg.From > policy.MaxBlockCountForRetrieving {
-		errText := "incorrect arguments: count of block for retrieving is exceeded the limit"
-		reply.Error = &errText
-		return
+		return fmt.Errorf("incorrect arguments: count of block for retrieving is exceeded the limit")
 	}
 	for i := arg.From; i <= arg.To; i++ {
-		block, err := s.blockpool.FetchBlockByHeight(i)
+		block, err := s.blockchain.FetchBlockByHeight(i)
 		if err != nil {
 			logrus.Warnf("failed to retrieve block from blockpool with height %d", i)
 			reply.FailedBlockHeights = append(reply.FailedBlockHeights, i)
@@ -58,9 +55,10 @@ func (s *NetworkService) GetRangeOfBlocks(ctx context.Context, arg wire.GetRange
 		}
 		reply.Blocks = append(reply.Blocks, *block)
 	}
+	return nil
 }
 
-func (s *NetworkService) Mempool(ctx context.Context, arg struct{}, reply *wire.InvMessage) {
+func (s *NetworkService) Mempool(ctx context.Context, arg struct{}, reply *wire.InvMessage) error {
 	txs := s.mempool.GetAllTransactions()
 
 	// extract hashes of txs
@@ -70,14 +68,15 @@ func (s *NetworkService) Mempool(ctx context.Context, arg struct{}, reply *wire.
 			Hash: v.Hash,
 		})
 	}
+
+	return nil
 }
 
-func (s *NetworkService) GetMempoolTxs(ctx context.Context, arg wire.GetMempoolTxsArg, reply *wire.GetMempoolTxsReply) {
+func (s *NetworkService) GetMempoolTxs(ctx context.Context, arg wire.GetMempoolTxsArg, reply *wire.GetMempoolTxsReply) error {
 	if len(arg.Items) > policy.MaxTransactionCountForRetrieving {
 		pid, _ := gorpc.GetRequestSender(ctx)
 		logrus.Warnf("Max tx count limit exceeded for GetMempoolTxs request of node %s", pid)
-		reply.Error = fmt.Errorf("max tx count limit exceeded")
-		return
+		return fmt.Errorf("max tx count limit exceeded")
 	}
 
 	for _, v := range arg.Items {
@@ -86,10 +85,11 @@ func (s *NetworkService) GetMempoolTxs(ctx context.Context, arg wire.GetMempoolT
 			if errors.Is(err, pool.ErrTxNotFound) {
 				reply.NotFoundTxs = append(reply.NotFoundTxs, v)
 			} else {
-				reply.Error = err
-				return
+				return err
 			}
 		}
 		reply.Transactions = append(reply.Transactions, *tx)
 	}
+
+	return nil
 }

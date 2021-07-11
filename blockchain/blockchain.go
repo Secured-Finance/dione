@@ -4,6 +4,7 @@ import (
 	"encoding/binary"
 	"encoding/hex"
 	"errors"
+	"os"
 
 	"github.com/Secured-Finance/dione/blockchain/utils"
 
@@ -41,12 +42,21 @@ func NewBlockChain(path string) (*BlockChain, error) {
 		return nil, err
 	}
 
+	err = env.SetMaxDBs(1)
+	if err != nil {
+		return nil, err
+	}
 	err = env.SetMapSize(100 * 1024 * 1024 * 1024) // 100 GB
 	if err != nil {
 		return nil, err
 	}
 
-	err = env.Open(path, 0, 0664)
+	err = os.MkdirAll(path, 0755)
+	if err != nil {
+		return nil, err
+	}
+
+	err = env.Open(path, 0, 0755)
 	if err != nil {
 		return nil, err
 	}
@@ -111,7 +121,7 @@ func (bp *BlockChain) StoreBlock(block *types2.Block) error {
 	}
 
 	// update index "height -> block hash"
-	var heightBytes []byte
+	heightBytes := make([]byte, 8)
 	binary.LittleEndian.PutUint64(heightBytes, block.Header.Height)
 	err = bp.heightIndex.PutBytes(heightBytes, block.Header.Hash)
 	if err != nil {

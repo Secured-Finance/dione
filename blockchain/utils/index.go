@@ -32,7 +32,7 @@ func NewIndex(name string, dbEnv *lmdb.Env, db lmdb.DBI) *Index {
 
 func (i *Index) PutUint64(key []byte, value uint64) error {
 	return i.dbEnv.Update(func(txn *lmdb.Txn) error {
-		var data []byte
+		data := make([]byte, 8)
 		binary.LittleEndian.PutUint64(data, value)
 		return txn.Put(i.db, i.constructIndexKey(key), data, 0)
 	})

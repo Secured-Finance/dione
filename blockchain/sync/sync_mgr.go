@@ -99,13 +99,14 @@ func (sm *syncManager) doInitialBlockPoolSync() error {
 		}
 	}
 
+	if sm.bootstrapPeer == "" {
+		return nil // FIXME
+	}
+
 	var reply wire.LastBlockHeightReply
 	err = sm.rpcClient.Call(sm.bootstrapPeer, "NetworkService", "LastBlockHeight", nil, &reply)
 	if err != nil {
 		return err
-	}
-	if reply.Error != nil {
-		return reply.Error
 	}
 
 	if reply.Height > ourLastHeight {
@@ -150,6 +151,10 @@ func (sm *syncManager) doInitialBlockPoolSync() error {
 }
 
 func (sm *syncManager) doInitialMempoolSync() error {
+	if sm.bootstrapPeer == "" {
+		return nil // FIXME
+	}
+
 	var reply wire.InvMessage
 	err := sm.rpcClient.Call(sm.bootstrapPeer, "NetworkService", "Mempool", nil, &reply)
 	if err != nil {
@@ -186,9 +191,6 @@ func (sm *syncManager) doInitialMempoolSync() error {
 		err := sm.rpcClient.Call(sm.bootstrapPeer, "NetworkService", "GetMempoolTxs", getMempoolTxArg, &getMempoolTxReply)
 		if err != nil {
 			return err
-		}
-		if getMempoolTxReply.Error != nil {
-			return getMempoolTxReply.Error
 		}
 		for _, v := range getMempoolTxReply.Transactions {
 			err := sm.mempool.StoreTx(&v)

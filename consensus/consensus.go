@@ -32,6 +32,10 @@ import (
 	"github.com/Secured-Finance/dione/pubsub"
 )
 
+var (
+	ErrNoAcceptedBlocks = errors.New("there is no accepted blocks")
+)
+
 type StateStatus uint8
 
 const (
@@ -52,7 +56,7 @@ type PBFTConsensusManager struct {
 	validator      *ConsensusValidator
 	ethereumClient *ethclient.EthereumClient
 	miner          *Miner
-	blockPool      pool.BlockPool
+	blockPool      *pool.BlockPool
 	blockchain     blockchain.BlockChain
 	state          *State
 }
@@ -66,7 +70,16 @@ type State struct {
 	ready       chan bool
 }
 
-func NewPBFTConsensusManager(bus EventBus.Bus, psb *pubsub.PubSubRouter, minApprovals int, privKey crypto.PrivKey, ethereumClient *ethclient.EthereumClient, miner *Miner, bc *blockchain.BlockChain) *PBFTConsensusManager {
+func NewPBFTConsensusManager(
+	bus EventBus.Bus,
+	psb *pubsub.PubSubRouter,
+	minApprovals int,
+	privKey crypto.PrivKey,
+	ethereumClient *ethclient.EthereumClient,
+	miner *Miner,
+	bc *blockchain.BlockChain,
+	bp *pool.BlockPool,
+) *PBFTConsensusManager {
 	pcm := &PBFTConsensusManager{}
 	pcm.psb = psb
 	pcm.miner = miner
@@ -80,6 +93,7 @@ func NewPBFTConsensusManager(bus EventBus.Bus, psb *pubsub.PubSubRouter, minAppr
 		status: StateStatusUnknown,
 	}
 	pcm.bus = bus
+	pcm.blockPool = bp
 	pcm.psb.Hook(pubsub.PrePrepareMessageType, pcm.handlePrePrepare, types.PrePrepareMessage{})
 	pcm.psb.Hook(pubsub.PrepareMessageType, pcm.handlePrepare, types.PrepareMessage{})
 	pcm.psb.Hook(pubsub.CommitMessageType, pcm.handleCommit, types.CommitMessage{})
@@ -237,7 +251,11 @@ func (pcm *PBFTConsensusManager) NewDrandRound(from phony.Actor, res client.Resu
 		defer pcm.state.mutex.Unlock()
 		block, err := pcm.commitAcceptedBlocks()
 		if err != nil {
-			logrus.Errorf("Failed to select the block in consensus round %d: %s", pcm.state.blockHeight, err.Error())
+			if errors.Is(err, ErrNoAcceptedBlocks) {
+				logrus.Warnf("No accepted blocks for consensus round %d", pcm.state.blockHeight)
+			} else {
+				logrus.Errorf("Failed to select the block in consensus round %d: %s", pcm.state.blockHeight, err.Error())
+			}
 			return
 		}
 
@@ -245,7 +263,7 @@ func (pcm *PBFTConsensusManager) NewDrandRound(from phony.Actor, res client.Resu
 		// then post dione tasks to target chains (currently, only Ethereum)
 		if block.Header.Proposer == pcm.miner.address {
 			for _, v := range block.Data {
-				var task *types2.DioneTask
+				var task types2.DioneTask
 				err := cbor.Unmarshal(v.Data, &task)
 				if err != nil {
 					logrus.Errorf("Failed to unmarshal transaction %x payload: %s", v.Hash, err.Error())
@@ -291,7 +309,7 @@ func (pcm *PBFTConsensusManager) NewDrandRound(from phony.Actor, res client.Resu
 func (pcm *PBFTConsensusManager) commitAcceptedBlocks() (*types3.Block, error) {
 	blocks := pcm.blockPool.GetAllAcceptedBlocks()
 	if blocks == nil {
-		return nil, errors.New("there is no accepted blocks")
+		return nil, ErrNoAcceptedBlocks
 	}
 	var maxStake *big.Int
 	var selectedBlock *types3.Block

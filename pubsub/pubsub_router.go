@@ -34,6 +34,7 @@ func NewPubSubRouter(h host.Host, oracleTopic string, isBootstrap bool) *PubSubR
 		context:       ctx,
 		contextCancel: ctxCancel,
 		handlers:      make(map[PubSubMessageType][]Handler),
+		typeMapping:   map[PubSubMessageType]interface{}{},
 	}
 
 	var pbOptions []pubsub.Option

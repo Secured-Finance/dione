@@ -105,8 +105,26 @@ func providePubsubRouter(lhost host.Host, config *config.Config) *pubsub.PubSubR
 	return pubsub.NewPubSubRouter(lhost, config.PubSub.ServiceTopicName, config.IsBootstrap)
 }
 
-func provideConsensusManager(bus EventBus.Bus, psb *pubsub.PubSubRouter, miner *consensus.Miner, bc *blockchain.BlockChain, ethClient *ethclient.EthereumClient, privateKey crypto.PrivKey, minApprovals int) *consensus.PBFTConsensusManager {
-	return consensus.NewPBFTConsensusManager(bus, psb, minApprovals, privateKey, ethClient, miner, bc)
+func provideConsensusManager(
+	bus EventBus.Bus,
+	psb *pubsub.PubSubRouter,
+	miner *consensus.Miner,
+	bc *blockchain.BlockChain,
+	ethClient *ethclient.EthereumClient,
+	privateKey crypto.PrivKey,
+	minApprovals int,
+	bp *pool.BlockPool,
+) *consensus.PBFTConsensusManager {
+	return consensus.NewPBFTConsensusManager(
+		bus,
+		psb,
+		minApprovals,
+		privateKey,
+		ethClient,
+		miner,
+		bc,
+		bp,
+	)
 }
 
 func provideLibp2pHost(config *config.Config, privateKey crypto.PrivKey) (host.Host, error) {
@@ -181,6 +199,10 @@ func provideP2PRPCClient(h host.Host) *gorpc.Client {
 	return gorpc.NewClient(h, DioneProtocolID)
 }
 
-func provideNetworkService(bp *blockchain.BlockChain) *NetworkService {
-	return NewNetworkService(bp)
+func provideNetworkService(bp *blockchain.BlockChain, mp *pool.Mempool) *NetworkService {
+	return NewNetworkService(bp, mp)
+}
+
+func provideBlockPool(mp *pool.Mempool) (*pool.BlockPool, error) {
+	return pool.NewBlockPool(mp)
 }

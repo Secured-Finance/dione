@@ -9,5 +9,4 @@ type GetMempoolTxsArg struct {
 type GetMempoolTxsReply struct {
 	Transactions []types.Transaction
 	NotFoundTxs  [][]byte
-	Error        error
 }

@@ -9,6 +9,8 @@ import (
 	"os"
 	"time"
 
+	"github.com/Secured-Finance/dione/blockchain"
+
 	"github.com/multiformats/go-multiaddr"
 
 	"github.com/asaskevich/EventBus"
@@ -16,8 +18,6 @@ import (
 	"github.com/fxamacker/cbor/v2"
 
 	"github.com/Secured-Finance/dione/types"
-
-	"github.com/Secured-Finance/dione/blockchain"
 
 	types2 "github.com/Secured-Finance/dione/blockchain/types"
 
@@ -66,8 +66,9 @@ type Node struct {
 	Miner            *consensus.Miner
 	Beacon           beacon.BeaconNetworks
 	DisputeManager   *consensus.DisputeManager
-	BlockPool        *blockchain.BlockChain
+	BlockPool        *pool.BlockPool
 	MemPool          *pool.Mempool
+	BlockChain       *blockchain.BlockChain
 	SyncManager      sync.SyncManager
 	NetworkService   *NetworkService
 	NetworkRPCHost   *gorpc.Server
@@ -138,7 +139,7 @@ func NewNode(config *config.Config, prvKey crypto.PrivKey, pexDiscoveryUpdateTim
 	if err != nil {
 		logrus.Fatalf("Failed to initialize blockpool: %s", err.Error())
 	}
-	n.BlockPool = bc
+	n.BlockChain = bc
 	logrus.Info("Block pool database has been successfully initialized!")
 
 	// initialize mempool
@@ -149,7 +150,14 @@ func NewNode(config *config.Config, prvKey crypto.PrivKey, pexDiscoveryUpdateTim
 	n.MemPool = mp
 	logrus.Info("Mempool has been successfully initialized!")
 
-	ns := provideNetworkService(bc)
+	bp, err := provideBlockPool(mp)
+	if err != nil {
+		logrus.Fatalf("Failed to initialize blockpool: %s", err.Error())
+	}
+	n.BlockPool = bp
+	logrus.Info("Blockpool has been successfully initialized!")
+
+	ns := provideNetworkService(bc, mp)
 	n.NetworkService = ns
 	rpcHost := provideNetworkRPCHost(lhost)
 	err = rpcHost.Register(ns)
@@ -182,7 +190,7 @@ func NewNode(config *config.Config, prvKey crypto.PrivKey, pexDiscoveryUpdateTim
 	logrus.Info("Mining subsystem has been initialized!")
 
 	// initialize consensus subsystem
-	consensusManager := provideConsensusManager(bus, psb, miner, bc, ethClient, prvKey, n.Config.ConsensusMinApprovals)
+	consensusManager := provideConsensusManager(bus, psb, miner, bc, ethClient, prvKey, n.Config.ConsensusMinApprovals, bp)
 	n.ConsensusManager = consensusManager
 	logrus.Info("Consensus subsystem has been initialized!")
 
